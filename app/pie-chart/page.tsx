@@ -5,7 +5,7 @@ import { TaskLegend } from "@/components/task-legend"
 import { Button } from "@/components/ui/button"
 import { useTasks } from "@/context/task-context"
 import { useSettings } from "@/context/settings-context"
-import { PlusCircle, Menu } from "lucide-react"
+import { PlusCircle, Menu, ArrowLeft } from "lucide-react"
 import { PlanDayDialog } from "@/components/plan-day-dialog"
 import { useState } from "react"
 import { motion } from "framer-motion"
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { NotesViewDialog } from "@/components/notes-view-dialog"
 import { UserGuideDialog } from "@/components/user-guide-dialog"
+import { ResetProgressButton } from "@/components/reset-progress-button"
 
 export default function PieChartView() {
   const router = useRouter()
@@ -81,6 +82,10 @@ export default function PieChartView() {
             <DropdownMenuItem onClick={() => setUserGuideOpen(true)}>
               User Guide
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <ResetProgressButton />
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => alert("About clicked!")}>About</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -97,7 +102,7 @@ export default function PieChartView() {
             />
           </div>
 
-          <div className="w-full md:w-auto md:min-w-[300px] lg:min-w-[350px] mb-2 sm:mb-4 md:pt-0 rounded-xl shadow-lg bg-white/80 backdrop-blur-sm border border-gray-100 p-3 sm:p-4">
+          <div className="w-full md:w-auto md:min-w-[300px] lg:min-w-[350px] mb-2 sm:mb-4 md:pt-0">
             <TaskLegend tasks={tasks} workdayHours={workdayHours} onTaskClick={handleTaskClick} />
           </div>
         </div>

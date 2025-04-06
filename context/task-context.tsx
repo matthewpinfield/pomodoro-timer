@@ -7,37 +7,37 @@ import { v4 as uuidv4 } from "uuid"
 // Sample data for development only - will be ignored in production
 const DEMO_TASKS: Task[] = [
   {
-    id: "task-1",
-    name: "Project Planning",
+    id: "demo-task-1",
+    name: "[DEV] Project Planning",
     goalTimeMinutes: 120, // 2 hours
-    progressMinutes: 45,
+    progressMinutes: 20,
     color: "#3b82f6", // blue
     notes: [],
   },
   {
-    id: "task-2",
-    name: "Client Meeting",
+    id: "demo-task-2",
+    name: "[DEV] Client Meeting",
     goalTimeMinutes: 60, // 1 hour
     progressMinutes: 0,
     color: "#ef4444", // red
     notes: [],
   },
   {
-    id: "task-3",
-    name: "Documentation",
+    id: "demo-task-3",
+    name: "[DEV] Documentation",
     goalTimeMinutes: 90, // 1.5 hours
-    progressMinutes: 30,
+    progressMinutes: 0,
     color: "#10b981", // green
     notes: [],
   },
   {
-    id: "task-4",
-    name: "Break Time",
+    id: "demo-task-4",
+    name: "[DEV] Break Time",
     goalTimeMinutes: 30, // 0.5 hours
-    progressMinutes: 15,
+    progressMinutes: 0,
     color: "#f59e0b", // amber
     notes: [],
-  },
+  }
 ]
 
 interface TaskContextType {
@@ -49,6 +49,7 @@ interface TaskContextType {
   updateTaskProgress: (id: string, minutesCompleted: number) => void
   addTaskNote: (id: string, note: string) => void
   setCurrentTaskId: (id: string | null) => void
+  resetAllTaskProgress: () => void
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
@@ -57,25 +58,80 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
 
+  // Function to backup task progress to localStorage
+  const backupTaskProgress = (tasksToBackup: Task[]) => {
+    const today = new Date().toISOString().split('T')[0] // Format: YYYY-MM-DD
+    const backupKey = `focuspie-backup-${today}`
+    localStorage.setItem(backupKey, JSON.stringify(tasksToBackup))
+  }
+
+  // Function to reset all task progress with notification
+  const resetAllTaskProgress = () => {
+    // Backup current progress before reset
+    backupTaskProgress(tasks)
+    
+    // Reset progress
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => ({
+        ...task,
+        progressMinutes: 0,
+      }))
+    )
+    
+    // Show notification
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification('Task Progress Reset', {
+          body: 'All task progress has been reset for the new day.',
+          icon: '/favicon.ico'
+        })
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification('Task Progress Reset', {
+              body: 'All task progress has been reset for the new day.',
+              icon: '/favicon.ico'
+            })
+          }
+        })
+      }
+    }
+  }
+
+  // Check for midnight and reset progress
+  useEffect(() => {
+    const checkMidnight = () => {
+      const now = new Date()
+      const tomorrow = new Date(now)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(0, 0, 0, 0)
+      
+      const timeUntilMidnight = tomorrow.getTime() - now.getTime()
+      
+      // Set timeout for next midnight
+      const timeoutId = setTimeout(() => {
+        resetAllTaskProgress()
+        // Set up next check
+        checkMidnight()
+      }, timeUntilMidnight)
+
+      return () => clearTimeout(timeoutId)
+    }
+
+    // Initial check
+    const cleanup = checkMidnight()
+    return cleanup
+  }, [tasks]) // Add tasks as dependency to ensure we have the latest data for backup
+
   // Load tasks from localStorage on initial render
   useEffect(() => {
-    const savedTasks = localStorage.getItem("focuspie-tasks")
+    // Clear localStorage to force demo tasks
+    localStorage.removeItem("focuspie-tasks")
+    localStorage.removeItem("focuspie-current-task")
 
-    // If we have saved tasks, use them
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks))
-    }
-    // Otherwise, in development mode, load demo tasks if enabled
-    else if (process.env.NODE_ENV === "development") {
-      // This line ensures the demo data doesn't appear in production
-      // The comment below is for build tools to recognize this should be removed in production
-      /* @__PURE__ */
+    // Load demo tasks in development mode
+    if (process.env.NODE_ENV === "development") {
       setTasks(DEMO_TASKS)
-    }
-
-    const savedCurrentTaskId = localStorage.getItem("focuspie-current-task")
-    if (savedCurrentTaskId) {
-      setCurrentTaskId(savedCurrentTaskId)
     }
   }, [])
 
@@ -149,6 +205,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         updateTaskProgress,
         addTaskNote,
         setCurrentTaskId,
+        resetAllTaskProgress,
       }}
     >
       {children}

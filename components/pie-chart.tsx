@@ -177,22 +177,6 @@ export function PieChart({
       }
       ctx.fill()
 
-      // Draw progress arc (inner arc)
-      if (task.progressMinutes > 0) {
-        const progressRatio = Math.min(1, task.progressMinutes / task.goalTimeMinutes)
-        const progressAngle = sliceAngle * progressRatio
-
-        ctx.beginPath()
-        ctx.moveTo(centerX + offsetX, centerY + offsetY)
-        ctx.arc(centerX + offsetX, centerY + offsetY, radius * 0.8, startAngle, startAngle + progressAngle)
-        ctx.lineTo(centerX + offsetX, centerY + offsetY)
-        ctx.closePath()
-
-        // Fill with darker shade of task color
-        ctx.fillStyle = task.color + "99" // Add transparency
-        ctx.fill()
-      }
-
       startAngle = endAngle
     })
 

@@ -3,16 +3,18 @@
 import type { Task } from "@/types/task"
 import { Check, Clock } from "lucide-react"
 import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
 
 // Update the TaskLegendProps interface to include an onTaskClick handler
 interface TaskLegendProps {
   tasks: Task[]
   workdayHours?: number
   onTaskClick?: (taskId: string) => void
+  className?: string
 }
 
 // Update the function signature to include the new prop with a default empty function
-export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: TaskLegendProps) {
+export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {}, className }: TaskLegendProps) {
   // Calculate total task time
   const totalTaskMinutes = tasks.reduce((sum, task) => sum + task.goalTimeMinutes, 0)
   const workdayMinutes = workdayHours * 60
