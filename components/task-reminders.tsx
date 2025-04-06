@@ -15,7 +15,7 @@ export function TaskReminders({ tasks }: TaskRemindersProps) {
   return (
     <div className="text-sm text-gray-600 w-full">
       <p className="font-medium mb-2">Today's other tasks:</p>
-      <ul className="space-y-2">
+      <ul className="space-y-2 md:max-h-32 md:overflow-y-auto pr-1">
         {tasks.map((task, index) => {
           const timeLeft = Math.max(0, task.goalTimeMinutes - task.progressMinutes)
           const hours = Math.floor(timeLeft / 60)

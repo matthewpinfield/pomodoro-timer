@@ -1,7 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { TaskForm } from "@/components/task-form"
 import { TaskList } from "@/components/task-list"
@@ -30,7 +36,7 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
     } else {
       setEditingTask(null)
     }
-  }, [editTaskId, tasks, open])
+  }, [editTaskId, open])
 
   const handleAddTask = (task: { name: string; goalTimeMinutes: number; color: string }) => {
     addTask(task)
@@ -53,9 +59,12 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-white text-gray-800">
         <DialogHeader>
           <DialogTitle>Plan My Day</DialogTitle>
+          <DialogDescription className="text-gray-600">
+            Manage your daily tasks here. Add new tasks or edit existing ones.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
@@ -69,6 +78,7 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
                 initialValues={
                   editingTask
                     ? {
+                        id: editingTask.id,
                         name: editingTask.name,
                         goalTimeMinutes: editingTask.goalTimeMinutes,
                         color: editingTask.color,

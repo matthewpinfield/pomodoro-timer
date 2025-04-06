@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { CircleTimer } from "@/components/circle-timer"
 import { TaskList } from "@/components/task-list"
-import { BottomNavigation } from "@/components/bottom-navigation"
 import { TimerStatsAlt } from "@/components/timer-stats-alt"
 
 export default function LayoutTwo() {
@@ -69,8 +68,6 @@ export default function LayoutTwo() {
 
         <TaskList variant="alt" />
       </main>
-
-      <BottomNavigation activeTab="timer" />
     </div>
   )
 }

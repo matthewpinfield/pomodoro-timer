@@ -28,8 +28,8 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
   }
 
   return (
-    <div className="space-y-3 bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-gray-100">
-      <h3 className="font-medium text-gray-700 mb-3">Task Overview</h3>
+    <div className="space-y-1 sm:space-y-2 bg-white/80 backdrop-blur-sm rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100">
+      <h3 className="font-medium text-gray-700 mb-1 sm:mb-2">Task Overview</h3>
       {tasks.map((task, index) => {
         const isCompleted = task.progressMinutes >= task.goalTimeMinutes
         const progressText = isCompleted ? "Goal Achieved!" : "Progress"
@@ -41,7 +41,7 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
         return (
           <motion.div
             key={task.id}
-            className="flex items-center p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+            className="flex items-center p-1 sm:p-1.5 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -49,7 +49,7 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
             onClick={() => onTaskClick(task.id)}
           >
             <div
-              className="w-4 h-4 rounded-full mr-3 flex-shrink-0 shadow-sm"
+              className="w-4 h-4 rounded-full mr-2 sm:mr-3 flex-shrink-0 shadow-sm"
               style={{ backgroundColor: task.color }}
             />
             <div className="flex-1">

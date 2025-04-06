@@ -1,17 +1,85 @@
 # Pomodoro Timer
 
-A modern, feature-rich Pomodoro timer application built with Next.js, TypeScript, and Tailwind CSS.
+A task management and productivity app based on the Pomodoro Technique, helping users manage their time effectively.
 
 ## Features
 
-- 🕒 Pomodoro Timer with visual progress tracking
-- 📋 Task Management System
-- 📊 Task Statistics and Visualization
-- 🎨 Beautiful UI with Dark/Light mode
-- 📱 Responsive Design
-- 📝 Note-taking functionality
-- 🔔 Task Reminders
-- 📅 Day Planning
+- Task management with time tracking
+- Pomodoro timer with work and break intervals
+- Task visualization with progress indication
+- Simple and intuitive interface
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run the development server
+npm run dev
+```
+
+## Backup Strategy
+
+This project includes a backup system to prevent data loss during development.
+
+### How to Create a Backup
+
+Run the backup script using Node.js:
+
+```bash
+node backup.js
+```
+
+This will create a timestamped backup in the `backups` directory.
+
+### Restoring from a Backup
+
+To restore from a backup:
+
+1. Stop the development server
+2. Copy the contents from the backup folder into the root project directory
+3. Run `npm install` to ensure dependencies are up to date
+4. Start the development server with `npm run dev`
+
+### Recommended Backup Schedule
+
+- Before implementing major changes
+- After completing key features
+- When the application is in a stable state
+- Daily during active development
+
+## Git Strategy
+
+To properly maintain the project with Git:
+
+1. Initialize Git if not already done:
+   ```bash
+   git init
+   ```
+
+2. Create a `.gitignore` file:
+   ```
+   node_modules
+   .next
+   backups
+   ```
+
+3. Make regular commits:
+   ```bash
+   git add .
+   git commit -m "Descriptive message about changes"
+   ```
+
+4. Create feature branches for new functionality:
+   ```bash
+   git checkout -b feature/new-feature-name
+   ```
+
+5. Push to remote repository:
+   ```bash
+   git push origin main
+   ```
 
 ## Getting Started
 

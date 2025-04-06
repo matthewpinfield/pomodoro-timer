@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { CircleTimer } from "@/components/circle-timer"
 import { TaskList } from "@/components/task-list"
-import { BottomNavigation } from "@/components/bottom-navigation"
 import { TimerStats } from "@/components/timer-stats"
 
 export default function LayoutOne() {
@@ -69,8 +68,6 @@ export default function LayoutOne() {
 
         <TaskList />
       </main>
-
-      <BottomNavigation activeTab="timer" />
     </div>
   )
 }

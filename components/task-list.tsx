@@ -10,9 +10,10 @@ import type { Task } from "@/types/task"
 interface TaskListProps {
   tasks?: Task[]
   onEditTask?: (taskId: string) => void
+  variant?: string
 }
 
-export function TaskList({ tasks = [], onEditTask }: TaskListProps) {
+export function TaskList({ tasks = [], onEditTask, variant }: TaskListProps) {
   const { deleteTask, updateTask } = useTasks()
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
 

@@ -1,0 +1,52 @@
+# FocusPie Features & Improvements
+
+1.  [x] **Task Editing Bug:** Fix issue where existing tasks couldn't be saved due to duplicate check.
+2.  [x] **Mobile Layout:** Adjust sizes/spacing for Pie Chart, Legend, Button, Header on mobile.
+3.  [x] **Desktop Layout:** Implement side-by-side layout for Pie Chart/Legend and Timer/Other Tasks.
+4.  [x] **Button Styling:** Apply consistent primary button style.
+5.  [x] **Timer Mode Display:** Make "Work" text more descriptive.
+6.  [x] **Menu Position:** Adjust header padding to raise menu.
+7.  [x] **Menu Items:** Add placeholder "View Notes" & "Settings".
+8.  [x] **Timer State Persistence:** Prevent `timeLeft` from resetting when navigating away and back to the same task.
+9.  [x] **Early Task Finish:** Handle scenario where task completes before Pomodoro interval ends (log partial time, start break). (Needs Testing)
+10. [x] **Pie Chart Hover:** Remove tooltips, keep pull-out animation.
+11. [x] **UI Polish ("Apple Polish"):**
+    *   [x] Background Gradient: Apply subtle gradient.
+    *   [x] Header Border: Add bottom border.
+    *   [x] Card Shadows: Use softer `shadow-lg`.
+    *   [x] Button Polish: Add `active:scale-95`.
+    *   [ ] *Further refinement?* (Spacing, borders, animations, typography)
+12. [x] **Auto-Start Breaks:** Make breaks start automatically after work intervals. (Needs Testing)
+13. [x] **Notifications:**
+    *   [x] Basic Browser Notifications: Implement notifications for state transitions (Work -> Break, Break -> Work). (Needs Testing & Permission)
+    *   [ ] *Future: Filtered/Cross-device?* (More complex)
+14. [x] **"View Notes" Functionality:**
+    *   [x] Create Dialog Component.
+    *   [x] Install `date-fns` dependency.
+    *   [x] Trigger dialog from menu item.
+    *   [x] Add edit/delete note functionality.
+15. [x] **"Settings" Page:**
+    *   [x] Create basic page/route.
+    *   [x] Pomodoro Durations (Work, Short, Long).
+    *   [x] Cycles Before Long Break.
+    *   [x] Theme Selection (Light/Dark toggle).
+    *   [x] Workday Hours.
+16. [ ] **Focus Sounds:** Optional ambient sounds during work intervals.
+17. [ ] **Calendar/Email Integration:** (Future - Complex)
+18. [ ] **Statistics Dashboard:**
+    *   [ ] Track completed pomodoros.
+    *   [ ] Show daily/weekly productivity metrics.
+    *   [ ] Visual charts for time distribution.
+19. [ ] **Task Categories/Tags:**
+    *   [ ] Add category/tag field to tasks.
+    *   [ ] Filter tasks by category.
+    *   [ ] Color-code categories.
+20. [ ] **Data Export/Import:**
+    *   [ ] Export tasks and history to JSON.
+    *   [ ] Import data from file.
+    *   [ ] Backup/restore functionality.
+21. [x] **User Guide:**
+    *   [x] Create comprehensive instructions.
+    *   [x] Include getting started section.
+    *   [x] Document all features.
+    *   [x] Add usage tips and best practices.

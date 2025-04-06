@@ -56,19 +56,13 @@ export function TimerCircle({
     // 5% gap (18 degrees)
     const gapSize = (Math.PI / 180) * 18
 
-    // Draw the background track (light gray) - only for the gap
-    ctx.beginPath()
-    ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle - gapSize, startAngle)
-    ctx.lineWidth = trackWidth
-    ctx.strokeStyle = "#e2e8f0" // Light gray
-    ctx.stroke()
-
     // STEP 1: Draw the red timer (task time)
     // At start (taskProgress = 0), it covers full circle minus gap
     // As task progresses, it decreases
     if (taskProgress < 1) {
-      // Calculate how much of the circle to draw (from 100% down to 0%)
-      const redArcSize = (Math.PI * 2 - gapSize) * (1 - taskProgress)
+      // Calculate how much of the circle to draw based on remaining time
+      const taskTimeLeftRatio = taskTimeLeftSeconds / (taskGoalMinutes * 60)
+      const redArcSize = (Math.PI * 2 - gapSize) * taskTimeLeftRatio
 
       // Draw main part with flat start
       ctx.beginPath()
@@ -169,9 +163,10 @@ export function TimerCircle({
     ctx.fillText(taskName, centerX, centerY + 15)
 
     // Format task time left using taskTimeLeftSeconds
-    const hoursLeft = Math.floor(taskTimeLeftSeconds / 3600)
-    const minutesLeft = Math.floor((taskTimeLeftSeconds % 3600) / 60)
-    const taskTimeDisplay = `${hoursLeft}:${minutesLeft.toString().padStart(2, "0")}`
+    const hours = Math.floor(taskTimeLeftSeconds / 3600)
+    const minutes = Math.floor((taskTimeLeftSeconds % 3600) / 60)
+    const seconds = taskTimeLeftSeconds % 60
+    const taskTimeDisplay = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 
     // Draw the task time remaining (small timer under the task name)
     ctx.font = "12px Inter, system-ui, sans-serif"

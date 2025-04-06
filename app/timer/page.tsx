@@ -6,7 +6,8 @@ import { TimerCircle } from "@/components/timer-circle"
 import { TaskReminders } from "@/components/task-reminders"
 import { Button } from "@/components/ui/button"
 import { useTasks } from "@/context/task-context"
-import { Plus, ArrowLeft } from "lucide-react"
+import { useTimer } from "@/context/timer-context"
+import { Plus, ArrowLeft, SkipForward } from "lucide-react"
 import { formatTime } from "@/lib/utils"
 import { AddNoteDialog } from "@/components/add-note-dialog"
 import { motion } from "framer-motion"
@@ -14,9 +15,7 @@ import { motion } from "framer-motion"
 export default function TimerView() {
   const router = useRouter()
   const { tasks, currentTaskId, updateTaskProgress } = useTasks()
-  const [isRunning, setIsRunning] = useState(false)
-  const [pomodoroTime, setPomodoroTime] = useState(25 * 60) // 25 minutes in seconds
-  const [timeLeft, setTimeLeft] = useState(pomodoroTime)
+  const { timerState, startTimer, pauseTimer, skipPhase } = useTimer()
   const [noteDialogOpen, setNoteDialogOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [taskTimeLeft, setTaskTimeLeft] = useState(0)
@@ -35,36 +34,23 @@ export default function TimerView() {
     }
   }, [currentTaskId, currentTask, router])
 
-  // Timer logic
+  // Update task progress when work phase completes
   useEffect(() => {
-    let interval: NodeJS.Timeout
-
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          const newTime = prevTime - 1
-
-          // If timer reaches zero, complete a pomodoro
-          if (newTime === 0 && currentTaskId) {
-            updateTaskProgress(currentTaskId, pomodoroTime / 60) // Add minutes to progress
-
-            // Update task time left
-            setTaskTimeLeft((prev) => Math.max(0, prev - pomodoroTime))
-
-            // Reset timer for next pomodoro
-            setTimeout(() => {
-              setTimeLeft(pomodoroTime)
-              setIsRunning(false)
-            }, 500)
-          }
-
-          return newTime
-        })
-      }, 1000)
+    if (timerState.currentPhase === "work" && timerState.timeLeft === 0 && currentTaskId) {
+      updateTaskProgress(currentTaskId, timerState.timeLeft / 60)
+      setTaskTimeLeft((prev) => Math.max(0, prev - timerState.timeLeft))
     }
+  }, [timerState.currentPhase, timerState.timeLeft, currentTaskId, updateTaskProgress])
 
-    return () => clearInterval(interval)
-  }, [isRunning, timeLeft, pomodoroTime, currentTaskId, updateTaskProgress])
+  // Update task time left when timer is running
+  useEffect(() => {
+    if (timerState.isRunning && timerState.currentPhase === "work" && currentTaskId) {
+      const interval = setInterval(() => {
+        setTaskTimeLeft((prev) => Math.max(0, prev - 1))
+      }, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [timerState.isRunning, timerState.currentPhase, currentTaskId])
 
   // Update current time
   useEffect(() => {
@@ -77,7 +63,11 @@ export default function TimerView() {
 
   // Toggle timer
   const toggleTimer = () => {
-    setIsRunning(!isRunning)
+    if (timerState.isRunning) {
+      pauseTimer()
+    } else {
+      startTimer()
+    }
   }
 
   // Format current time
@@ -86,18 +76,11 @@ export default function TimerView() {
     minute: "2-digit",
   })
 
-  // Format time left for display
-  const timeDisplay = formatTime(timeLeft)
-
   if (!currentTask) return null
 
-  // Calculate task time left
-  const taskGoalMinutes = currentTask.goalTimeMinutes
-  const taskProgressMinutes = currentTask.progressMinutes
-
   // Calculate progress percentages for visual arcs
-  const pomodoroProgress = 1 - timeLeft / pomodoroTime
-  const taskProgress = taskProgressMinutes / taskGoalMinutes
+  const pomodoroProgress = 1 - timerState.timeLeft / (25 * 60) // Assuming 25 minutes for work phase
+  const taskProgress = currentTask.progressMinutes / currentTask.goalTimeMinutes
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -123,9 +106,9 @@ export default function TimerView() {
           <TimerCircle
             pomodoroProgress={pomodoroProgress}
             taskProgress={taskProgress}
-            timeDisplay={timeDisplay}
+            timeDisplay={formatTime(timerState.timeLeft)}
             taskName={currentTask.name}
-            isRunning={isRunning}
+            isRunning={timerState.isRunning}
             onTimerClick={toggleTimer}
             taskGoalMinutes={currentTask.goalTimeMinutes}
             taskTimeLeftSeconds={taskTimeLeft}
@@ -141,17 +124,19 @@ export default function TimerView() {
           <div className="flex justify-between items-start mb-6">
             <TaskReminders tasks={tasks.filter((task) => task.id !== currentTaskId)} />
 
-            <Button variant="ghost" size="sm" onClick={() => setNoteDialogOpen(true)} className="text-gray-500">
-              <Plus className="h-4 w-4 mr-1" />
-              Add Note
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setNoteDialogOpen(true)} className="text-gray-500">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Note
+              </Button>
+            </div>
           </div>
 
           <div className="text-center text-gray-500 text-sm">{formattedTime}</div>
         </motion.div>
       </motion.main>
 
-      <AddNoteDialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen} taskId={currentTaskId} />
+      <AddNoteDialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen} taskId={currentTaskId || ""} />
     </div>
   )
 }

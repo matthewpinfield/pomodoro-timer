@@ -15,9 +15,10 @@ interface TaskFormProps {
   onSubmit: (task: { name: string; goalTimeMinutes: number; color: string }) => void
   onCancel: () => void
   initialValues?: {
-    name: string
-    goalTimeMinutes: number
-    color: string
+    id?: string;
+    name: string;
+    goalTimeMinutes: number;
+    color: string;
   }
   useAutoColors?: boolean
   workdayHours?: number

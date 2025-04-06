@@ -33,11 +33,25 @@ export function PieChart({
   // Determine chart size based on screen width
   useEffect(() => {
     const handleResize = () => {
-      const width = window.innerWidth
-      if (width < 640) {
-        setChartSize({ width: 280, height: 280 })
-      } else {
-        setChartSize({ width: 320, height: 320 })
+      const width = window.innerWidth;
+      // Set size based on viewport width but ensure it's not too large
+      const maxWidth = Math.min(width * 0.9, 320); // Increased from 85% to 90% of viewport
+      
+      if (width < 480) { // Mobile breakpoint
+        setChartSize({ 
+          width: Math.min(280, maxWidth), // Increased from 240 to 280
+          height: Math.min(280, maxWidth) // Increased from 240 to 280
+        });
+      } else if (width < 640) { // Small breakpoint
+        setChartSize({ 
+          width: Math.min(300, maxWidth), // Increased from 280 to 300
+          height: Math.min(300, maxWidth) // Increased from 280 to 300
+        });
+      } else { // Medium and up
+        setChartSize({ 
+          width: Math.min(320, maxWidth), 
+          height: Math.min(320, maxWidth) 
+        });
       }
     }
 
@@ -68,6 +82,10 @@ export function PieChart({
     const radius = Math.min(centerX, centerY) - 20
     const innerRadius = radius * 0.6
 
+    // Responsive font sizes based on chart width
+    const titleFontSize = chartSize.width < 250 ? 16 : 20 // Smaller font for smallest charts
+    const detailFontSize = chartSize.width < 250 ? 12 : 14
+
     // If no tasks, draw empty circle with gradient
     if (tasks.length === 0) {
       // Create gradient background
@@ -93,14 +111,14 @@ export function PieChart({
       ctx.fillStyle = isHoveringCenter ? "#f8fafc" : "#ffffff"
       ctx.fill()
 
-      // Draw text
-      ctx.font = "bold 18px Inter, system-ui, sans-serif"
+      // Draw text (using responsive sizes)
+      ctx.font = `bold ${titleFontSize}px Inter, system-ui, sans-serif`
       ctx.fillStyle = "#64748b"
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
       ctx.fillText("No tasks yet", centerX, centerY - 10)
 
-      ctx.font = "14px Inter, system-ui, sans-serif"
+      ctx.font = `${detailFontSize}px Inter, system-ui, sans-serif`
       ctx.fillStyle = "#94a3b8"
       ctx.fillText("Click to add tasks", centerX, centerY + 20)
 
@@ -135,23 +153,24 @@ export function PieChart({
       const midAngle = startAngle + sliceAngle / 2
 
       // Determine if slice should be "pulled out" (hovered or selected)
-      const isPulledOut = hoveredSlice === index || selectedSlice === index
-      const pullDistance = isPulledOut ? 10 : 0
+      const isHovered = hoveredSlice === index
+      // Restore pull distance based on hover
+      const pullDistance = isHovered ? 10 : 0 
+      // const isPulledOut = selectedSlice === index // Keep selection logic separate for now
 
       // Calculate offset for pulled out slice
       const offsetX = Math.cos(midAngle) * pullDistance
       const offsetY = Math.sin(midAngle) * pullDistance
 
-      // Draw slice
+      // Draw slice (use offsetX, offsetY)
       ctx.beginPath()
-      ctx.moveTo(centerX + offsetX, centerY + offsetY)
-      ctx.arc(centerX + offsetX, centerY + offsetY, radius, startAngle, endAngle)
-      ctx.lineTo(centerX + offsetX, centerY + offsetY)
+      ctx.moveTo(centerX + offsetX, centerY + offsetY) // Apply offset
+      ctx.arc(centerX + offsetX, centerY + offsetY, radius, startAngle, endAngle) // Apply offset
+      ctx.lineTo(centerX + offsetX, centerY + offsetY) // Apply offset
       ctx.closePath()
 
       // Fill with task color or slightly lighter if hovered
-      if (isPulledOut) {
-        // Create a slightly lighter version of the color for hover effect
+      if (isHovered) { // Use isHovered directly for color change
         ctx.fillStyle = task.color + "ee"
       } else {
         ctx.fillStyle = task.color
@@ -171,27 +190,6 @@ export function PieChart({
 
         // Fill with darker shade of task color
         ctx.fillStyle = task.color + "99" // Add transparency
-        ctx.fill()
-      }
-
-      // Draw play icon on hovered slice
-      if (isPulledOut) {
-        const iconX = centerX + Math.cos(midAngle) * (radius * 0.7)
-        const iconY = centerY + Math.sin(midAngle) * (radius * 0.7)
-
-        // Draw circle background for play icon
-        ctx.beginPath()
-        ctx.arc(iconX, iconY, 15, 0, Math.PI * 2)
-        ctx.fillStyle = "rgba(255, 255, 255, 0.9)"
-        ctx.fill()
-
-        // Draw play triangle
-        ctx.beginPath()
-        ctx.moveTo(iconX - 5, iconY - 7)
-        ctx.lineTo(iconX - 5, iconY + 7)
-        ctx.lineTo(iconX + 7, iconY)
-        ctx.closePath()
-        ctx.fillStyle = "#3b82f6"
         ctx.fill()
       }
 
@@ -266,9 +264,8 @@ export function PieChart({
     ctx.fill()
     ctx.restore()
 
-    // STEP 4: Draw the text in the center
-    // Draw center text
-    ctx.font = "bold 20px Inter, system-ui, sans-serif"
+    // STEP 4: Draw the text in the center (using responsive sizes)
+    ctx.font = `bold ${titleFontSize}px Inter, system-ui, sans-serif`
     ctx.fillStyle = isHoveringCenter ? "#3b82f6" : "#1e293b"
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
@@ -280,7 +277,7 @@ export function PieChart({
       if (taskIndex !== null && taskIndex < tasks.length) {
         const task = tasks[taskIndex]
 
-        ctx.font = "14px Inter, system-ui, sans-serif"
+        ctx.font = `${detailFontSize}px Inter, system-ui, sans-serif`
         ctx.fillStyle = "#64748b"
         ctx.fillText(task.name, centerX, centerY + 15)
       }
@@ -290,7 +287,7 @@ export function PieChart({
       const totalMinutes = totalGoalTime % 60
       const timeText = `${totalHours > 0 ? `${totalHours}h ` : ""}${totalMinutes}m / ${workdayHours}h`
 
-      ctx.font = "14px Inter, system-ui, sans-serif"
+      ctx.font = `${detailFontSize}px Inter, system-ui, sans-serif`
       ctx.fillStyle = "#64748b"
       ctx.fillText(timeText, centerX, centerY + 15)
     }
@@ -308,143 +305,145 @@ export function PieChart({
     }
   }, [tasks, hoveredSlice, selectedSlice, chartSize, isHoveringCenter, workdayHours, workdayMinutes])
 
-  // Handle mouse move to detect which slice is being hovered
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isAnimating) return
+  // Helper function to determine slice index from coordinates
+  const getSliceIndexFromCoords = (x: number, y: number): number | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
 
-    const canvas = canvasRef.current
-    if (!canvas) {
-      setHoveredSlice(null)
-      setIsHoveringCenter(false)
-      return
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / (rect.width * (window.devicePixelRatio || 1));
+    const scaleY = canvas.height / (rect.height * (window.devicePixelRatio || 1));
+    
+    const canvasX = (x - rect.left) * scaleX;
+    const canvasY = (y - rect.top) * scaleY;
+
+    const centerX = canvas.width / (window.devicePixelRatio || 1) / 2;
+    const centerY = canvas.height / (window.devicePixelRatio || 1) / 2;
+    const radius = Math.min(centerX, centerY) - 20;
+    const innerRadius = radius * 0.6;
+
+    const dx = canvasX - centerX;
+    const dy = canvasY - centerY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Check if click is within the pie area (outside the center circle)
+    if (distance < innerRadius || distance > radius) {
+      return null; // Clicked center or outside
     }
 
-    const rect = canvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-
-    const centerX = rect.width / 2
-    const centerY = rect.height / 2
-    const radius = Math.min(centerX, centerY) - 20
-
-    // Calculate distance from center
-    const dx = x - centerX
-    const dy = y - centerY
-    const distance = Math.sqrt(dx * dx + dy * dy)
-
-    // Check if hovering over center circle
-    if (distance < radius * 0.6) {
-      setHoveredSlice(null)
-      setIsHoveringCenter(true)
-      return
-    } else {
-      setIsHoveringCenter(false)
+    let angle = Math.atan2(dy, dx);
+    if (angle < -Math.PI / 2) {
+      angle += Math.PI * 2; // Adjust angle to start from 12 o'clock
     }
 
-    // If outside the pie, no hover
-    if (distance > radius || tasks.length === 0) {
-      setHoveredSlice(null)
-      return
-    }
-
-    // Calculate angle
-    let angle = Math.atan2(dy, dx)
-    // Convert to 0-2π range starting from top (-π/2)
-    angle = (angle + Math.PI * 2.5) % (Math.PI * 2)
-
-    // Find which slice contains this angle
-    const totalGoalTime = Math.min(
-      tasks.reduce((sum, task) => sum + task.goalTimeMinutes, 0),
-      workdayMinutes,
-    )
-    let startAngle = 0
+    let startAngle = -Math.PI / 2;
+    const workdayMinutes = workdayHours * 60;
 
     for (let i = 0; i < tasks.length; i++) {
-      const sliceAngle = (tasks[i].goalTimeMinutes / workdayMinutes) * Math.PI * 2
-      const endAngle = startAngle + sliceAngle
+      const sliceAngle = (tasks[i].goalTimeMinutes / workdayMinutes) * Math.PI * 2;
+      const endAngle = startAngle + sliceAngle;
 
       if (angle >= startAngle && angle < endAngle) {
-        setHoveredSlice(i)
-        return
+        return i;
       }
-
-      startAngle = endAngle
+      startAngle = endAngle;
     }
 
-    setHoveredSlice(null)
-  }
+    return null; // Should not happen if click is within a segment, but safety return
+  };
 
-  // Handle mouse leave
+  // Update handleMouseMove
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const sliceIndex = getSliceIndexFromCoords(e.clientX, e.clientY);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / (rect.width * (window.devicePixelRatio || 1));
+    const scaleY = canvas.height / (rect.height * (window.devicePixelRatio || 1));
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+    const centerX = canvas.width / (window.devicePixelRatio || 1) / 2;
+    const centerY = canvas.height / (window.devicePixelRatio || 1) / 2;
+    const radius = Math.min(centerX, centerY) - 20;
+    const innerRadius = radius * 0.6;
+    const dx = canvasX - centerX;
+    const dy = canvasY - centerY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < innerRadius) {
+        setIsHoveringCenter(true);
+        setHoveredSlice(null);
+    } else {
+        setIsHoveringCenter(false);
+        setHoveredSlice(sliceIndex);
+    }
+  };
+
+  // Update handleMouseLeave
   const handleMouseLeave = () => {
-    setHoveredSlice(null)
-    setIsHoveringCenter(false)
-  }
+    setHoveredSlice(null);
+    setIsHoveringCenter(false);
+  };
 
-  // Handle click to select a task or add new tasks
-  const handleClick = () => {
-    if (isHoveringCenter) {
-      onCenterClick()
-      return
+  // Update handleClick
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / (rect.width * (window.devicePixelRatio || 1));
+    const scaleY = canvas.height / (rect.height * (window.devicePixelRatio || 1));
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+    const centerX = canvas.width / (window.devicePixelRatio || 1) / 2;
+    const centerY = canvas.height / (window.devicePixelRatio || 1) / 2;
+    const radius = Math.min(centerX, centerY) - 20;
+    const innerRadius = radius * 0.6;
+    const dx = canvasX - centerX;
+    const dy = canvasY - centerY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Check center click first
+    if (distance < innerRadius) {
+      onCenterClick();
+      return;
     }
 
-    if (hoveredSlice !== null && hoveredSlice < tasks.length) {
-      setSelectedSlice(hoveredSlice)
-      setIsAnimating(true)
+    // Get clicked slice directly
+    const clickedSliceIndex = getSliceIndexFromCoords(e.clientX, e.clientY);
 
-      // Animate selection before navigating
+    if (clickedSliceIndex !== null && clickedSliceIndex < tasks.length) {
+      setSelectedSlice(clickedSliceIndex);
+      setIsAnimating(true);
+      const taskId = tasks[clickedSliceIndex].id;
+
       setTimeout(() => {
-        onTaskSelect(tasks[hoveredSlice].id)
-      }, 300)
+        setIsAnimating(false);
+        setSelectedSlice(null);
+        onTaskSelect(taskId);
+      }, 300); // Keep delay for visual feedback
     }
-  }
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full">
+    <div className="flex flex-col items-center justify-center w-full max-w-full">
       <div
         className="relative flex justify-center items-center mb-4"
-        style={{ width: chartSize.width, height: chartSize.height }}
+        style={{ 
+          width: chartSize.width, 
+          height: chartSize.height,
+          maxWidth: '100%' // Ensure it never exceeds its container
+        }}
       >
         <canvas
           ref={canvasRef}
           width={chartSize.width}
           height={chartSize.height}
           className="cursor-pointer rounded-full"
+          style={{ width: '100%', height: '100%' }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={handleClick}
         />
-
-        {/* Task tooltip on hover */}
-        <AnimatePresence>
-          {hoveredSlice !== null && hoveredSlice < tasks.length && !isAnimating && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="absolute bottom-0 mb-2 bg-white px-3 py-1.5 rounded-full shadow-lg flex items-center"
-            >
-              <Play className="w-4 h-4 mr-1 text-blue-500" />
-              <span className="text-sm font-medium">Click to start timer for {tasks[hoveredSlice].name}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Center tooltip on hover */}
-        <AnimatePresence>
-          {isHoveringCenter && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="absolute bottom-0 mb-2 bg-white px-3 py-1.5 rounded-full shadow-lg flex items-center"
-            >
-              <Plus className="w-4 h-4 mr-1 text-blue-500" />
-              <span className="text-sm font-medium">Add tasks</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Task count and workday indicator - moved down by 10% */}
