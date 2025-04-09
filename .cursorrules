@@ -1,0 +1,43 @@
+always make sure the project is connected to github before coding
+ground all action using .cursorrules, @docs and project files.
+unless you are 100% that you know the code solution ask questions and search on google.
+always check for feedback as you have tried a fix before avoid creating error / fix loops
+always use cmd over powershell and we are pc native so avoid all linux 
+# Core Principles & MVP Focus
+- **Goal:** Generate code for MVPs, prioritizing functionality and reusability.
+- **Framework:** Next.js v15.2.4 (App Router)
+- **UI Library:** React v19
+- **Language:** TypeScript v5 (Strict mode preferred)
+- **Linting:** Ensure code conforms to ESLint rules (`next lint`).
+- **Package Manager:** Use `pnpm` for all package operations.
+# Styling: Tailwind CSS & Classname Utils
+- **Styling Method:** Strictly use Tailwind CSS v3.4.17 utility classes. Avoid custom CSS files unless necessary and matching existing patterns.
+- **Tooling:** Utilizes PostCSS and Autoprefixer.
+- **Classname Management:** Use the `cn(...)` utility function for conditional (`clsx`) and merged (`tailwind-merge`) classes. Example: `className={cn("base-class", { "conditional-class": condition })}`
+- **Theming:** Use Tailwind's `dark:` prefix for dark mode styles (`next-themes` is configured).
+# UI Components: Shadcn UI (Limited Set)
+- **Library:** Shadcn UI, built on Radix UI primitives and styled with Tailwind CSS.
+- **Available Core Components:** ONLY use the following components from `/components/ui`: `Button`, `Dialog`, `Input`, `Label`, `Alert`, `Textarea`, `Toggle`.
+- **Constraint:** Many Shadcn UI components were *removed*. Do NOT use or suggest components other than those listed above. If a new one is needed, the command is `pnpm dlx shadcn-ui@latest add [component-name]`.
+- **Priority:** Reuse these existing components whenever applicable.
+# State Management: React Context API
+- **Primary Method:** Use React Context API for new simple-to-moderate shared state needs.
+- **Existing Patterns:** Follow the structure found in `TimerContext` and `TaskContext`.
+- **Task IDs:** Use `uuid` (likely `v4()`) for generating unique IDs within `TaskContext`.
+- **Avoid:** Do not introduce complex global state libraries (Redux, Zustand) for MVPs.
+# Forms: React Hook Form (RHF) & Zod
+- **Library:** Use React Hook Form (RHF) v7.54.1.
+- **Validation:** Use Zod v3.24.1 for schema definition and validation via `@hookform/resolvers/zod`.
+- **Pattern:**
+    1. Define Zod schema.
+    2. Use RHF `useForm` hook with Zod resolver.
+    3. Integrate with Shadcn UI components (`Input`, `Textarea`, etc.) using RHF `register` or `<Controller>`.
+    4. Handle submission via `handleSubmit` from `useForm`.
+    # Icons: Lucide React
+- **Library:** Use `lucide-react` for all icons.
+- **Usage:** Import icons directly by name, e.g., `import { Check, PlusCircle } from 'lucide-react';`.
+# Utility Libraries
+- **Date/Time:** Use `date-fns` for all date/time formatting and manipulation.
+- **Unique IDs:** Use `uuid` (specifically `v4()`) for generating unique identifiers, especially within `TaskContext`.
+- **Animation:** Use `framer-motion` for subtle UI animations or transitions where appropriate for MVP.
+Perform a comprehensive codebase audit and refactoring. Check every file for redundancies, broken links, broken code, unused comments, and incorrect file structure placement. Proceed autonomously to fix identified issues where possible, and report any major ambiguities or blockers you encounter.

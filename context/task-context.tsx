@@ -4,41 +4,6 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import type { Task } from "@/types/task"
 import { v4 as uuidv4 } from "uuid"
 
-// Sample data for development only - will be ignored in production
-const DEMO_TASKS: Task[] = [
-  {
-    id: "task-1",
-    name: "Project Planning",
-    goalTimeMinutes: 120, // 2 hours
-    progressMinutes: 45,
-    color: "#3b82f6", // blue
-    notes: [],
-  },
-  {
-    id: "task-2",
-    name: "Client Meeting",
-    goalTimeMinutes: 60, // 1 hour
-    progressMinutes: 0,
-    color: "#ef4444", // red
-    notes: [],
-  },
-  {
-    id: "task-3",
-    name: "Documentation",
-    goalTimeMinutes: 90, // 1.5 hours
-    progressMinutes: 30,
-    color: "#10b981", // green
-    notes: [],
-  },
-  {
-    id: "task-4",
-    name: "Break Time",
-    goalTimeMinutes: 30, // 0.5 hours
-    progressMinutes: 15,
-    color: "#f59e0b", // amber
-    notes: [],
-  },
-]
 
 interface TaskContextType {
   tasks: Task[]
@@ -60,18 +25,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   // Load tasks from localStorage on initial render
   useEffect(() => {
     const savedTasks = localStorage.getItem("focuspie-tasks")
-
     // If we have saved tasks, use them
     if (savedTasks) {
       setTasks(JSON.parse(savedTasks))
     }
-    // Otherwise, in development mode, load demo tasks if enabled
-    else if (process.env.NODE_ENV === "development") {
-      // This line ensures the demo data doesn't appear in production
-      // The comment below is for build tools to recognize this should be removed in production
-      /* @__PURE__ */
-      setTasks(DEMO_TASKS)
-    }
+    // Otherwise start with empty task list - removed demo data
 
     const savedCurrentTaskId = localStorage.getItem("focuspie-current-task")
     if (savedCurrentTaskId) {
