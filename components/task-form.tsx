@@ -15,6 +15,7 @@ interface TaskFormProps {
   onSubmit: (task: { name: string; goalTimeMinutes: number; color: string }) => void
   onCancel: () => void
   initialValues?: {
+    id: string
     name: string
     goalTimeMinutes: number
     color: string
@@ -177,7 +178,9 @@ export function TaskForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">{initialValues ? "Update Task" : "Add Task"}</Button>
+        <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white">
+          {initialValues ? "Update Task" : "Add Task"}
+        </Button>
       </div>
     </form>
   )

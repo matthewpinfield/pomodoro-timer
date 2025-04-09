@@ -6,210 +6,194 @@ import { TimerCircle } from "@/components/timer-circle"
 import { TaskReminders } from "@/components/task-reminders"
 import { Button } from "@/components/ui/button"
 import { useTasks } from "@/context/task-context"
-import { Plus, ArrowLeft } from "lucide-react"
+import { useTimer } from "@/context/timer-context"
+import { Plus, ArrowLeft, PlusCircle } from "lucide-react"
 import { formatTime } from "@/lib/utils"
 import { AddNoteDialog } from "@/components/add-note-dialog"
 import { motion } from "framer-motion"
 
-const POMODORO_DURATION_SECONDS = 25 * 60 // Default Pomodoro time
-
 export default function TimerView() {
   const router = useRouter()
-  const { tasks, currentTaskId, updateTaskProgress } = useTasks()
+  const { tasks, currentTaskId } = useTasks()
+  const {
+    mode,
+    timeLeftInMode,
+    isRunning,
+    settings,
+    startWork,
+    pauseTimer,
+    skipBreak
+  } = useTimer();
+
   const [noteDialogOpen, setNoteDialogOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
 
-  // Load timer state from localStorage or use defaults
-  const [timeLeft, setTimeLeft] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const savedTime = localStorage.getItem("focuspie-timeLeft")
-      return savedTime ? parseInt(savedTime, 10) : POMODORO_DURATION_SECONDS
-    }
-    return POMODORO_DURATION_SECONDS
-  })
-
-  const [isRunning, setIsRunning] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const savedRunning = localStorage.getItem("focuspie-isRunning")
-      return savedRunning ? JSON.parse(savedRunning) : false
-    }
-    return false
-  })
-
-  // Load task time left from localStorage or calculate if not present/invalid
-  const [taskTimeLeft, setTaskTimeLeft] = useState<number>(0) // Initial value set later
+  const [taskTimeLeftSeconds, setTaskTimeLeftSeconds] = useState<number>(NaN);
 
   const currentTask = tasks.find((task) => task.id === currentTaskId)
+  const taskGoalSeconds = currentTask ? currentTask.goalTimeMinutes * 60 : 0;
 
-  // Initial setup, redirection, and taskTimeLeft initialization
   useEffect(() => {
-    if (!currentTaskId || !currentTask) {
-      // Clear timer state if no task is selected
-      localStorage.removeItem("focuspie-timeLeft")
-      localStorage.removeItem("focuspie-isRunning")
-      localStorage.removeItem("focuspie-taskTimeLeft") // Clear task time left
+    if (!currentTaskId || !currentTask || taskGoalSeconds <= 0) {
+      localStorage.removeItem("focuspie-taskTimeLeft")
+      setTaskTimeLeftSeconds(NaN);
       router.push("/pie-chart")
     } else {
-      // Calculate task time left based on stored progress
-      const taskGoalSeconds = currentTask.goalTimeMinutes * 60
-      const taskProgressSeconds = currentTask.progressMinutes * 60
-      const calculatedTaskTimeLeft = Math.max(0, taskGoalSeconds - taskProgressSeconds)
-
-      // Try to load from localStorage, fallback to calculated value
-      let initialTaskTimeLeft = calculatedTaskTimeLeft;
+      let initialTaskTimeLeft = taskGoalSeconds;
       if (typeof window !== 'undefined') {
         const savedTaskTime = localStorage.getItem("focuspie-taskTimeLeft");
-        // Use saved value ONLY if it's less than or equal to the calculated time
-        // This prevents using stale data if task progress was updated elsewhere
         if (savedTaskTime !== null) {
-            const parsedSavedTime = parseInt(savedTaskTime, 10);
-            if (!isNaN(parsedSavedTime) && parsedSavedTime <= calculatedTaskTimeLeft) {
-                initialTaskTimeLeft = parsedSavedTime;
-            }
+          const parsedSavedTime = parseInt(savedTaskTime, 10);
+          if (!isNaN(parsedSavedTime) && parsedSavedTime >= 0 && parsedSavedTime <= taskGoalSeconds) {
+            initialTaskTimeLeft = parsedSavedTime;
+          }
         }
       }
-      setTaskTimeLeft(initialTaskTimeLeft)
-
-      // Ensure timeLeft doesn't exceed task time left if loaded from storage
-      setTimeLeft(prevTimeLeft => Math.min(prevTimeLeft, initialTaskTimeLeft))
+      setTaskTimeLeftSeconds(initialTaskTimeLeft);
     }
-    // Include tasks in dependency array as progressMinutes might change
-  }, [currentTaskId, currentTask, router, tasks])
+  }, [currentTaskId, currentTask, router, taskGoalSeconds]);
 
-  // Save timer state to localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem("focuspie-timeLeft", timeLeft.toString())
-      localStorage.setItem("focuspie-isRunning", JSON.stringify(isRunning))
-      // Only save taskTimeLeft if it's a valid number (initialized)
-      if (!isNaN(taskTimeLeft)) {
-          localStorage.setItem("focuspie-taskTimeLeft", taskTimeLeft.toString())
-      }
-    }
-  }, [timeLeft, isRunning, taskTimeLeft])
+    let taskInterval: NodeJS.Timeout | undefined = undefined;
 
-  // Main Timer Logic
-  useEffect(() => {
-    let interval: NodeJS.Timeout | undefined = undefined
-
-    if (isRunning && timeLeft > 0 && taskTimeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prevTime) => Math.max(0, prevTime - 1))
-        setTaskTimeLeft((prevTaskTime) => Math.max(0, prevTaskTime - 1))
-      }, 1000)
-    }
-
-    // Handle Pomodoro Completion
-    if (timeLeft === 0 && isRunning && currentTaskId) {
-      const completedPomodoroMinutes = POMODORO_DURATION_SECONDS / 60
-      updateTaskProgress(currentTaskId, completedPomodoroMinutes)
-
-      // Reset for next pomodoro
-      setTimeLeft(POMODORO_DURATION_SECONDS)
-      setIsRunning(false)
-      // Task time left is already updated via the interval
-      // Or recalculate based on updated task progress if needed for sync
-      // const updatedTask = tasks.find(t => t.id === currentTaskId);
-      // if (updatedTask) {
-      //   const taskGoalSeconds = updatedTask.goalTimeMinutes * 60;
-      //   const taskProgressSeconds = updatedTask.progressMinutes * 60;
-      //   setTaskTimeLeft(Math.max(0, taskGoalSeconds - taskProgressSeconds));
-      // }
+    if (mode === 'working' && isRunning && taskTimeLeftSeconds > 0) {
+      taskInterval = setInterval(() => {
+        setTaskTimeLeftSeconds((prev) => !isNaN(prev) ? Math.max(0, prev - 1) : 0);
+      }, 1000);
     }
 
     return () => {
-        if(interval) clearInterval(interval)
+      if (taskInterval) clearInterval(taskInterval);
     };
-  // Ensure dependencies cover all scenarios for starting/stopping/completion
-  }, [isRunning, timeLeft, taskTimeLeft, currentTaskId, updateTaskProgress])
+  }, [mode, isRunning, taskTimeLeftSeconds]);
 
-  // Update current clock time
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentTaskId && !isNaN(taskTimeLeftSeconds)) {
+      localStorage.setItem("focuspie-taskTimeLeft", taskTimeLeftSeconds.toString());
+    }
+  }, [taskTimeLeftSeconds, currentTaskId]);
+
   useEffect(() => {
     const clockInterval = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)
-
     return () => clearInterval(clockInterval)
   }, [])
 
-  // Toggle timer running state
-  const toggleTimer = () => {
-    // Prevent starting if task is already complete
-    if (taskTimeLeft <= 0 && !isRunning) return;
-    setIsRunning(!isRunning)
-  }
-
-  // Format current time display
   const formattedTime = currentTime.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   })
 
-  // Format pomodoro time left for display
-  const timeDisplay = formatTime(timeLeft)
+  const timeDisplay = formatTime(timeLeftInMode)
 
-  // Render null or loading state until task is confirmed
-  if (!currentTask) return null
+  const taskProgress = taskGoalSeconds > 0 ? taskTimeLeftSeconds / taskGoalSeconds : 0;
 
-  // Calculate progress percentages for visual arcs
-  // Pomodoro progress based on its own duration
-  const pomodoroProgress = 1 - timeLeft / POMODORO_DURATION_SECONDS
-  // Task progress based on minutes recorded in context (updates per pomodoro)
-  const taskProgress = currentTask.progressMinutes / currentTask.goalTimeMinutes
+  const handleTimerClick = () => {
+      if (mode === 'idle') {
+          startWork();
+      } else {
+          pauseTimer();
+      }
+  };
+
+  const isEffectivelyRunning = isRunning;
+
+  if (!currentTask || isNaN(taskTimeLeftSeconds)) return null
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <motion.header initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="p-4">
+    <div className="flex flex-col min-h-full p-4">
+      {/* Add Back Button at the top of the content area */}
+      <div className="w-full max-w-5xl mx-auto mb-4"> {/* Constrain width and add margin */}
         <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/pie-chart")}
-          className="flex items-center text-gray-500"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to Tasks
-        </Button>
-      </motion.header>
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/pie-chart")}
+            className="flex items-center text-gray-500 dark:text-gray-400"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Tasks
+          </Button>
+      </div>
 
       <motion.main
-        className="flex-1 max-w-md mx-auto w-full px-4 flex flex-col items-center"
+        className="flex-1 w-full px-4 flex flex-col items-center md:flex-row md:justify-center md:items-start md:gap-8 md:max-w-4xl lg:max-w-5xl mx-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="my-6">
+        <div className="flex flex-col items-center md:w-1/2 my-6 md:my-0">
           <TimerCircle
-            pomodoroProgress={pomodoroProgress}
-            taskProgress={taskProgress} // Red arc still based on completed pomodoros
+            mode={mode}
+            currentModeTotalDuration={
+                mode === 'working' ? settings.pomodoro :
+                mode === 'shortBreak' ? settings.shortBreak :
+                mode === 'longBreak' ? settings.longBreak :
+                settings.pomodoro
+            }
+            timeLeftInMode={timeLeftInMode}
             timeDisplay={timeDisplay}
+            taskProgress={taskProgress}
             taskName={currentTask.name}
-            isRunning={isRunning}
-            onTimerClick={toggleTimer}
+            taskTimeLeftSeconds={taskTimeLeftSeconds}
             taskGoalMinutes={currentTask.goalTimeMinutes}
-            taskTimeLeftSeconds={taskTimeLeft} // This now counts down
+            isRunning={isEffectivelyRunning}
+            onTimerClick={handleTimerClick}
           />
+
+          {/* --- Simplified Legends Container --- */}
+          <div className="mt-4 flex justify-center items-center space-x-4 text-xs text-gray-600">
+            {/* Current Task Indicator - Make dot red */}
+            <div className="flex items-center">
+              <div 
+                className="w-3 h-3 rounded-full mr-1.5 bg-red-500"
+              ></div>
+              <span>Current Task</span>
+            </div>
+
+            {/* Work/Rest Indicator */}
+            <div className="flex items-center">
+               <div className="w-3 h-3 rounded-full mr-1.5 bg-blue-500"></div>
+               <span>Work / Rest</span>
+            </div>
+          </div>
+          
+          {(mode === 'shortBreak' || mode === 'longBreak') && (
+              <Button onClick={skipBreak} variant="secondary" size="sm" className="mt-4">
+                  Skip Break
+              </Button>
+          )}
         </div>
 
-        <motion.div
-          className="w-full bg-white rounded-xl shadow-sm p-4 mt-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <div className="flex justify-between items-start mb-6">
-            <TaskReminders tasks={tasks.filter((task) => task.id !== currentTaskId)} />
+        {/* --- Right Column Wrapper (Desktop) --- */}
+        <div className="flex flex-col items-center w-full md:w-1/2">
+          {/* White Panel */}
+          <motion.div
+            className="w-full bg-white rounded-xl shadow-sm p-4 mt-6 md:mt-0"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <div className="mb-6">
+              <TaskReminders tasks={tasks.filter((task) => task.id !== currentTaskId)} />
+            </div>
+            <div className="text-center text-gray-500 text-sm">{formattedTime}</div>
+          </motion.div>
 
-            <Button variant="ghost" size="sm" onClick={() => setNoteDialogOpen(true)} className="text-gray-500">
-              <Plus className="h-4 w-4 mr-1" />
-              Add Note
+          {/* Add Note Button (Now below the panel, but within the right column) */}
+          <div className="flex justify-center mt-4 w-full">
+            <Button 
+              onClick={() => setNoteDialogOpen(true)} 
+              className="w-full max-w-md flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all"
+              size="lg"
+            >
+              <PlusCircle className="w-5 h-5" />
+              <span>Add Note</span>
             </Button>
           </div>
-
-          <div className="text-center text-gray-500 text-sm">{formattedTime}</div>
-        </motion.div>
+        </div>
       </motion.main>
 
-      {/* Only render dialog if a task is selected */}
       {currentTaskId && (
         <AddNoteDialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen} taskId={currentTaskId} />
       )}

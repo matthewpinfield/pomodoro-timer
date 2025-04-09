@@ -3,20 +3,26 @@
 import { useRef, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Clock } from "lucide-react"
+import type { TimerMode } from "@/context/timer-context"; // Import TimerMode type
+import { useTimer } from "@/context/timer-context"; // Import the hook
 
 interface TimerCircleProps {
-  pomodoroProgress: number
-  taskProgress: number
-  timeDisplay: string
-  taskName: string
-  isRunning: boolean
-  onTimerClick: () => void
-  taskGoalMinutes?: number
-  taskTimeLeftSeconds?: number
+  mode: TimerMode; // To know if working or break
+  currentModeTotalDuration: number; // Total seconds for the current mode (work/break)
+  timeLeftInMode: number; // Seconds left in the current mode (replaces old timeDisplay calculation)
+  taskProgress: number; // Real-time task progress [0, 1]
+  timeDisplay: string; // Formatted string for timeLeftInMode
+  taskName: string;
+  isRunning: boolean; // Represents if the context timer is running
+  onTimerClick: () => void;
+  taskGoalMinutes?: number;
+  taskTimeLeftSeconds?: number;
 }
 
 export function TimerCircle({
-  pomodoroProgress,
+  mode,
+  currentModeTotalDuration,
+  timeLeftInMode,
   taskProgress,
   timeDisplay,
   taskName,
@@ -26,6 +32,7 @@ export function TimerCircle({
   taskTimeLeftSeconds = 7200, // Task time left in seconds (default 2 hours)
 }: TimerCircleProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const { settings } = useTimer(); // Get settings from context
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -34,7 +41,7 @@ export function TimerCircle({
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // Set canvas dimensions with device pixel ratio for sharp rendering
+    // Set canvas dimensions with device pixel ratio
     const dpr = window.devicePixelRatio || 1
     const rect = canvas.getBoundingClientRect()
     canvas.width = rect.width * dpr
@@ -47,137 +54,153 @@ export function TimerCircle({
     const centerX = rect.width / 2
     const centerY = rect.height / 2
     const radius = Math.min(centerX, centerY) - 10
-    const trackWidth = 30 // Width of the timer track
-    const innerRadius = radius - trackWidth - 5 // Inner circle radius, touching the tracks
+    const trackWidth = 30
+    const innerRadius = radius - trackWidth - 5 // Keep inner circle calculation
+    const startAngle = -Math.PI / 2; // This is already set to 12 o'clock
+    const fullCircle = Math.PI * 2
 
-    // Start at 12 o'clock position (-90 degrees or -PI/2 radians)
-    const startAngle = -Math.PI / 2
-
-    // 5% gap (18 degrees)
-    const gapSize = (Math.PI / 180) * 18
-
-    // Draw the background track (light gray) - only for the gap
+    // --- Draw Background Track (Original Style - Light Gray Circle Segment) ---
+    // Draw a full light gray circle as the base background for the arcs
     ctx.beginPath()
-    ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle - gapSize, startAngle)
-    ctx.lineWidth = trackWidth
+    ctx.arc(centerX, centerY, radius - trackWidth / 2, 0, fullCircle)
+    ctx.lineWidth = trackWidth;
     ctx.strokeStyle = "#e2e8f0" // Light gray
     ctx.stroke()
 
-    // STEP 1: Draw the red timer (task time)
-    // At start (taskProgress = 0), it covers full circle minus gap
-    // As task progresses, it decreases
-    if (taskProgress < 1) {
-      // Calculate how much of the circle to draw (from 100% down to 0%)
-      const redArcSize = (Math.PI * 2 - gapSize) * (1 - taskProgress)
-
-      // Draw main part with flat start
-      ctx.beginPath()
-      ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle, startAngle + redArcSize - 0.01)
-      ctx.lineWidth = trackWidth
-      ctx.lineCap = "butt" // Flat start
-      ctx.strokeStyle = "#ef4444" // Red color
-      ctx.stroke()
-
-      // Draw rounded end at the moving end
-      ctx.beginPath()
-      ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle + redArcSize - 0.01, startAngle + redArcSize)
-      ctx.lineWidth = trackWidth
-      ctx.lineCap = "round" // Rounded end
-      ctx.strokeStyle = "#ef4444" // Red color
-      ctx.stroke()
+    // --- Draw Task Progress Arc (Red - Overall Task Remaining Time) ---
+    const totalTaskSeconds = (taskGoalMinutes || 1) * 60; // Use 1 minute if 0 to avoid division by zero
+    let taskArcFraction = 1; // Default to full circle if no task goal
+    if (totalTaskSeconds > 0) {
+      taskArcFraction = Math.min(taskTimeLeftSeconds / totalTaskSeconds, 1);
     }
+    const taskArcSize = fullCircle * taskArcFraction;
 
-    // STEP 2: Draw the blue timer (pomodoro)
-    // Calculate pomodoro ratio (how much of the task is one pomodoro)
-    const POMODORO_MINUTES = 25
-    const pomodoroRatio = Math.min(1, POMODORO_MINUTES / taskGoalMinutes)
+    // Determine opacity based on running state
+    const opacitySuffix = isRunning ? "" : "80"; // "80" hex for 50% opacity
 
-    // Calculate blue arc size
-    const blueArcSize = Math.PI * 2 * pomodoroRatio * (1 - pomodoroProgress)
+    // Always draw the red arc
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle, startAngle + taskArcSize);
+    ctx.lineWidth = trackWidth;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = `#ef4444${opacitySuffix}`; // Red with conditional opacity
+    ctx.stroke();
 
-    if (blueArcSize > 0) {
-      ctx.save()
-      ctx.shadowColor = "rgba(0, 0, 0, 0.3)"
-      ctx.shadowBlur = 8
-      ctx.shadowOffsetX = 0
-      ctx.shadowOffsetY = 4
+    // --- Draw Current Mode Progress Arc (Blue/Green - Session Time Remaining) ---
+    const modeProgress = timeLeftInMode / currentModeTotalDuration; // Progress within the current session [0, 1]
+    let baseModeColor = "#3b82f6"; // Blue for working
+    let currentModeArcSize = fullCircle * modeProgress; // Base arc size for breaks or if no task context
 
-      // Draw main part with flat start
-      ctx.beginPath()
-      ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle, startAngle + blueArcSize - 0.01)
-      ctx.lineWidth = trackWidth
-      ctx.lineCap = "butt" // Flat start
-      ctx.strokeStyle = "#3b82f6" // Blue color
-      ctx.stroke()
+    if (mode === 'working' && totalTaskSeconds > 0) {
+        // Scale the work session arc relative to the total task duration
+        const maxWorkSessionArc = (currentModeTotalDuration / totalTaskSeconds) * fullCircle;
+        currentModeArcSize = modeProgress * maxWorkSessionArc;
+        baseModeColor = "#3b82f6"; // Ensure blue for working
 
-      // Draw rounded end at the moving end
-      ctx.beginPath()
-      ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle + blueArcSize - 0.01, startAngle + blueArcSize)
-      ctx.lineWidth = trackWidth
-      ctx.lineCap = "round" // Rounded end
-      ctx.strokeStyle = "#3b82f6" // Blue color
-      ctx.stroke()
-      ctx.restore()
+        const completedTaskArc = fullCircle * (1 - taskArcFraction);
+        const blueArcStartAngle = startAngle + completedTaskArc;
+        const blueArcEndAngle = blueArcStartAngle + currentModeArcSize;
+
+        // Always draw the blue arc
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius - trackWidth / 2, blueArcStartAngle, blueArcEndAngle);
+        ctx.lineWidth = trackWidth;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = `${baseModeColor}${opacitySuffix}`; // Apply conditional opacity
+        ctx.stroke();
+
+    } else if (mode === 'shortBreak' || mode === 'longBreak') {
+        baseModeColor = "#10b981"; // Green for breaks
+        const breakArcEndAngle = startAngle + currentModeArcSize;
+
+        // Always draw the green arc
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle, breakArcEndAngle);
+        ctx.lineWidth = trackWidth;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = `${baseModeColor}${opacitySuffix}`; // Apply conditional opacity
+        ctx.stroke();
     }
+    // Note: The 'idle' mode doesn't draw a progress arc intentionally based on previous logic.
+    // If idle should show something (e.g., full transparent blue/red), logic needs adjustment here.
 
-    // STEP 3: Draw the center white circle with shadow
+    // --- Draw Center Circle & Text (remains the same) ---
+    // Center white circle with shadow
     ctx.save()
     ctx.beginPath()
-    ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2)
-    ctx.shadowColor = "rgba(0, 0, 0, 0.2)"
-    ctx.shadowBlur = 15
+    ctx.arc(centerX, centerY, innerRadius, 0, fullCircle)
+    ctx.shadowColor = "rgba(0, 0, 0, 0.1)"
+    ctx.shadowBlur = 10
     ctx.shadowOffsetX = 0
-    ctx.shadowOffsetY = 5
+    ctx.shadowOffsetY = 4
     ctx.fillStyle = "#ffffff"
     ctx.fill()
     ctx.restore()
 
-    // STEP 4: Draw play/pause icon in light grey behind the text
+    // Play/pause icon
     ctx.save()
     ctx.fillStyle = "#e5e7eb" // Light grey
     if (isRunning) {
       // Pause icon
-      const pauseWidth = 24
-      const pauseHeight = 30
-      const pauseX = centerX - pauseWidth / 2
-      const pauseY = centerY - pauseHeight / 2
-
-      ctx.fillRect(pauseX, pauseY, 8, pauseHeight)
-      ctx.fillRect(pauseX + 16, pauseY, 8, pauseHeight)
+      const pauseWidth = 24; const pauseHeight = 30;
+      const pauseX = centerX - pauseWidth / 2; const pauseY = centerY - pauseHeight / 2;
+      ctx.fillRect(pauseX, pauseY, 8, pauseHeight);
+      ctx.fillRect(pauseX + 16, pauseY, 8, pauseHeight);
     } else {
-      // Play icon (triangle)
-      ctx.beginPath()
-      ctx.moveTo(centerX - 10, centerY - 15)
-      ctx.lineTo(centerX - 10, centerY + 15)
-      ctx.lineTo(centerX + 15, centerY)
-      ctx.closePath()
-      ctx.fill()
+      // Play icon
+      ctx.beginPath();
+      ctx.moveTo(centerX - 10, centerY - 15);
+      ctx.lineTo(centerX - 10, centerY + 15);
+      ctx.lineTo(centerX + 15, centerY);
+      ctx.closePath();
+      ctx.fill();
     }
     ctx.restore()
 
-    // STEP 5: Draw the text elements
-    // Draw the pomodoro time text (main display)
+    // Main time display
     ctx.font = "bold 32px Inter, system-ui, sans-serif"
-    ctx.fillStyle = "#334155" // Slate-700
+    ctx.fillStyle = "#334155"
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
     ctx.fillText(timeDisplay, centerX, centerY - 10)
 
-    // Draw the task name
+    // Subtitle (Task name or Break status)
+    let subtitle = taskName;
+    if (mode === 'shortBreak') subtitle = 'Short Break';
+    if (mode === 'longBreak') subtitle = 'Long Break';
+    if (mode === 'idle') subtitle = 'Ready'; // Or taskName
+
     ctx.font = "14px Inter, system-ui, sans-serif"
-    ctx.fillStyle = "#94a3b8" // Slate-400
-    ctx.fillText(taskName, centerX, centerY + 15)
+    ctx.fillStyle = "#94a3b8"
+    ctx.fillText(subtitle, centerX, centerY + 15)
 
-    // Format task time left using taskTimeLeftSeconds
-    const hoursLeft = Math.floor(taskTimeLeftSeconds / 3600)
-    const minutesLeft = Math.floor((taskTimeLeftSeconds % 3600) / 60)
-    const taskTimeDisplay = `${hoursLeft}:${minutesLeft.toString().padStart(2, "0")}`
+    // Task time remaining
+    if (mode === 'working' && taskTimeLeftSeconds !== undefined && taskTimeLeftSeconds >= 0) {
+      const hoursLeft = Math.floor(taskTimeLeftSeconds / 3600)
+      const minutesLeft = Math.floor((taskTimeLeftSeconds % 3600) / 60)
+      const taskTimeDisplay = `${hoursLeft}:${minutesLeft.toString().padStart(2, "0")}`
+      ctx.font = "12px Inter, system-ui, sans-serif"
+      ctx.fillStyle = "#94a3b8"
+      ctx.fillText(taskTimeDisplay + " remaining", centerX, centerY + 35)
+    }
 
-    // Draw the task time remaining (small timer under the task name)
-    ctx.font = "12px Inter, system-ui, sans-serif"
-    ctx.fillStyle = "#94a3b8" // Slate-400
-    ctx.fillText(taskTimeDisplay + " remaining", centerX, centerY + 35)
-  }, [pomodoroProgress, taskProgress, timeDisplay, taskName, isRunning, taskGoalMinutes, taskTimeLeftSeconds])
+  }, [mode, currentModeTotalDuration, timeLeftInMode, taskProgress, timeDisplay, taskName, isRunning, taskGoalMinutes, taskTimeLeftSeconds]) // Ensure all props used are dependencies
+
+  // Add event listener for visibility change to auto-pause the timer
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Only pause if the setting is enabled and the timer is running
+      if (settings.autoPauseEnabled && isRunning && document.visibilityState === 'hidden') {
+        onTimerClick(); // This function likely toggles pause/resume
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [settings.autoPauseEnabled, isRunning, onTimerClick]); // Add dependencies
 
   return (
     <div className="flex flex-col items-center">

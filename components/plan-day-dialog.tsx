@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { TaskForm } from "@/components/task-form"
 import { TaskList } from "@/components/task-list"
 import { useTasks } from "@/context/task-context"
-import { Plus } from "lucide-react"
+import { PlusCircle } from "lucide-react"
 
 interface PlanDayDialogProps {
   open: boolean
@@ -53,10 +53,11 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" aria-describedby="dialog-description">
         <DialogHeader>
           <DialogTitle>Plan My Day</DialogTitle>
         </DialogHeader>
+        <p id="dialog-description" className="sr-only">Manage your tasks for the day by adding or editing tasks.</p>
 
         <div className="py-4">
           {isAddingTask ? (
@@ -69,6 +70,7 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
                 initialValues={
                   editingTask
                     ? {
+                        id: editingTask.id,
                         name: editingTask.name,
                         goalTimeMinutes: editingTask.goalTimeMinutes,
                         color: editingTask.color,
@@ -78,8 +80,8 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
               />
             </div>
           ) : (
-            <Button onClick={() => setIsAddingTask(true)} className="w-full mb-6">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button onClick={() => setIsAddingTask(true)} className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all">
+              <PlusCircle className="w-5 h-5" />
               Add New Task
             </Button>
           )}
