@@ -8,6 +8,7 @@ import { PlusCircle, Clock, CheckCircle, ArrowRight } from "lucide-react"
 import { PlanDayDialog } from "@/components/plan-day-dialog"
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { TaskList } from "@/components/task-list"
 
 export default function PieChartView() {
   const router = useRouter()
@@ -118,34 +119,45 @@ export default function PieChartView() {
           transition={{ duration: 0.5 }}
           className="bg-white rounded-lg shadow-sm p-6 md:p-8 mb-4 flex flex-col items-stretch justify-center w-full max-w-[350px]"
         >
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">FocusPie</h2>
-          <p className="text-sm text-gray-600 mb-6">Visualize. Focus. Achieve.</p>
-          <div className="flex flex-col space-y-4">
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-gray-600">Plan your day with purpose.</p>
-            </div>
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-gray-600">Create time blocks, track your progress.</p>
-            </div>
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-gray-600">Dive into deep work—all in one glance.</p>
-            </div>
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-gray-600">Turn your hours into accomplishments.</p>
-            </div>
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-gray-600">Ready to transform your productivity?</p>
-            </div>
-          </div>
+          {tasks.length === 0 ? (
+            <>
+              <h2 className="text-3xl font-bold text-gray-800 mb-4">FocusPie</h2>
+              <p className="text-sm text-gray-600 mb-6">Visualize. Focus. Achieve.</p>
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-gray-600">Plan your day with purpose.</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-gray-600">Create time blocks, track your progress.</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-gray-600">Dive into deep work—all in one glance.</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-gray-600">Turn your hours into accomplishments.</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-gray-600">Ready to transform your productivity?</p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Today's Tasks</h2>
+              <div className="mb-6">
+                <TaskList tasks={tasks} onEditTask={handleTaskClick} />
+              </div>
+            </>
+          )}
           <div className="mt-6">
             <Button
               onClick={handlePlanDay}
-              className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all mb-6"
+              className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all mb-2"
               size="lg"
             >
               <PlusCircle className="w-5 h-5" />
@@ -157,7 +169,7 @@ export default function PieChartView() {
       {/* Ensure the PlanDayDialog is always rendered, its visibility controlled by its props */}
       <PlanDayDialog open={planDayOpen} onOpenChange={setPlanDayOpen} editTaskId={editTaskId} />
 
-      {/* Example Time Allocation under Pie Chart */}
+      {/* Example Time Allocation under Pie Chart - only show when no tasks */}
       {tasks.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
