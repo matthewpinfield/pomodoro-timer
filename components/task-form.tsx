@@ -10,6 +10,7 @@ import { getRandomColor } from "@/lib/utils"
 import { useTasks } from "@/context/task-context"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface TaskFormProps {
   onSubmit: (task: { name: string; goalTimeMinutes: number; color: string }) => void
@@ -22,6 +23,7 @@ interface TaskFormProps {
   }
   useAutoColors?: boolean
   workdayHours?: number
+  standalone?: boolean
 }
 
 export function TaskForm({
@@ -30,6 +32,7 @@ export function TaskForm({
   initialValues,
   useAutoColors = false,
   workdayHours = 8,
+  standalone = false,
 }: TaskFormProps) {
   const { tasks } = useTasks()
   const [name, setName] = useState(initialValues?.name || "")
@@ -111,78 +114,88 @@ export function TaskForm({
     })
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+  const formContent = (
+    <form onSubmit={handleSubmit} className="space-y-md">
       {error && (
-        <Alert variant="destructive" className="py-2">
-          <AlertCircle className="h-4 w-4" />
+        <Alert variant="destructive" className="py-sm">
+          <AlertCircle className="w-icon-base h-icon-base" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-
-      <div>
-        <Label htmlFor="task-name">Task Name</Label>
+      
+      <div className="space-y-md">
+        <Label htmlFor="name" className="text-base px-w-xs">Task Name</Label>
         <Input
-          id="task-name"
+          id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Enter task name"
-          required
+          className="w-full px-w-lg py-lg text-base"
         />
       </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="task-hours">Hours</Label>
+      
+      <div className="grid grid-cols-2 gap-md">
+        <div className="space-y-md">
+          <Label htmlFor="hours" className="text-base px-w-xs">Hours</Label>
           <Input
-            id="task-hours"
+            id="hours"
             type="number"
             min="0"
             max="24"
             value={hours}
             onChange={(e) => setHours(e.target.value)}
             placeholder="0"
+            className="w-full px-w-lg py-lg text-base"
           />
         </div>
-        <div>
-          <Label htmlFor="task-minutes">Minutes</Label>
+        
+        <div className="space-y-md">
+          <Label htmlFor="minutes" className="text-base px-w-xs">Minutes</Label>
           <Input
-            id="task-minutes"
+            id="minutes"
             type="number"
             min="0"
             max="59"
             value={minutes}
             onChange={(e) => setMinutes(e.target.value)}
             placeholder="0"
+            className="w-full px-w-lg py-lg text-base"
           />
         </div>
       </div>
-
-      {!useAutoColors && (
-        <div>
-          <Label htmlFor="task-color">Color</Label>
-          <div className="flex items-center space-x-2">
-            <input
-              id="task-color"
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-10 h-10 rounded-md border border-gray-300"
-            />
-            <span className="text-sm text-gray-500">Choose a color for this task</span>
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-end space-x-2 pt-2">
+      
+      <div className="flex justify-end space-x-w-md pt-md">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white">
-          {initialValues ? "Update Task" : "Add Task"}
+        <Button type="submit">
+          {initialValues ? "Update" : "Add"} Task
         </Button>
       </div>
     </form>
   )
+
+  // If standalone is true, wrap the form in a Dialog
+  if (standalone) {
+    return (
+      <Dialog>
+        <DialogContent className="sm:max-w-dialog-lg max-h-dialog overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{initialValues ? 'Edit Task' : 'Add Task'}</DialogTitle>
+            <DialogDescription>
+              {initialValues ? 'Update your task details.' : 'Create a new task for your day.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-xl py-xl">
+            {formContent}
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  // Otherwise, just return the form content
+  return formContent
 }
+
 

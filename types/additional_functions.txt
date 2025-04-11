@@ -1,0 +1,12 @@
+pomodoro app
+
+if you leave the app  paused after 2 minutes it starts a light bleep to remind you its paused
+
+we need help pop ups or a tour the first time they use the app
+
+a reset button that puts the timer back to where it was when you entered timer, this incudes if the timer has already been running that day.
+
+add a calendar so they can book tasks over multiple days so you could add a task that will last 5 days and work on it 2 hours a day till it is complete or even set a deadline of when it needs to be done by and then say how many hours a day you want to work on it, so the app calculated when you need to start it by.
+
+When the break ends, the app should wait and prompt the user to click "Go" (or similar) to start the next Pomodoro cycle. something like "ready to carry on?" we will need it to start reminding after a pre defined time period. the ability to change the defined period  will be added to the settings menu. we also need to look at reminder sounds.
+

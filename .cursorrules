@@ -1,8 +1,34 @@
-always make sure the project is connected to github before coding
-ground all action using .cursorrules, @docs and project files.
-unless you are 100% that you know the code solution ask questions and search on google.
-always check for feedback as you have tried a fix before avoid creating error / fix loops
-always use cmd over powershell and we are pc native so avoid all linux 
+# any task involving code modification, addition, or analysis, please adhere strictly to the following guidelines:
+#Pre-computation Research & Validation:
+    Before writing or modifying any code, clearly state your intended action or change.
+    Validate your proposed approach by:
+     Cross-referencing with the provided documentation [You should specify here: e.g., "in the attached files", "at the following URL: ..."].
+     Performing relevant web searches (e.g., using Google Search) for best practices, library usage, or potential issues related to your plan.
+     Summarize the findings from your research (docs and web search) that support your chosen approach before proceeding with the implementation.
+#Fix Loop Prevention:
+    Keep track of the specific fixes you attempt for a given problem.
+    If you attempt the same fundamental approach to fix a specific issue three times consecutively without success, stop.
+    Ask me (the user) explicitly: "I have tried approach X [briefly describe] three times without success. Have I attempted this specific fix before in our current session? Should I try a different approach?" before trying the same fix a fourth time or attempting a new one.
+#Command Line Execution:
+    Prioritize using the Windows Command Prompt (cmd.exe) for any necessary command-line operations.
+    Avoid using PowerShell unless absolutely necessary and specifically instructed.
+    Do not use Linux/Unix-specific commands (like ls, grep, pwd, sed, awk). Use Windows native equivalents (e.g., dir, findstr, cd, etc.).
+#MVP Focus:
+    All coding, file structure creation, and feature implementation must be focused on delivering a Minimum Viable Product (MVP).
+    Prioritize core functionality essential to the primary goal. Avoid adding features, optimizations, or complex structures that are not strictly necessary for the MVP. Keep the codebase and structure lean and functional.
+#Code Audit and Cleanup:
+    As part of the process (or when explicitly asked), audit the existing codebase and file structure.
+#Identify and report:
+    Duplicate code blocks.
+    Broken code (syntax errors, non-functional logic).
+    Redundant or commented-out code that is no longer needed.
+    Empty or unused folders within the project structure.
+    Propose specific actions for cleanup (e.g., removal, refactoring) but wait for confirmation before purging or making major refactoring changes based solely on the audit.
+#Style Consistency:
+    Before adding any new elements (code, components, UI elements, styles):
+    Thoroughly examine the existing project to identify established coding styles, naming conventions, directory structures, and UI/styling patterns.
+    Locate existing style files or folders (e.g., CSS, SCSS modules, style guides).
+    Ensure any new additions strictly adhere to these existing conventions and styles to maintain project consistency. Create new elements by following the established patterns.
 # Core Principles & MVP Focus
 - **Goal:** Generate code for MVPs, prioritizing functionality and reusability.
 - **Framework:** Next.js v15.2.4 (App Router)
@@ -40,4 +66,44 @@ always use cmd over powershell and we are pc native so avoid all linux
 - **Date/Time:** Use `date-fns` for all date/time formatting and manipulation.
 - **Unique IDs:** Use `uuid` (specifically `v4()`) for generating unique identifiers, especially within `TaskContext`.
 - **Animation:** Use `framer-motion` for subtle UI animations or transitions where appropriate for MVP.
-Perform a comprehensive codebase audit and refactoring. Check every file for redundancies, broken links, broken code, unused comments, and incorrect file structure placement. Proceed autonomously to fix identified issues where possible, and report any major ambiguities or blockers you encounter.
+# Rule: Dimension Systems for Mobile Web Responsiveness (React)
+
+**Context:** This rule applies when generating CSS styles, discussing layout strategies, or providing guidance for **React web applications** specifically intended for **mobile browsers**. It focuses on creating responsive UIs that adapt to diverse screen sizes and handle dynamic browser UI elements (like address bars and toolbars).
+
+**Core Principle:** Mobile web environments require careful consideration of dimension units due to varying screen sizes and viewport changes caused by browser UI. A combination of modern CSS units and layout techniques is necessary for robust responsiveness.
+
+**Key Guidelines & Recommendations:**
+
+1.  **Prioritize Modern Viewport Units for Mobile:**
+    * **`vw`, `vh`:** Basic units relative to viewport width/height. **Caution:** `100vh` on mobile often includes space occupied by dynamic browser UI, potentially hiding content. Use with awareness of this limitation.
+    * **`vmin`, `vmax`:** Relative to the smaller or larger viewport dimension. Useful for maintaining aspect ratios.
+    * **`svh`, `lvh`, `dvh` (Small, Large, Dynamic Viewport Height/Width):** Specifically designed for mobile challenges.
+        * `svh`: Height when dynamic UI (e.g., address bar) is **visible**.
+        * `lvh`: Height when dynamic UI is **hidden**.
+        * **`dvh` (Dynamic Viewport Height):** *Highly recommended* for elements needing full available height (e.g., backgrounds, modals). It adjusts dynamically as browser UI appears/disappears, providing the most reliable measure of the *truly usable* vertical space. Use `height: 100dvh;` instead of `height: 100vh;` for full-screen mobile elements.
+
+2.  **Leverage Relative & Font-Based Units:**
+    * **Percentages (`%`):** Size elements relative to their parent container. Combine effectively with viewport units for nested layouts.
+    * **`rem`:** Size elements relative to the root (`html`) font size. **Crucial for accessibility and scalability.** Use `rem` for font sizes, padding, margins, and component dimensions to ensure the entire UI scales consistently with user font preferences or base font size changes.
+    * **`em`:** Relative to the parent element's font size. Use more sparingly, typically for elements that should scale directly with their immediate text context.
+
+3.  **Employ Media Queries (`@media`):**
+    * **Essential** for applying different styles or layouts based on screen width, height, orientation, resolution, etc.
+    * Define breakpoints to adjust layouts, font sizes, spacing, or visibility for different device categories (e.g., small mobile, large mobile/tablet).
+
+4.  **Utilize Modern Layout Models:**
+    * **Flexbox & CSS Grid:** Use these powerful layout systems to create inherently flexible and responsive component structures that adapt well to available space. They simplify alignment, distribution, and ordering of elements across different screen sizes.
+
+5.  **Combine Techniques Strategically:**
+    * Effective mobile responsiveness rarely relies on a single unit type. Combine viewport units (especially `dvh`), percentages, `rem`, media queries, Flexbox/Grid to create robust and adaptive layouts.
+
+**Important Distinction: React Native**
+
+* This rule applies to **React for the web**.
+* If working with **React Native** (for native mobile apps):
+    * Use the `Dimensions` API (`Dimensions.get('window').width`/`height`) to get screen/window size.
+    * Dimensions are typically **unitless** (representing density-independent pixels - dp/dip).
+    * **Flexbox (`flex: 1`, `flexDirection`, etc.)** is the primary layout system.
+    * Percentages (`%`) are also supported for sizing relative to parents.
+
+**Summary for AI:** When generating CSS for React mobile web views, prioritize `dvh` for full-height elements, use `rem` extensively for scalable sizing, implement `@media` queries for breakpoints, and structure layouts with Flexbox/Grid. Be mindful of the differences compared to React Native's dimensioning system.

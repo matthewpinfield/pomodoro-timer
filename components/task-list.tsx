@@ -30,42 +30,57 @@ export function TaskList({ tasks = [], onEditTask }: TaskListProps) {
   }
 
   if (tasks.length === 0) {
-    return <div className="text-center text-gray-500 py-4">No tasks yet. Add your first task below.</div>
+    return <div className="text-center text-gray-500 py-md text-task-title">No tasks yet. Add your first task below.</div>
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-md">
       {tasks.map((task) => (
         <div key={task.id}>
           {editingTaskId === task.id ? (
-            <TaskForm
-              initialValues={{
-                name: task.name,
-                goalTimeMinutes: task.goalTimeMinutes,
-                color: task.color,
-              }}
-              onSubmit={(data) => handleUpdate(task.id, data)}
-              onCancel={() => setEditingTaskId(null)}
-            />
+            <div className="p-md border rounded-md bg-white shadow-sm">
+              <h3 className="font-medium mb-md">Edit Task</h3>
+              <TaskForm
+                initialValues={{
+                  id: task.id,
+                  name: task.name,
+                  goalTimeMinutes: task.goalTimeMinutes,
+                  color: task.color,
+                }}
+                onSubmit={(data) => handleUpdate(task.id, data)}
+                onCancel={() => setEditingTaskId(null)}
+                standalone={false}
+              />
+            </div>
           ) : (
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+            <div className="flex items-center justify-between p-lg bg-gray-50 dark:bg-slate-700 rounded-md">
               <div className="flex items-center">
-                <div className="w-4 h-4 rounded-full mr-3" style={{ backgroundColor: task.color }} />
-                <div>
-                  <div className="font-medium">{task.name}</div>
-                  <div className="text-sm text-gray-500">
+                <div className="w-icon-lg h-icon-lg rounded-full mr-lg" style={{ backgroundColor: task.color }} />
+                <div className="flex flex-col gap-xs">
+                  <div className="text-task-title font-medium px-sm">{task.name}</div>
+                  <div className="text-task-time text-gray-500 dark:text-gray-400 px-sm">
                     {Math.floor(task.goalTimeMinutes / 60) > 0 && `${Math.floor(task.goalTimeMinutes / 60)}h `}
                     {task.goalTimeMinutes % 60}m
                   </div>
                 </div>
               </div>
 
-              <div className="flex space-x-2">
-                <Button variant="ghost" size="icon" onClick={() => handleEdit(task.id)}>
-                  <Edit className="h-4 w-4" />
+              <div className="flex gap-sm">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-xl w-xl sm:h-lg sm:w-lg" 
+                  onClick={() => handleEdit(task.id)}
+                >
+                  <Edit className="w-icon-base h-icon-base" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => deleteTask(task.id)}>
-                  <Trash2 className="h-4 w-4" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-xl w-xl sm:h-lg sm:w-lg" 
+                  onClick={() => deleteTask(task.id)}
+                >
+                  <Trash2 className="w-icon-base h-icon-base" />
                 </Button>
               </div>
             </div>

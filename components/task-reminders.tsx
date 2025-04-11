@@ -14,8 +14,8 @@ export function TaskReminders({ tasks }: TaskRemindersProps) {
 
   return (
     <div className="text-sm text-gray-600 w-full">
-      <p className="font-medium mb-2">Today's other tasks:</p>
-      <ul className="space-y-2">
+      <p className="font-medium mb-sm">Today's other tasks:</p>
+      <ul className="space-y-sm">
         {tasks.map((task, index) => {
           const timeLeft = Math.max(0, task.goalTimeMinutes - task.progressMinutes)
           const hours = Math.floor(timeLeft / 60)
@@ -31,10 +31,10 @@ export function TaskReminders({ tasks }: TaskRemindersProps) {
               transition={{ delay: index * 0.1 }}
             >
               <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: task.color }} />
+                <div className="w-icon-sm h-icon-sm rounded-full mr-sm" style={{ backgroundColor: task.color }} />
                 <span>{task.name}</span>
               </div>
-              <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">{timeDisplay}</span>
+              <span className="text-xs bg-gray-100 px-sm py-xs rounded-full">{timeDisplay}</span>
             </motion.li>
           )
         })}

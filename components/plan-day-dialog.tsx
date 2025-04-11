@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { DialogContentNoClose } from "@/components/ui/dialog-no-close"
 import { Button } from "@/components/ui/button"
 import { TaskForm } from "@/components/task-form"
 import { TaskList } from "@/components/task-list"
@@ -53,20 +54,31 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" aria-describedby="dialog-description">
-        <DialogHeader>
-          <DialogTitle>Plan My Day</DialogTitle>
+      <DialogContentNoClose className="sm:max-w-dialog-lg max-h-dialog overflow-y-auto">
+        <DialogHeader className="flex flex-row items-center justify-between">
+          <div>
+            <DialogTitle className="text-xl font-bold px-w-xs py-xs">Plan Your Day</DialogTitle>
+            <DialogDescription className="!text-dialog-description !text-gray-500 px-w-xs py-xs">
+              Add tasks and set their duration for today.
+            </DialogDescription>
+          </div>
+          <Button 
+            onClick={() => onOpenChange(false)}
+            variant="ghost" 
+            className="text-base px-w-lg py-md font-medium hover:bg-gray-100 dark:hover:bg-slate-700"
+          >
+            Done
+          </Button>
         </DialogHeader>
-        <p id="dialog-description" className="sr-only">Manage your tasks for the day by adding or editing tasks.</p>
-
-        <div className="py-4">
+        <div className="flex flex-col gap-xl py-xl px-w-xs">
           {isAddingTask ? (
-            <div className="mb-6 p-4 border rounded-md bg-white shadow-sm">
-              <h3 className="font-medium mb-4">{editingTask ? "Edit Task" : "Add New Task"}</h3>
+            <div className="mb-xl p-xl border rounded-md bg-white dark:bg-slate-800 shadow-sm">
+              <h3 className="text-dialog-title font-medium mb-xl px-w-sm">{editingTask ? "Edit Task" : "Add New Task"}</h3>
               <TaskForm
                 onSubmit={editingTask ? handleUpdateTask : handleAddTask}
                 onCancel={handleCancel}
                 useAutoColors={!editingTask}
+                standalone={false}
                 initialValues={
                   editingTask
                     ? {
@@ -80,8 +92,8 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
               />
             </div>
           ) : (
-            <Button onClick={() => setIsAddingTask(true)} className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all">
-              <PlusCircle className="w-5 h-5" />
+            <Button onClick={() => setIsAddingTask(true)} className="w-full flex items-center justify-center gap-md bg-blue-500 hover:bg-blue-600 text-white font-semibold py-lg px-xl rounded-lg shadow-md hover:shadow-lg transition-all text-dialog-button">
+              <PlusCircle className="w-icon-lg h-icon-lg" />
               Add New Task
             </Button>
           )}
@@ -98,10 +110,10 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
               }}
             />
           ) : (
-            <p className="text-center text-gray-500 py-4">No tasks yet. Add your first task above.</p>
+            <p className="text-center text-gray-500 py-xl text-task-title">No tasks yet. Add your first task above.</p>
           )}
         </div>
-      </DialogContent>
+      </DialogContentNoClose>
     </Dialog>
   )
 }

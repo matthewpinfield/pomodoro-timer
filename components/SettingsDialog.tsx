@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useTimer } from "@/context/timer-context";
 import { Label } from "@/components/ui/label";
@@ -19,8 +19,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>
+            Configure your timer and application preferences.
+          </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
+        <div className="py-md">
           <div className="flex items-center justify-between">
             <Label htmlFor="auto-pause-toggle" className="text-gray-700 dark:text-gray-300">
               Auto-pause timer on tab/window switch

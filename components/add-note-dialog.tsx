@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useTasks } from "@/context/task-context"
@@ -29,13 +29,16 @@ export function AddNoteDialog({ open, onOpenChange, taskId }: AddNoteDialogProps
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add Note</DialogTitle>
+          <DialogDescription>
+            Add a note to your task to track progress or record thoughts.
+          </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
+        <div className="py-md">
           <Textarea
             placeholder="Write your note here..."
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="min-h-[100px]"
+            className="min-h-note sm:min-h-note-sm"
           />
         </div>
         <DialogFooter>

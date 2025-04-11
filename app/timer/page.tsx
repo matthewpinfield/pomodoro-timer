@@ -34,10 +34,30 @@ export default function TimerView() {
   const taskGoalSeconds = currentTask ? currentTask.goalTimeMinutes * 60 : 0;
 
   useEffect(() => {
-    if (!currentTaskId || !currentTask || taskGoalSeconds <= 0) {
-      localStorage.removeItem("focuspie-taskTimeLeft")
-      setTaskTimeLeftSeconds(NaN);
-      router.push("/pie-chart")
+    // Set selection state when component mounts
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("focuspie-selecting-task", "true");
+    }
+
+    // Cleanup when component unmounts
+    return () => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem("focuspie-selecting-task");
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!currentTaskId || !currentTask) {
+      // Only redirect if we're not in the process of selecting a task
+      if (typeof window !== 'undefined' && !localStorage.getItem("focuspie-selecting-task")) {
+        localStorage.removeItem("focuspie-taskTimeLeft")
+        setTaskTimeLeftSeconds(NaN);
+        router.push("/pie-chart")
+      }
+    } else if (taskGoalSeconds <= 0) {
+      // If task has no goal time, set a default of 25 minutes
+      setTaskTimeLeftSeconds(25 * 60);
     } else {
       let initialTaskTimeLeft = taskGoalSeconds;
       if (typeof window !== 'undefined') {
@@ -102,94 +122,85 @@ export default function TimerView() {
   if (!currentTask || isNaN(taskTimeLeftSeconds)) return null
 
   return (
-    <div className="flex flex-col min-h-full p-4">
-      {/* Add Back Button at the top of the content area */}
-      <div className="w-full max-w-5xl mx-auto mb-4"> {/* Constrain width and add margin */}
-        <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/pie-chart")}
-            className="flex items-center text-gray-500 dark:text-gray-400"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Back to Tasks
-          </Button>
-      </div>
-
+    <div className="flex flex-col h-screen bg-gray-50">
       <motion.main
-        className="flex-1 w-full px-4 flex flex-col items-center md:flex-row md:justify-center md:items-start md:gap-8 md:max-w-4xl lg:max-w-5xl mx-auto"
+        className="flex-1 w-full px-w-xs sm:px-w-sm py-md flex flex-col items-center md:flex-row md:justify-center md:items-start md:gap-xl md:max-w-4xl lg:max-w-5xl mx-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="flex flex-col items-center md:w-1/2 my-6 md:my-0">
-          <TimerCircle
-            mode={mode}
-            currentModeTotalDuration={
-                mode === 'working' ? settings.pomodoro :
-                mode === 'shortBreak' ? settings.shortBreak :
-                mode === 'longBreak' ? settings.longBreak :
-                settings.pomodoro
-            }
-            timeLeftInMode={timeLeftInMode}
-            timeDisplay={timeDisplay}
-            taskProgress={taskProgress}
-            taskName={currentTask.name}
-            taskTimeLeftSeconds={taskTimeLeftSeconds}
-            taskGoalMinutes={currentTask.goalTimeMinutes}
-            isRunning={isEffectivelyRunning}
-            onTimerClick={handleTimerClick}
-          />
+        <div className="flex flex-col md:flex-row w-full items-start gap-xl">
+          <div className="flex flex-col items-center md:w-1/2 mb-xl md:mb-0 flex-shrink-0">
+            <TimerCircle
+              mode={mode}
+              currentModeTotalDuration={
+                  mode === 'working' ? settings.pomodoro :
+                  mode === 'shortBreak' ? settings.shortBreak :
+                  mode === 'longBreak' ? settings.longBreak :
+                  settings.pomodoro
+              }
+              timeLeftInMode={timeLeftInMode}
+              timeDisplay={timeDisplay}
+              taskProgress={taskProgress}
+              taskName={currentTask.name}
+              taskTimeLeftSeconds={taskTimeLeftSeconds}
+              taskGoalMinutes={currentTask.goalTimeMinutes}
+              isRunning={isEffectivelyRunning}
+              onTimerClick={handleTimerClick}
+            />
 
-          {/* --- Simplified Legends Container --- */}
-          <div className="mt-4 flex justify-center items-center space-x-4 text-xs text-gray-600">
-            {/* Current Task Indicator - Make dot red */}
-            <div className="flex items-center">
-              <div 
-                className="w-3 h-3 rounded-full mr-1.5 bg-red-500"
-              ></div>
-              <span>Current Task</span>
-            </div>
+            {/* --- Simplified Legends Container --- */}
+            <div className="mt-sm sm:mt-md flex justify-center items-center gap-md text-xs text-gray-600">
+              {/* Current Task Indicator */}
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                <span>Current Task</span>
+              </div>
 
-            {/* Work/Rest Indicator */}
-            <div className="flex items-center">
-               <div className="w-3 h-3 rounded-full mr-1.5 bg-blue-500"></div>
-               <span>Work / Rest</span>
+              <span>|</span>
+
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                <span>Work</span>
+                <span>/</span>
+                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                <span>Rest</span>
+              </div>
             </div>
+            
+            {(mode === 'shortBreak' || mode === 'longBreak') && (
+                <Button onClick={skipBreak} variant="secondary" size="sm" className="mt-sm sm:mt-md">
+                    Skip Break
+                </Button>
+            )}
           </div>
-          
-          {(mode === 'shortBreak' || mode === 'longBreak') && (
-              <Button onClick={skipBreak} variant="secondary" size="sm" className="mt-4">
-                  Skip Break
-              </Button>
-          )}
-        </div>
 
-        {/* --- Right Column Wrapper (Desktop) --- */}
-        <div className="flex flex-col items-center w-full md:w-1/2">
-          {/* White Panel */}
-          <motion.div
-            className="w-full bg-white rounded-xl shadow-sm p-4 mt-6 md:mt-0"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <div className="mb-6">
-              <TaskReminders tasks={tasks.filter((task) => task.id !== currentTaskId)} />
-            </div>
-            <div className="text-center text-gray-500 text-sm">{formattedTime}</div>
-          </motion.div>
-
-          {/* Add Note Button (Now below the panel, but within the right column) */}
-          <div className="flex justify-center mt-4 w-full">
-            <Button 
-              onClick={() => setNoteDialogOpen(true)} 
-              className="w-full max-w-md flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all"
-              size="lg"
+          {/* --- Right Column Wrapper (Desktop) --- */}
+          <div className="flex flex-col items-center w-full md:w-1/2">
+            {/* White Panel */}
+            <motion.div
+              className="w-full bg-white rounded-xl shadow-sm p-md sm:p-lg mt-md sm:mt-xl md:mt-0"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <PlusCircle className="w-5 h-5" />
-              <span>Add Note</span>
-            </Button>
+              <div className="mb-md sm:mb-xl">
+                <TaskReminders tasks={tasks.filter((task) => task.id !== currentTaskId)} />
+              </div>
+              <div className="text-center text-gray-500 text-sm">{formattedTime}</div>
+            </motion.div>
+
+            {/* Add Note Button (Now below the panel, but within the right column) */}
+            <div className="flex justify-center mt-md sm:mt-lg w-full">
+              <Button 
+                onClick={() => setNoteDialogOpen(true)} 
+                className="w-full max-w-md flex items-center justify-center gap-sm bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all"
+                size="lg"
+              >
+                <PlusCircle className="w-icon-base h-icon-base" />
+                <span>Add Note</span>
+              </Button>
+            </div>
           </div>
         </div>
       </motion.main>
