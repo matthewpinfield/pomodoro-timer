@@ -25,11 +25,11 @@ const config = {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        'task': '0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06)',
-        'task-hover': '0 4px 6px rgba(0, 0, 0, 0.05)',
-        'dialog': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        'input': 'inset 0 2px 4px rgba(0, 0, 0, 0.05)',
-        'input-focus': '0 0 0 2px rgba(59, 130, 246, 0.3)',
+        'task': '0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.08), 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.06)',
+        'task-hover': '0 0.25rem 0.375rem rgba(0, 0, 0, 0.05)',
+        'dialog': '0 1.5625rem 3.125rem -0.75rem rgba(0, 0, 0, 0.25)',
+        'input': 'inset 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05)',
+        'input-focus': '0 0 0 0.125rem rgba(59, 130, 246, 0.3)',
       },
       backgroundImage: {
         'button-gradient': 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
@@ -47,12 +47,12 @@ const config = {
           to: { height: "0" },
         },
         "fade-in": {
-          from: { opacity: "0", transform: "translateY(10px)" },
+          from: { opacity: "0", transform: "translateY(0.625rem)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         "fade-out": {
           from: { opacity: "1", transform: "translateY(0)" },
-          to: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "0", transform: "translateY(0.625rem)" },
         },
       },
       animation: {
@@ -66,7 +66,7 @@ const config = {
         'spacing': 'margin, padding',
       },
       backdropBlur: {
-        xs: '2px',
+        xs: '0.125rem',
       },
       timer: {
         track: {

@@ -10,6 +10,10 @@ import { tokens, getEnvironmentInfo, isBrowser } from './design-tokens';
 import { isFontLoaded, getFontVariable } from './font-registry';
 import type { ColorToken, FontSizeToken, FontFamilyToken, SpacingToken } from './design-tokens';
 
+// Consistent font size in pixels used ONLY for font loading detection logic.
+// This value doesn't affect visual rendering or responsiveness.
+const FONT_DETECTION_SIZE_PX = 16;
+
 // Configuration for font sizes
 const fontSizeConfig: Record<keyof typeof tokens.fontSizes, { min: number; preferred: number; max: number; unit: string }> = {
   xs: { min: 0.75, preferred: 1.1, max: 1.25, unit: 'dvmin' },
@@ -81,9 +85,9 @@ export function preloadCanvasFont(
       const fallbackFont = 'monospace';
       const testFont = `${fontToken.toCanvas()}`;
 
-      ctx.font = `16px ${fallbackFont}`;
+      ctx.font = `${FONT_DETECTION_SIZE_PX}px ${fallbackFont}`;
       const fallbackWidth = ctx.measureText(text).width;
-      ctx.font = `16px ${testFont}`;
+      ctx.font = `${FONT_DETECTION_SIZE_PX}px ${testFont}`;
       const testWidth = ctx.measureText(text).width;
 
       if (fallbackWidth !== testWidth) {
@@ -157,7 +161,6 @@ export function applyTokenFont(
 
 // isFontAvailable (Unchanged)
 export function isFontAvailable(fontFamily: string): boolean {
-  // ... (implementation unchanged) ...
   if (!isBrowser) return false;
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -165,9 +168,9 @@ export function isFontAvailable(fontFamily: string): boolean {
   const text = 'abcdefghijklmnopqrstuvwxyz0123456789';
   const fallbackFont = 'monospace';
   const testFont = `"${fontFamily}", ${fallbackFont}`; // Ensure family is quoted
-  ctx.font = `12px ${fallbackFont}`;
+  ctx.font = `${FONT_DETECTION_SIZE_PX}px ${fallbackFont}`;
   const fallbackWidth = ctx.measureText(text).width;
-  ctx.font = `12px ${testFont}`;
+  ctx.font = `${FONT_DETECTION_SIZE_PX}px ${testFont}`;
   const testWidth = ctx.measureText(text).width;
   return fallbackWidth !== testWidth;
 }

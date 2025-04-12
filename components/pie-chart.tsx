@@ -24,40 +24,10 @@ export function PieChart({
   const [hoveredSlice, setHoveredSlice] = useState<number | null>(null)
   const [selectedSlice, setSelectedSlice] = useState<number | null>(null)
   const [isHoveringCenter, setIsHoveringCenter] = useState(false)
-  const [chartSize, setChartSize] = useState({ width: 320, height: 320 })
   const [isAnimating, setIsAnimating] = useState(false)
 
   // Convert workday hours to minutes
   const workdayMinutes = workdayHours * 60
-
-  // Determine chart size based on screen width
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      const maxWidth = Math.min(width * 0.85, 320); // Reverted to original values
-      
-      if (width < 480) { // Mobile breakpoint
-        setChartSize({ 
-          width: Math.min(240, maxWidth),
-          height: Math.min(240, maxWidth)
-        });
-      } else if (width < 640) { // Small breakpoint
-        setChartSize({ 
-          width: Math.min(280, maxWidth),
-          height: Math.min(280, maxWidth)
-        });
-      } else { // Desktop
-        setChartSize({ 
-          width: Math.min(320, maxWidth),
-          height: Math.min(320, maxWidth)
-        });
-      }
-    }
-
-    handleResize()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
 
   // Draw the pie chart
   useEffect(() => {
@@ -67,28 +37,34 @@ export function PieChart({
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // Set canvas dimensions with device pixel ratio for sharp rendering
-    const dpr = window.devicePixelRatio || 1
-    canvas.width = chartSize.width * dpr
-    canvas.height = chartSize.height * dpr
-    ctx.scale(dpr, dpr)
+    // Set canvas dimensions based on actual element size and DPR
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    // Use actual rendered dimensions for calculations
+    const width = rect.width;
+    const height = rect.height;
 
     // Clear canvas
-    ctx.clearRect(0, 0, chartSize.width, chartSize.height)
+    ctx.clearRect(0, 0, width, height)
 
-    const centerX = chartSize.width / 2
-    const centerY = chartSize.height / 2
-    const radius = Math.min(centerX, centerY) - 20
-    const innerRadius = radius * 0.6
+    const centerX = width / 2
+    const centerY = height / 2
+    const baseRadius = Math.min(centerX, centerY);
+    const radius = baseRadius * 0.9; // Outer radius of pie
+    const innerRadius = radius * 0.6; // Inner radius (center hole)
 
     // Responsive font sizes based on chart width
-    const titleFontSize = chartSize.width < 250 ? 16 : 20 // Smaller font for smallest charts
-    const detailFontSize = chartSize.width < 250 ? 12 : 14
+    const titleFontSize = Math.max(12, Math.min(20, width * 0.1)); // Clamp font size
+    const detailFontSize = Math.max(10, Math.min(14, width * 0.07)); // Clamp font size
 
     // If no tasks, draw empty circle with gradient
     if (tasks.length === 0) {
       // Create gradient background
-      const gradient = ctx.createLinearGradient(0, 0, chartSize.width, chartSize.height)
+      const gradient = ctx.createLinearGradient(0, 0, width, height)
       gradient.addColorStop(0, "#f1f5f9")
       gradient.addColorStop(1, "#e2e8f0")
 
@@ -115,22 +91,25 @@ export function PieChart({
       ctx.fillStyle = "#64748b"
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
-      ctx.fillText("No tasks yet", centerX, centerY - 10)
+      ctx.fillText("No tasks yet", centerX, centerY - detailFontSize * 0.7) // Adjust text position based on font size
 
       ctx.font = `${detailFontSize}px Inter, system-ui, sans-serif`
       ctx.fillStyle = "#94a3b8"
-      ctx.fillText("Click to add tasks", centerX, centerY + 20)
+      ctx.fillText("Click to add tasks", centerX, centerY + detailFontSize * 1.5) // Adjust text position
 
       // Draw plus icon if hovering center
       if (isHoveringCenter) {
+        const iconBaseY = centerY + detailFontSize * 3; // Adjust icon position
+        const iconRadius = detailFontSize * 0.8;
         ctx.fillStyle = "#3b82f6"
         ctx.beginPath()
-        ctx.arc(centerX, centerY + 45, 12, 0, Math.PI * 2)
+        ctx.arc(centerX, iconBaseY, iconRadius, 0, Math.PI * 2)
         ctx.fill()
 
         ctx.fillStyle = "#ffffff"
-        ctx.fillRect(centerX - 5, centerY + 40, 10, 2)
-        ctx.fillRect(centerX - 1, centerY + 36, 2, 10)
+        const plusSize = iconRadius * 0.8;
+        ctx.fillRect(centerX - plusSize / 2, iconBaseY - plusSize / 10, plusSize, plusSize / 5) // Horizontal bar
+        ctx.fillRect(centerX - plusSize / 10, iconBaseY - plusSize / 2, plusSize / 5, plusSize) // Vertical bar
       }
 
       return
@@ -153,9 +132,8 @@ export function PieChart({
 
       // Determine if slice should be "pulled out" (hovered or selected)
       const isHovered = hoveredSlice === index
-      // Restore pull distance based on hover
-      const pullDistance = isHovered ? 10 : 0 
-      // const isPulledOut = selectedSlice === index // Keep selection logic separate for now
+      // Restore pull distance based on hover - make it relative
+      const pullDistance = isHovered ? baseRadius * 0.05 : 0 
 
       // Calculate offset for pulled out slice
       const offsetX = Math.cos(midAngle) * pullDistance
@@ -219,16 +197,16 @@ export function PieChart({
     ctx.beginPath()
     ctx.arc(centerX, centerY, innerRadius + 2, 0, Math.PI * 2)
     ctx.strokeStyle = "rgba(0, 0, 0, 0.25)" // 20% darker (from 0.2 to 0.25)
-    ctx.lineWidth = 1
+    ctx.lineWidth = 1 // Keep line width thin regardless of scale
     ctx.stroke()
 
     // Draw a much more prominent shadow - darker by 20%
     ctx.beginPath()
-    ctx.arc(centerX, centerY, innerRadius + 8, 0, Math.PI * 2)
+    ctx.arc(centerX, centerY, innerRadius + baseRadius * 0.04, 0, Math.PI * 2) // Relative shadow offset
     ctx.shadowColor = "rgba(0, 0, 0, 0.85)" // 20% darker (from 0.7 to 0.85)
-    ctx.shadowBlur = 25
+    ctx.shadowBlur = baseRadius * 0.12; // Relative shadow blur
     ctx.shadowOffsetX = 0
-    ctx.shadowOffsetY = 8
+    ctx.shadowOffsetY = baseRadius * 0.04 // Relative shadow offset
     ctx.fillStyle = "rgba(0, 0, 0, 0.36)" // 20% darker (from 0.3 to 0.36)
     ctx.fill()
     ctx.restore()
@@ -237,8 +215,8 @@ export function PieChart({
     // Create a gradient for the center circle
     const centerGradient = ctx.createRadialGradient(
       centerX,
-      centerY - 15,
-      0, // Shift gradient origin up for 3D effect
+      centerY - baseRadius * 0.07, // Relative gradient origin y
+      0, 
       centerX,
       centerY,
       innerRadius,
@@ -268,7 +246,7 @@ export function PieChart({
     ctx.fillStyle = isHoveringCenter ? "#3b82f6" : "#1e293b"
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
-    ctx.fillText("Today", centerX, centerY - 10)
+    ctx.fillText("Today", centerX, centerY - detailFontSize * 0.7) // Adjust based on detail font size
 
     // If a task is selected or hovered, show its name
     if (hoveredSlice !== null || selectedSlice !== null) {
@@ -278,7 +256,7 @@ export function PieChart({
 
         ctx.font = `${detailFontSize}px Inter, system-ui, sans-serif`
         ctx.fillStyle = "#64748b"
-        ctx.fillText(task.name, centerX, centerY + 15)
+        ctx.fillText(task.name, centerX, centerY + detailFontSize * 1.5) // Adjust based on detail font size
       }
     } else {
       // Show total time and workday time
@@ -288,21 +266,24 @@ export function PieChart({
 
       ctx.font = `${detailFontSize}px Inter, system-ui, sans-serif`
       ctx.fillStyle = "#64748b"
-      ctx.fillText(timeText, centerX, centerY + 15)
+      ctx.fillText(timeText, centerX, centerY + detailFontSize * 1.5) // Adjust based on detail font size
     }
 
     // Draw plus icon if hovering center
     if (isHoveringCenter) {
+      const iconBaseY = centerY + detailFontSize * 3; // Adjust icon position
+      const iconRadius = detailFontSize * 0.8;
       ctx.fillStyle = "#3b82f6"
       ctx.beginPath()
-      ctx.arc(centerX, centerY + 45, 12, 0, Math.PI * 2)
+      ctx.arc(centerX, iconBaseY, iconRadius, 0, Math.PI * 2)
       ctx.fill()
 
       ctx.fillStyle = "#ffffff"
-      ctx.fillRect(centerX - 5, centerY + 40, 10, 2)
-      ctx.fillRect(centerX - 1, centerY + 36, 2, 10)
+      const plusSize = iconRadius * 0.8;
+      ctx.fillRect(centerX - plusSize / 2, iconBaseY - plusSize / 10, plusSize, plusSize / 5) // Horizontal bar
+      ctx.fillRect(centerX - plusSize / 10, iconBaseY - plusSize / 2, plusSize / 5, plusSize) // Vertical bar
     }
-  }, [tasks, hoveredSlice, selectedSlice, chartSize, isHoveringCenter, workdayHours, workdayMinutes])
+  }, [tasks, hoveredSlice, selectedSlice, isHoveringCenter, workdayHours, workdayMinutes])
 
   // Helper function to determine slice index from coordinates
   const getSliceIndexFromCoords = (x: number, y: number): number | null => {
@@ -426,19 +407,11 @@ export function PieChart({
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-full">
       <div
-        className="relative flex justify-center items-center mb-4"
-        style={{ 
-          width: chartSize.width, 
-          height: chartSize.height,
-          maxWidth: '100%' // Ensure it never exceeds its container
-        }}
+        className="relative flex justify-center items-center mb-4 w-full h-full"
       >
         <canvas
           ref={canvasRef}
-          width={chartSize.width}
-          height={chartSize.height}
-          className="cursor-pointer rounded-full"
-          style={{ width: '100%', height: '100%' }}
+          className="cursor-pointer rounded-full w-full h-full block"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={handleClick}

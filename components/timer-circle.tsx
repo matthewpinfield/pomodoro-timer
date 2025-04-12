@@ -269,7 +269,7 @@ const TimerCircle = memo(function TimerCircle({
   return (
     <div className="flex flex-col items-center">
       <div 
-        className="relative w-full max-w-[400px] aspect-square rounded-lg overflow-hidden"
+        className="relative w-full max-w-md aspect-square rounded-lg overflow-hidden"
         onClick={onTimerClick}
       >
         <canvas 
