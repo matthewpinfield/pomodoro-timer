@@ -1,5 +1,8 @@
 import type { Config } from "tailwindcss"
 import plugin from 'tailwindcss/plugin'
+import { getTokensForTailwind } from './lib/design-tokens'
+
+const { colors, spacing, fontSize, fontFamily } = getTokensForTailwind();
 
 const config = {
   darkMode: ["class"],
@@ -10,51 +13,12 @@ const config = {
     "./src/**/*.{ts,tsx}",
     "*.{js,ts,jsx,tsx,mdx}",
   ],
-  prefix: "",
   theme: {
-    container: {
-      center: true,
-      padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
-    },
     extend: {
-      colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
-      },
+      colors,
+      spacing,
+      fontSize,
+      fontFamily,
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -118,29 +82,6 @@ const config = {
           offset: '0.5rem',
         }
       },
-      spacing: {
-        'xs': '0.3dvh',
-        'sm': '0.5dvh',
-        'md': '1dvh',
-        'lg': '1.5dvh',
-        'xl': '2dvh',
-        '2xl': '2.5dvh',
-        'w-xs': '0.3dvw',
-        'w-sm': '0.5dvw',
-        'w-md': '1dvw',
-        'w-lg': '1.5dvw',
-        'w-xl': '2dvw',
-      },
-      fontSize: {
-        'xs': ['clamp(0.75rem, 1.125dvmin, 1.25rem)', { lineHeight: '1.5rem' }],
-        'sm': ['clamp(0.875rem, 1.3dvmin, 1.5rem)', { lineHeight: '1.75rem' }],
-        'base': ['clamp(1rem, 1.5dvmin, 1.8rem)', { lineHeight: '2rem' }],
-        'lg': ['clamp(1.125rem, 1.7dvmin, 2rem)', { lineHeight: '2.25rem' }],
-        'xl': ['clamp(1.25rem, 1.875dvmin, 2.25rem)', { lineHeight: '2.5rem' }],
-        '2xl': ['clamp(1.5rem, 2.25dvmin, 2.5rem)', { lineHeight: '2.75rem' }],
-        '3xl': ['clamp(1.875rem, 3dvmin, 3rem)', { lineHeight: '3.25rem' }],
-        '4xl': ['clamp(2.25rem, 3.75dvmin, 3.5rem)', { lineHeight: '4rem' }],
-      },
       sizes: {
         'icon-sm': 'clamp(1.5rem, 2.25dvmin, 2.25rem)',
         'icon-base': 'clamp(2rem, 3dvmin, 3rem)',
@@ -162,13 +103,18 @@ const config = {
   },
   plugins: [
     require("tailwindcss-animate"),
-    // Add plugin for custom variants
-    plugin(({ addVariant }: { addVariant: (name: string, definition: string) => void }) => {
+    plugin(({ addVariant }) => {
       addVariant('child', '& > *');
       addVariant('child-hover', '& > *:hover');
+    }),
+    plugin(({ addBase }) => {
+      addBase({
+        ':root': {
+          '--radius': '0.5rem',
+        },
+      });
     }),
   ],
 } satisfies Config
 
 export default config
-

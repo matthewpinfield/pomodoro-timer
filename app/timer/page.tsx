@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { TimerCircle } from "@/components/timer-circle"
 import { TaskReminders } from "@/components/task-reminders"
@@ -13,6 +13,7 @@ import { AddNoteDialog } from "@/components/add-note-dialog"
 import { motion } from "framer-motion"
 
 export default function TimerView() {
+  // Contexts first
   const router = useRouter()
   const { tasks, currentTaskId } = useTasks()
   const {
@@ -23,75 +24,117 @@ export default function TimerView() {
     startWork,
     pauseTimer,
     skipBreak
-  } = useTimer();
+  } = useTimer()
 
+  // All useState hooks
   const [noteDialogOpen, setNoteDialogOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [taskTimeLeftSeconds, setTaskTimeLeftSeconds] = useState<number>(NaN)
 
-  const [taskTimeLeftSeconds, setTaskTimeLeftSeconds] = useState<number>(NaN);
+  // All useMemo hooks
+  const currentTask = useMemo(() => 
+    tasks.find((task) => task.id === currentTaskId),
+    [tasks, currentTaskId]
+  )
 
-  const currentTask = tasks.find((task) => task.id === currentTaskId)
-  const taskGoalSeconds = currentTask ? currentTask.goalTimeMinutes * 60 : 0;
+  const taskGoalSeconds = useMemo(() => 
+    currentTask ? currentTask.goalTimeMinutes * 60 : 0,
+    [currentTask]
+  )
 
-  useEffect(() => {
-    // Set selection state when component mounts
-    if (typeof window !== 'undefined') {
-      localStorage.setItem("focuspie-selecting-task", "true");
+  const timeDisplay = useMemo(() => 
+    formatTime(timeLeftInMode),
+    [timeLeftInMode]
+  )
+
+  const taskProgress = useMemo(() => 
+    taskGoalSeconds > 0 ? taskTimeLeftSeconds / taskGoalSeconds : 0,
+    [taskGoalSeconds, taskTimeLeftSeconds]
+  )
+
+  const currentModeTotalDuration = useMemo(() =>
+    mode === 'working' ? settings.pomodoro :
+    mode === 'shortBreak' ? settings.shortBreak :
+    mode === 'longBreak' ? settings.longBreak :
+    settings.pomodoro,
+    [mode, settings]
+  )
+
+  const formattedTime = useMemo(() => 
+    currentTime.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    [currentTime]
+  )
+
+  const filteredTasks = useMemo(() => 
+    tasks.filter((task) => task.id !== currentTaskId),
+    [tasks, currentTaskId]
+  )
+
+  // useCallback hooks
+  const handleTimerClick = useCallback(() => {
+    if (mode === 'idle') {
+      startWork()
+    } else {
+      pauseTimer()
     }
+  }, [mode, startWork, pauseTimer])
 
-    // Cleanup when component unmounts
+  // All useEffect hooks
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("focuspie-selecting-task", "true")
+    }
     return () => {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem("focuspie-selecting-task");
+        localStorage.removeItem("focuspie-selecting-task")
       }
-    };
-  }, []);
+    }
+  }, [])
 
   useEffect(() => {
     if (!currentTaskId || !currentTask) {
-      // Only redirect if we're not in the process of selecting a task
       if (typeof window !== 'undefined' && !localStorage.getItem("focuspie-selecting-task")) {
         localStorage.removeItem("focuspie-taskTimeLeft")
-        setTaskTimeLeftSeconds(NaN);
+        setTaskTimeLeftSeconds(NaN)
         router.push("/pie-chart")
       }
     } else if (taskGoalSeconds <= 0) {
-      // If task has no goal time, set a default of 25 minutes
-      setTaskTimeLeftSeconds(25 * 60);
+      setTaskTimeLeftSeconds(25 * 60)
     } else {
-      let initialTaskTimeLeft = taskGoalSeconds;
+      let initialTaskTimeLeft = taskGoalSeconds
       if (typeof window !== 'undefined') {
-        const savedTaskTime = localStorage.getItem("focuspie-taskTimeLeft");
+        const savedTaskTime = localStorage.getItem("focuspie-taskTimeLeft")
         if (savedTaskTime !== null) {
-          const parsedSavedTime = parseInt(savedTaskTime, 10);
+          const parsedSavedTime = parseInt(savedTaskTime, 10)
           if (!isNaN(parsedSavedTime) && parsedSavedTime >= 0 && parsedSavedTime <= taskGoalSeconds) {
-            initialTaskTimeLeft = parsedSavedTime;
+            initialTaskTimeLeft = parsedSavedTime
           }
         }
       }
-      setTaskTimeLeftSeconds(initialTaskTimeLeft);
+      setTaskTimeLeftSeconds(initialTaskTimeLeft)
     }
-  }, [currentTaskId, currentTask, router, taskGoalSeconds]);
+  }, [currentTaskId, currentTask, router, taskGoalSeconds])
 
   useEffect(() => {
-    let taskInterval: NodeJS.Timeout | undefined = undefined;
-
+    let taskInterval: NodeJS.Timeout | undefined = undefined
     if (mode === 'working' && isRunning && taskTimeLeftSeconds > 0) {
       taskInterval = setInterval(() => {
-        setTaskTimeLeftSeconds((prev) => !isNaN(prev) ? Math.max(0, prev - 1) : 0);
-      }, 1000);
+        setTaskTimeLeftSeconds((prev) => !isNaN(prev) ? Math.max(0, prev - 1) : 0)
+      }, 1000)
     }
-
     return () => {
-      if (taskInterval) clearInterval(taskInterval);
-    };
-  }, [mode, isRunning, taskTimeLeftSeconds]);
+      if (taskInterval) clearInterval(taskInterval)
+    }
+  }, [mode, isRunning, taskTimeLeftSeconds])
 
   useEffect(() => {
     if (typeof window !== 'undefined' && currentTaskId && !isNaN(taskTimeLeftSeconds)) {
-      localStorage.setItem("focuspie-taskTimeLeft", taskTimeLeftSeconds.toString());
+      localStorage.setItem("focuspie-taskTimeLeft", taskTimeLeftSeconds.toString())
     }
-  }, [taskTimeLeftSeconds, currentTaskId]);
+  }, [taskTimeLeftSeconds, currentTaskId])
 
   useEffect(() => {
     const clockInterval = setInterval(() => {
@@ -100,52 +143,28 @@ export default function TimerView() {
     return () => clearInterval(clockInterval)
   }, [])
 
-  const formattedTime = currentTime.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-
-  const timeDisplay = formatTime(timeLeftInMode)
-
-  const taskProgress = taskGoalSeconds > 0 ? taskTimeLeftSeconds / taskGoalSeconds : 0;
-
-  const handleTimerClick = () => {
-      if (mode === 'idle') {
-          startWork();
-      } else {
-          pauseTimer();
-      }
-  };
-
-  const isEffectivelyRunning = isRunning;
-
+  // Early return should come after all hooks
   if (!currentTask || isNaN(taskTimeLeftSeconds)) return null
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <motion.main
         className="flex-1 w-full px-w-xs sm:px-w-sm py-md flex flex-col items-center md:flex-row md:justify-center md:items-start md:gap-xl md:max-w-4xl lg:max-w-5xl mx-auto"
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 1 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
       >
         <div className="flex flex-col md:flex-row w-full items-start gap-xl">
           <div className="flex flex-col items-center md:w-1/2 mb-xl md:mb-0 flex-shrink-0">
             <TimerCircle
               mode={mode}
-              currentModeTotalDuration={
-                  mode === 'working' ? settings.pomodoro :
-                  mode === 'shortBreak' ? settings.shortBreak :
-                  mode === 'longBreak' ? settings.longBreak :
-                  settings.pomodoro
-              }
+              currentModeTotalDuration={currentModeTotalDuration}
               timeLeftInMode={timeLeftInMode}
               timeDisplay={timeDisplay}
               taskProgress={taskProgress}
               taskName={currentTask.name}
               taskTimeLeftSeconds={taskTimeLeftSeconds}
               taskGoalMinutes={currentTask.goalTimeMinutes}
-              isRunning={isEffectivelyRunning}
+              isRunning={isRunning}
               onTimerClick={handleTimerClick}
             />
 
@@ -185,12 +204,12 @@ export default function TimerView() {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <div className="mb-md sm:mb-xl">
-                <TaskReminders tasks={tasks.filter((task) => task.id !== currentTaskId)} />
+                <TaskReminders tasks={filteredTasks} />
               </div>
               <div className="text-center text-gray-500 text-sm">{formattedTime}</div>
             </motion.div>
 
-            {/* Add Note Button (Now below the panel, but within the right column) */}
+            {/* Add Note Button */}
             <div className="flex justify-center mt-md sm:mt-lg w-full">
               <Button 
                 onClick={() => setNoteDialogOpen(true)} 

@@ -1,109 +1,123 @@
-# any task involving code modification, addition, or analysis, please adhere strictly to the following guidelines:
-#Pre-computation Research & Validation:
-    Before writing or modifying any code, clearly state your intended action or change.
-    Validate your proposed approach by:
-     Cross-referencing with the provided documentation [You should specify here: e.g., "in the attached files", "at the following URL: ..."].
-     Performing relevant web searches (e.g., using Google Search) for best practices, library usage, or potential issues related to your plan.
-     Summarize the findings from your research (docs and web search) that support your chosen approach before proceeding with the implementation.
-#Fix Loop Prevention:
-    Keep track of the specific fixes you attempt for a given problem.
-    If you attempt the same fundamental approach to fix a specific issue three times consecutively without success, stop.
-    Ask me (the user) explicitly: "I have tried approach X [briefly describe] three times without success. Have I attempted this specific fix before in our current session? Should I try a different approach?" before trying the same fix a fourth time or attempting a new one.
-#Command Line Execution:
-    Prioritize using the Windows Command Prompt (cmd.exe) for any necessary command-line operations.
-    Avoid using PowerShell unless absolutely necessary and specifically instructed.
-    Do not use Linux/Unix-specific commands (like ls, grep, pwd, sed, awk). Use Windows native equivalents (e.g., dir, findstr, cd, etc.).
-#MVP Focus:
-    All coding, file structure creation, and feature implementation must be focused on delivering a Minimum Viable Product (MVP).
-    Prioritize core functionality essential to the primary goal. Avoid adding features, optimizations, or complex structures that are not strictly necessary for the MVP. Keep the codebase and structure lean and functional.
-#Code Audit and Cleanup:
-    As part of the process (or when explicitly asked), audit the existing codebase and file structure.
-#Identify and report:
-    Duplicate code blocks.
-    Broken code (syntax errors, non-functional logic).
-    Redundant or commented-out code that is no longer needed.
-    Empty or unused folders within the project structure.
-    Propose specific actions for cleanup (e.g., removal, refactoring) but wait for confirmation before purging or making major refactoring changes based solely on the audit.
-#Style Consistency:
-    Before adding any new elements (code, components, UI elements, styles):
-    Thoroughly examine the existing project to identify established coding styles, naming conventions, directory structures, and UI/styling patterns.
-    Locate existing style files or folders (e.g., CSS, SCSS modules, style guides).
-    Ensure any new additions strictly adhere to these existing conventions and styles to maintain project consistency. Create new elements by following the established patterns.
-# Core Principles & MVP Focus
-- **Goal:** Generate code for MVPs, prioritizing functionality and reusability.
-- **Framework:** Next.js v15.2.4 (App Router)
-- **UI Library:** React v19
-- **Language:** TypeScript v5 (Strict mode preferred)
-- **Linting:** Ensure code conforms to ESLint rules (`next lint`).
-- **Package Manager:** Use `pnpm` for all package operations.
-# Styling: Tailwind CSS & Classname Utils
-- **Styling Method:** Strictly use Tailwind CSS v3.4.17 utility classes. Avoid custom CSS files unless necessary and matching existing patterns.
-- **Tooling:** Utilizes PostCSS and Autoprefixer.
-- **Classname Management:** Use the `cn(...)` utility function for conditional (`clsx`) and merged (`tailwind-merge`) classes. Example: `className={cn("base-class", { "conditional-class": condition })}`
-- **Theming:** Use Tailwind's `dark:` prefix for dark mode styles (`next-themes` is configured).
-# UI Components: Shadcn UI (Limited Set)
-- **Library:** Shadcn UI, built on Radix UI primitives and styled with Tailwind CSS.
-- **Available Core Components:** ONLY use the following components from `/components/ui`: `Button`, `Dialog`, `Input`, `Label`, `Alert`, `Textarea`, `Toggle`.
-- **Constraint:** Many Shadcn UI components were *removed*. Do NOT use or suggest components other than those listed above. If a new one is needed, the command is `pnpm dlx shadcn-ui@latest add [component-name]`.
-- **Priority:** Reuse these existing components whenever applicable.
-# State Management: React Context API
-- **Primary Method:** Use React Context API for new simple-to-moderate shared state needs.
-- **Existing Patterns:** Follow the structure found in `TimerContext` and `TaskContext`.
-- **Task IDs:** Use `uuid` (likely `v4()`) for generating unique IDs within `TaskContext`.
-- **Avoid:** Do not introduce complex global state libraries (Redux, Zustand) for MVPs.
-# Forms: React Hook Form (RHF) & Zod
-- **Library:** Use React Hook Form (RHF) v7.54.1.
-- **Validation:** Use Zod v3.24.1 for schema definition and validation via `@hookform/resolvers/zod`.
-- **Pattern:**
-    1. Define Zod schema.
-    2. Use RHF `useForm` hook with Zod resolver.
-    3. Integrate with Shadcn UI components (`Input`, `Textarea`, etc.) using RHF `register` or `<Controller>`.
-    4. Handle submission via `handleSubmit` from `useForm`.
-    # Icons: Lucide React
-- **Library:** Use `lucide-react` for all icons.
-- **Usage:** Import icons directly by name, e.g., `import { Check, PlusCircle } from 'lucide-react';`.
-# Utility Libraries
-- **Date/Time:** Use `date-fns` for all date/time formatting and manipulation.
-- **Unique IDs:** Use `uuid` (specifically `v4()`) for generating unique identifiers, especially within `TaskContext`.
-- **Animation:** Use `framer-motion` for subtle UI animations or transitions where appropriate for MVP.
-# Rule: Dimension Systems for Mobile Web Responsiveness (React)
+---
 
-**Context:** This rule applies when generating CSS styles, discussing layout strategies, or providing guidance for **React web applications** specifically intended for **mobile browsers**. It focuses on creating responsive UIs that adapt to diverse screen sizes and handle dynamic browser UI elements (like address bars and toolbars).
+# **Updated Guidelines for Code Modification, Addition, or Analysis (as of April 11, 2025)**
 
-**Core Principle:** Mobile web environments require careful consideration of dimension units due to varying screen sizes and viewport changes caused by browser UI. A combination of modern CSS units and layout techniques is necessary for robust responsiveness.
+# Pre-computation Research & Validation:
 
-**Key Guidelines & Recommendations:**
+*   Before writing or modifying any code, clearly state your intended action or change.
+*   Validate your proposed approach by:
+    *   Cross-referencing with the docs
+    *   Performing relevant web searches for best practices, library usage, or potential issues related to your plan.
+    *   Summarize the findings from your research that support your chosen approach before proceeding.
 
-1.  **Prioritize Modern Viewport Units for Mobile:**
-    * **`vw`, `vh`:** Basic units relative to viewport width/height. **Caution:** `100vh` on mobile often includes space occupied by dynamic browser UI, potentially hiding content. Use with awareness of this limitation.
-    * **`vmin`, `vmax`:** Relative to the smaller or larger viewport dimension. Useful for maintaining aspect ratios.
-    * **`svh`, `lvh`, `dvh` (Small, Large, Dynamic Viewport Height/Width):** Specifically designed for mobile challenges.
-        * `svh`: Height when dynamic UI (e.g., address bar) is **visible**.
-        * `lvh`: Height when dynamic UI is **hidden**.
-        * **`dvh` (Dynamic Viewport Height):** *Highly recommended* for elements needing full available height (e.g., backgrounds, modals). It adjusts dynamically as browser UI appears/disappears, providing the most reliable measure of the *truly usable* vertical space. Use `height: 100dvh;` instead of `height: 100vh;` for full-screen mobile elements.
+# Fix Loop Prevention:
 
-2.  **Leverage Relative & Font-Based Units:**
-    * **Percentages (`%`):** Size elements relative to their parent container. Combine effectively with viewport units for nested layouts.
-    * **`rem`:** Size elements relative to the root (`html`) font size. **Crucial for accessibility and scalability.** Use `rem` for font sizes, padding, margins, and component dimensions to ensure the entire UI scales consistently with user font preferences or base font size changes.
-    * **`em`:** Relative to the parent element's font size. Use more sparingly, typically for elements that should scale directly with their immediate text context.
+*   Keep track of the specific fixes you attempt for a given problem.
+*   If you attempt the same fundamental approach three times consecutively without success, stop.
+*   Ask the user explicitly: "I have tried approach X \[briefly describe] three times without success. Have I attempted this specific fix before in our current session? Should I try a different approach?" before trying the same fix again or attempting a new one.
 
-3.  **Employ Media Queries (`@media`):**
-    * **Essential** for applying different styles or layouts based on screen width, height, orientation, resolution, etc.
-    * Define breakpoints to adjust layouts, font sizes, spacing, or visibility for different device categories (e.g., small mobile, large mobile/tablet).
+# Command Line Execution:
 
-4.  **Utilize Modern Layout Models:**
-    * **Flexbox & CSS Grid:** Use these powerful layout systems to create inherently flexible and responsive component structures that adapt well to available space. They simplify alignment, distribution, and ordering of elements across different screen sizes.
+*   Prioritize using a standard command-line interface suitable for the project and developer environment (e.g., Windows Terminal with PowerShell, `cmd.exe`, or WSL/Bash).
+*   When operating directly within a Windows environment (not using WSL), use Windows native equivalents for common commands (e.g., `dir`, `findstr`, `cd`).
+*   If using WSL (Windows Subsystem for Linux), standard Linux/Unix commands (`ls`, `grep`, `pwd`, etc.) are expected and appropriate within that environment.
 
-5.  **Combine Techniques Strategically:**
-    * Effective mobile responsiveness rarely relies on a single unit type. Combine viewport units (especially `dvh`), percentages, `rem`, media queries, Flexbox/Grid to create robust and adaptive layouts.
+# MVP Focus:
 
-**Important Distinction: React Native**
+*   All coding, file structure creation, and feature implementation must be focused on delivering a Minimum Viable Product (MVP).
+*   Prioritize core functionality essential to the primary goal. Avoid adding features, optimizations, or complex structures not strictly necessary for the MVP. Keep the codebase and structure lean and functional.
 
-* This rule applies to **React for the web**.
-* If working with **React Native** (for native mobile apps):
-    * Use the `Dimensions` API (`Dimensions.get('window').width`/`height`) to get screen/window size.
-    * Dimensions are typically **unitless** (representing density-independent pixels - dp/dip).
-    * **Flexbox (`flex: 1`, `flexDirection`, etc.)** is the primary layout system.
-    * Percentages (`%`) are also supported for sizing relative to parents.
+# Code Audit and Cleanup:
 
-**Summary for AI:** When generating CSS for React mobile web views, prioritize `dvh` for full-height elements, use `rem` extensively for scalable sizing, implement `@media` queries for breakpoints, and structure layouts with Flexbox/Grid. Be mindful of the differences compared to React Native's dimensioning system.
+*   As part of the process (or when explicitly asked), audit the existing codebase and file structure.
+*   Identify and report:
+    *   Duplicate code blocks.
+    *   Broken code (syntax errors, non-functional logic).
+    *   Redundant or commented-out code that is no longer needed.
+    *   Empty or unused folders within the project structure.
+*   Propose specific actions for cleanup (e.g., removal, refactoring) but wait for confirmation before purging or making major refactoring changes based solely on the audit.
+
+# Style Consistency:
+
+*   Before adding new elements (code, components, UI, styles):
+    *   Thoroughly examine the existing project to identify established coding styles, naming conventions, directory structures, and UI/styling patterns.
+    *   Locate existing style files or folders (e.g., CSS, SCSS modules, style guides).
+    *   Ensure any new additions strictly adhere to these existing conventions and styles. Create new elements following established patterns.
+
+---
+
+# **Core Principles & MVP Focus (Tech Stack)**
+
+*   **Goal:** Generate code for MVPs, prioritizing functionality and reusability.
+*   **Framework:** Next.js **v15.x (latest stable, App Router)**
+*   **UI Library:** React **v19 (latest stable)**
+*   **Language:** TypeScript **v5.x (latest stable, Strict mode preferred)**
+*   **Linting:** Ensure code conforms to ESLint rules (`next lint`).
+*   **Package Manager:** Use `pnpm` for all package operations.
+
+# **Styling: Tailwind CSS & Classname Utils**
+
+*   **Styling Method:** Strictly use **Tailwind CSS v4.x (latest stable)** utility classes. Avoid custom CSS files unless necessary and matching existing patterns.
+*   **Tooling:** Utilizes the modern Tailwind engine (PostCSS/Autoprefixer often handled implicitly).
+*   **Classname Management:** Use the `cn(...)` utility function for conditional (`clsx`) and merged (`tailwind-merge`) classes. Example: `className={cn("base-class", { "conditional-class": condition })}`
+*   **Theming:** Use Tailwind's `dark:` variant for dark mode styles (`next-themes` is configured).
+
+# **UI Components: Shadcn UI (Limited Set)**
+
+*   **Library:** Shadcn UI, built on Radix UI primitives and styled with Tailwind CSS.
+*   **Available Core Components:** ONLY use the following components from `/components/ui`: `Button`, `Dialog`, `Input`, `Label`, `Alert`, `Textarea`, `Toggle`.
+*   **Constraint:** Many Shadcn UI components were *removed*. Do NOT use or suggest components other than those listed above. If a new one is needed, the command is `pnpm dlx shadcn-ui@latest add [component-name]`.
+*   **Priority:** Reuse these existing components whenever applicable.
+
+# **State Management: React Context API**
+
+*   **Primary Method:** Use React Context API for new simple-to-moderate shared state needs.
+*   **Existing Patterns:** Follow the structure found in `TimerContext` and `TaskContext`.
+*   **Task IDs:** Use `uuid` (likely `v4()`) for generating unique IDs within `TaskContext`.
+*   **Avoid:** Do not introduce complex global state libraries (Redux, Zustand) for MVPs.
+
+# **Forms: React Hook Form (RHF) & Zod**
+
+*   **Library:** Use React Hook Form (RHF) **v7.x (latest stable)**.
+*   **Validation:** Use Zod **v3.x (latest stable)** for schema definition and validation via `@hookform/resolvers/zod`.
+*   **Pattern:**
+    1.  Define Zod schema.
+    2.  Use RHF `useForm` hook with Zod resolver.
+    3.  Integrate with Shadcn UI components (`Input`, `Textarea`, etc.) using RHF `register` or `<Controller>`.
+    4.  Handle submission via `handleSubmit` from `useForm`.
+
+# **Icons: Lucide React**
+
+*   **Library:** Use `lucide-react` for all icons.
+*   **Usage:** Import icons directly by name, e.g., `import { Check, PlusCircle } from 'lucide-react';`.
+
+# **Utility Libraries**
+
+*   **Date/Time:** Use `date-fns` for all date/time formatting and manipulation.
+*   **Unique IDs:** Use `uuid` (specifically `v4()`) for generating unique identifiers, especially within `TaskContext`.
+*   **Animation:** Use `framer-motion` for subtle UI animations or transitions where appropriate for MVP.
+
+# **Rule: Dimension Systems for Mobile Web Responsiveness (React)**
+
+*   **Context:** This rule applies when generating CSS styles, discussing layout strategies, or providing guidance for **React web applications** specifically intended for **mobile browsers**.
+*   **Core Principle:** Mobile web environments require careful consideration of dimension units due to varying screen sizes and viewport changes caused by browser UI.
+*   **Key Guidelines & Recommendations:**
+    1.  **Prioritize Modern Viewport Units for Mobile:**
+        *   `vw`, `vh`: Use with caution due to dynamic browser UI.
+        *   `vmin`, `vmax`: Useful for aspect ratios.
+        *   `svh`, `lvh`, `dvh`: Specifically designed for mobile. **`dvh` (Dynamic Viewport Height) is highly recommended** for elements needing full available height (e.g., `height: 100dvh;`).
+    2.  **Leverage Relative & Font-Based Units:**
+        *   Percentages (`%`): Relative to parent.
+        *   `rem`: **Crucial for accessibility and scalability** (font sizes, padding, margins, dimensions).
+        *   `em`: Relative to parent font size (use more sparingly).
+    3.  **Employ Media Queries (`@media`):**
+        *   **Essential** for applying styles based on screen characteristics. Define breakpoints.
+    4.  **Utilize Modern Layout Models:**
+        *   **Flexbox & CSS Grid:** Create inherently flexible and responsive structures.
+    5.  **Combine Techniques Strategically:** Use a mix of `dvh`, percentages, `rem`, media queries, and Flexbox/Grid.
+*   **Important Distinction: React Native:**
+    *   Applies to **React for the web**.
+    *   React Native uses `Dimensions` API (unitless dp/dip), Flexbox (`flex: 1`), and percentages.
+*   **Summary:** Prioritize `dvh` for full height, `rem` for scaling, use media queries, and structure with Flexbox/Grid for React mobile web CSS.
+
+---

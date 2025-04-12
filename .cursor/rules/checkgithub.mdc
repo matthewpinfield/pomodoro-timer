@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# haveyouchecked
+
+- if a file is not working rather than guessing check the latest for on github and compare your broken file to the working file on github
