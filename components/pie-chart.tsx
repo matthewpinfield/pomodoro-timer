@@ -34,23 +34,22 @@ export function PieChart({
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
-      // Set size based on viewport width but ensure it's not too large
-      const maxWidth = Math.min(width * 0.9, 320); // Increased from 85% to 90% of viewport
+      const maxWidth = Math.min(width * 0.85, 320); // Reverted to original values
       
       if (width < 480) { // Mobile breakpoint
         setChartSize({ 
-          width: Math.min(280, maxWidth), // Increased from 240 to 280
-          height: Math.min(280, maxWidth) // Increased from 240 to 280
+          width: Math.min(240, maxWidth),
+          height: Math.min(240, maxWidth)
         });
       } else if (width < 640) { // Small breakpoint
         setChartSize({ 
-          width: Math.min(300, maxWidth), // Increased from 280 to 300
-          height: Math.min(300, maxWidth) // Increased from 280 to 300
+          width: Math.min(280, maxWidth),
+          height: Math.min(280, maxWidth)
         });
-      } else { // Medium and up
+      } else { // Desktop
         setChartSize({ 
-          width: Math.min(320, maxWidth), 
-          height: Math.min(320, maxWidth) 
+          width: Math.min(320, maxWidth),
+          height: Math.min(320, maxWidth)
         });
       }
     }

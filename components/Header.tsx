@@ -111,13 +111,13 @@ export function Header() {
   return (
     <header className="py-md pt-xl px-w-md bg-background border-b flex justify-between items-center sticky top-0 z-50 safe-top">
       <div className="flex items-center space-x-w-xs">
-        <Link href={basePath + "/"}>
+        <Link href={basePath + "/"} className="relative z-0">
           <Image
             src={basePath + "/icon-192x192.png"}
             alt="FocusPie Logo"
             width={48}
             height={48}
-            className="w-logo-mobile h-logo-mobile sm:w-logo-desktop sm:h-logo-desktop mr-w-xs"
+            className="w-logo-mobile h-logo-mobile sm:w-logo-desktop sm:h-logo-desktop mr-w-xs pointer-events-none"
             priority
             loading="eager"
             fetchPriority="high"

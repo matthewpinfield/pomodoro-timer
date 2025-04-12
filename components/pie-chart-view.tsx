@@ -93,7 +93,7 @@ export default function PieChartView() {
             transition={{ duration: 0.3, delay: 0.1 }}
             className="w-full md:flex-1 md:max-w-[50%] flex justify-center items-center aspect-square mb-lg md:mb-0"
           >
-            <div className="w-full h-full max-w-[400px] md:max-w-full">
+            <div className="w-full h-full max-w-[400px] md:max-w-full mx-auto">
               <PieChart
                 tasks={tasks}
                 onTaskSelect={handleTaskSelect}
@@ -159,4 +159,4 @@ export default function PieChartView() {
       </motion.main>
     </div>
   )
-} 
+}

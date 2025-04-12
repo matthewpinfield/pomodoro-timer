@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- [transferToResponsive.md](mdc:transferToResponsive.md)
+- Okay, I need you to refactor this React component code. REMEMBER THE NEW RULE: We must use Tailwind CSS utilities and relative units (`rem`, `%`) for all sizing, spacing, layout, and fonts. We MUST AVOID fixed pixel (`px`) values. Pay close attention to parent element sizing, especially if it contains other elements like a canvas.
+
+Here is the old code with fixed pixel problems:
+```jsx
+// [Paste your problematic React component code here]
+    className="w-full h-full max-w-[400px] md:max-w-full mx-auto"
+    className="w-full h-full max-w-[600px] md:max-w-full mx-auto"
+
