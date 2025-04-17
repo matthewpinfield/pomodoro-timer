@@ -53,12 +53,12 @@ export function TaskList({ tasks = [], onEditTask }: TaskListProps) {
               />
             </div>
           ) : (
-            <div className="flex items-center justify-between p-lg bg-gray-50 dark:bg-slate-700 rounded-md">
+            <div className="flex items-center justify-between p-lg bg-gray-50 rounded-md">
               <div className="flex items-center">
                 <div className="w-icon-lg h-icon-lg rounded-full mr-lg" style={{ backgroundColor: task.color }} />
                 <div className="flex flex-col gap-xs">
-                  <div className="text-task-title font-medium px-sm">{task.name}</div>
-                  <div className="text-task-time text-gray-500 dark:text-gray-400 px-sm">
+                  <div className="text-[hsl(var(--foreground))] font-medium px-sm">{task.name}</div>
+                  <div className="text-task-time text-gray-500 px-sm">
                     {Math.floor(task.goalTimeMinutes / 60) > 0 && `${Math.floor(task.goalTimeMinutes / 60)}h `}
                     {task.goalTimeMinutes % 60}m
                   </div>

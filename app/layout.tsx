@@ -7,14 +7,15 @@ import { TimerProvider } from "@/context/timer-context"
 import { Header } from '@/components/Header'
 import { registerFonts } from "@/lib/font-registry"
 
-export const inter = Inter({ 
+// --- Font definitions remain the same ---
+export const inter = Inter({
   subsets: ["latin"],
   display: 'swap',
   variable: '--font-sans',
   preload: false,
 })
 
-export const monoFont = DM_Mono({ 
+export const monoFont = DM_Mono({
   subsets: ["latin"],
   variable: '--font-mono',
   display: 'swap',
@@ -22,7 +23,7 @@ export const monoFont = DM_Mono({
   preload: false,
 })
 
-export const dotoFont = Doto({ 
+export const dotoFont = Doto({
   subsets: ["latin"],
   variable: '--font-doto',
   display: 'swap',
@@ -30,16 +31,17 @@ export const dotoFont = Doto({
   preload: false,
 })
 
-registerFonts({ 
-  sans: inter, 
+registerFonts({
+  sans: inter,
   mono: monoFont,
   doto: dotoFont
 })
 
+// --- Viewport and Metadata remain the same ---
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: "#4299e1"
+  themeColor: "#4299e1" // Example theme color
 }
 
 export const metadata: Metadata = {
@@ -53,13 +55,28 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${monoFont.variable} ${inter.className} min-h-screen flex flex-col bg-gray-50`}>
-        <ThemeProvider>
+    // Add h-full for robustness with body's height setting
+    <html lang="en" suppressHydrationWarning className="h-full">
+      {/*
+        - Change min-h-screen to h-full (or h-screen) to ensure body takes full viewport height
+        - Keep flex flex-col
+        - Keep font variables and bg color
+      */}
+      <body className={`${inter.variable} ${monoFont.variable} ${dotoFont.variable} ${inter.className} h-full flex flex-col bg-gray-50 dark:bg-slate-900`}> {/* Added dark mode bg */}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem> {/* ThemeProvider often wraps everything */}
           <TaskProvider>
             <TimerProvider>
-              <Header />
-              {children}
+              <Header /> {/* Header takes its natural height */}
+
+              {/* ***** THE KEY CHANGE IS HERE ***** */}
+              {/* This main element wraps the page content */}
+              {/* flex-1 makes it take up the remaining vertical space */}
+              {/* overflow-y-auto handles scrolling *within* this main area */}
+          
+              <main id="main-content-area" className="flex-1 overflow-y-auto p-6 min-h-0">
+                {children} {/* <--- Your page content goes INSIDE the main tag */}
+              </main>
+            
             </TimerProvider>
           </TaskProvider>
         </ThemeProvider>

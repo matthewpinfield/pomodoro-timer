@@ -79,9 +79,9 @@ const TimerCircle = memo(function TimerCircle({
 
     // Font sizes based on canvas size
     const viewportSize = Math.min(width, height);
-    const baseFontSize = viewportSize * 0.25;
-    const subtitleFontSize = viewportSize * 0.08;
-    const taskTimeFontSize = viewportSize * 0.06;
+    const baseFontSize = viewportSize * 0.01;
+    const subtitleFontSize = viewportSize * 0.005;
+    const taskTimeFontSize = viewportSize * 0.04;
 
     // Layer 1: Base (Gray Track)
     ctx.save();
@@ -92,7 +92,7 @@ const TimerCircle = memo(function TimerCircle({
     ctx.stroke();
     ctx.restore();
 
-    // Layer 2: Task Progress (Red)
+    // Current task : Layer 2: Task Progress (Red)
     ctx.save();
     const totalTaskSeconds = (taskGoalMinutes || 1) * 60;
     let taskArcFraction = 1;
@@ -109,7 +109,7 @@ const TimerCircle = memo(function TimerCircle({
     ctx.stroke();
     ctx.restore();
 
-    // Layer 3: Mode Progress (Blue/Green)
+    // Pomodoro arc: Layer 3: Mode Progress (Blue/Green)
     ctx.save();
     const modeProgress = timeLeftInMode / currentModeTotalDuration;
     let baseModeColor = "hsl(221.2, 83.2%, 53.3%)";
@@ -140,7 +140,7 @@ const TimerCircle = memo(function TimerCircle({
     }
     ctx.restore();
 
-    // Layer 4: Center
+    // White Circle : Layer 4: Center
     ctx.save();
     ctx.beginPath();
     ctx.arc(centerX, centerY, innerRadius + (trackWidth * 0.1), 0, fullCircle);
@@ -148,7 +148,7 @@ const TimerCircle = memo(function TimerCircle({
     ctx.shadowBlur = shadowBlur;
     ctx.shadowOffsetX = shadowOffset;
     ctx.shadowOffsetY = shadowOffset;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+    ctx.fillStyle = "rgba(192, 191, 191, 0.45)";
     ctx.fill();
     
     ctx.beginPath();
@@ -163,7 +163,7 @@ const TimerCircle = memo(function TimerCircle({
 
     // Play/pause icon
     ctx.save();
-    ctx.fillStyle = "hsl(215.4, 16.3%, 75%)";
+    ctx.fillStyle = "#D3D3D3";
     if (isRunning) {
       const pauseX = centerX - pauseWidth / 2;
       const pauseY = centerY - pauseHeight / 2;
@@ -184,29 +184,32 @@ const TimerCircle = memo(function TimerCircle({
     // Use Doto font if loaded, otherwise fallback to system font
     const isDotoLoaded = isFontLoaded('doto');
     const fontFamily = isDotoLoaded ? "var(--font-doto), system-ui, sans-serif" : "system-ui, sans-serif";
+    const adjustedFontSize = isDotoLoaded ? baseFontSize * 1.1 : baseFontSize; // Scale up for Doto
 
-    // Timer text
-    ctx.font = `bold ${baseFontSize}px ${fontFamily}`;
-    ctx.fillStyle = "#000000";
+    // Timer text Pomodoro
+    ctx.font = `bold ${adjustedFontSize}rem ${fontFamily}`;
+    ctx.fillStyle = "#666666";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(timeDisplay, centerX, centerY - iconSize * 0.5);
 
+    // Task title / Timer Subtitle
     let subtitle = taskName;
     if (mode === 'shortBreak') subtitle = 'Short Break';
     if (mode === 'longBreak') subtitle = 'Long Break';
     if (mode === 'idle') subtitle = 'Ready';
 
-    ctx.font = `${subtitleFontSize}px ${fontFamily}`;
+    ctx.font = `${subtitleFontSize}rem ${fontFamily}`;
     ctx.fillStyle = "#666666";
     ctx.fillText(subtitle, centerX, centerY + iconSize * 0.75);
 
+    // The task remaining timer
     if (mode === 'working' && taskTimeLeftSeconds !== undefined && taskTimeLeftSeconds >= 0) {
       const hoursLeft = Math.floor(taskTimeLeftSeconds / 3600);
       const minutesLeft = Math.floor((taskTimeLeftSeconds % 3600) / 60);
       ctx.font = `${taskTimeFontSize}px system-ui, sans-serif`;
       ctx.fillStyle = "#666666";
-      ctx.fillText(`${hoursLeft}h ${minutesLeft}m remaining`, centerX, centerY + 35);
+      ctx.fillText(`${hoursLeft}h ${minutesLeft}m remaining`, centerX, centerY + 50);
     }
 
     if (isRunning && mountedRef.current) {

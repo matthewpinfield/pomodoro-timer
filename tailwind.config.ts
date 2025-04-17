@@ -1,11 +1,10 @@
-import type { Config } from "tailwindcss"
-import plugin from 'tailwindcss/plugin'
-import { getTokensForTailwind } from './lib/design-tokens'
+// tailwind.config.js (Consolidated - No external design-tokens file needed)
 
-const { colors, spacing, fontSize, fontFamily } = getTokensForTailwind();
+import type { Config } from "tailwindcss"; // Optional: Provides type safety
+import plugin from 'tailwindcss/plugin';
 
 const config = {
-  darkMode: ["class"],
+  darkMode: "class",
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -15,10 +14,62 @@ const config = {
   ],
   theme: {
     extend: {
-      colors,
-      spacing,
-      fontSize,
-      fontFamily,
+      
+      colors: {
+        'primary': 'hsl(221.2 83.2% 53.3%)',
+        'background': 'hsl(0 0% 100%)',
+        'foreground': 'hsl(222.2 84% 4.9%)',
+        'border': 'hsl(214.3 31.8% 91.4%)',
+        'input': 'hsl(214.3 31.8% 91.4%)',
+        'ring': 'hsl(221.2 83.2% 53.3%)',
+        'secondary': 'hsl(210 40% 96.1%)',
+        'destructive': 'hsl(0 84.2% 60.2%)',
+        'muted': 'hsl(210 40% 96.1%)',
+        'accent': 'hsl(210 40% 96.1%)',
+        'popover': 'hsl(0 0% 100%)',
+        'card': 'hsl(0 0% 100%)'
+      },
+      spacing: {
+        'xs': '0.3dvh',
+        'sm': '0.5dvh',
+        'md': '1dvh',
+        'lg': '1.5dvh',
+        'xl': '2dvh',
+        'w-xs': '0.3dvw',
+        'w-sm': '0.5dvw',
+        'w-md': '1dvw',
+        'w-lg': '1.5dvw',
+        'w-xl': '2dvw'
+      },
+     
+      fontSize: {
+        // Target: ~9.6px (~375px) to ~12.8px (~1440px)
+        'xs': [`clamp(0.5rem, 0.515rem + 0.226vw, 0.8rem)`, { lineHeight: '1.5' }],
+        // Target: ~11.2px (~375px) to ~14.4px (~1440px)
+        'sm': [`clamp(0.7rem, 0.615rem + 0.226vw, 0.9rem)`, { lineHeight: '1.5' }],
+        // Target: 12.8px (~375px) to 16px (~1440px) - Your new base reference
+        'base': [`clamp(0.8rem, 0.703rem + 0.258vw, 1rem)`, { lineHeight: '1.5' }], // Adjusted LH
+        // Target: ~14.4px (~375px) to ~19.2px (~1440px)
+        'lg': [`clamp(0.9rem, 0.753rem + 0.392vw, 1.2rem)`, { lineHeight: '1.5' }],
+        // Target: 16px (~375px) to ~22.4px (~1440px)
+        'xl': [`clamp(1rem, 0.803rem + 0.525vw, 1.4rem)`, { lineHeight: '1.5' }],
+        // Target: ~19.2px (~375px) to ~25.6px (~1440px)
+        '2xl': [`clamp(1.3rem, 0.964rem + 0.629vw, 1.6rem)`, { lineHeight: '1.4' }],
+        // Target: 24px (~375px) to 32px (~1440px)
+        '3xl': [`clamp(1.5rem, 1.205rem + 0.787vw, 2rem)`, { lineHeight: '1.4' }],
+        // Target: ~28.8px (~375px) to ~38.4px (~1440px)
+        '4xl': [`clamp(1.8rem, 1.446rem + 0.944vw, 2.4rem)`, { lineHeight: '1.4' }],
+
+      },
+      
+      fontFamily: {
+        'sans': ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        'mono': ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+        'doto': ['var(--font-doto)', 'system-ui', 'sans-serif']
+      },
+
+      // --- Other customizations from your original config ---
+
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -38,22 +89,10 @@ const config = {
         'card-gradient-dark': 'linear-gradient(145deg, #1f2937, #111827)',
       },
       keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-        "fade-in": {
-          from: { opacity: "0", transform: "translateY(0.625rem)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
-        "fade-out": {
-          from: { opacity: "1", transform: "translateY(0)" },
-          to: { opacity: "0", transform: "translateY(0.625rem)" },
-        },
+        "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" }, },
+        "accordion-up": { from: { height: "var(--radix-accordion-content-height)" }, to: { height: "0" }, },
+        "fade-in": { from: { opacity: "0", transform: "translateY(0.625rem)" }, to: { opacity: "1", transform: "translateY(0)" }, },
+        "fade-out": { from: { opacity: "1", transform: "translateY(0)" }, to: { opacity: "0", transform: "translateY(0.625rem)" }, },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -69,18 +108,9 @@ const config = {
         xs: '0.125rem',
       },
       timer: {
-        track: {
-          width: '2.5rem',
-          gap: '0.3125rem',
-        },
-        icon: {
-          width: '1.5rem',
-          height: '1.875rem',
-        },
-        shadow: {
-          blur: '1.25rem',
-          offset: '0.5rem',
-        }
+        track: { width: '2.5rem', gap: '0.3125rem', },
+        icon: { width: '1.5rem', height: '1.875rem', },
+        shadow: { blur: '1.25rem', offset: '0.5rem', }
       },
       sizes: {
         'icon-sm': 'clamp(1.5rem, 2.25dvmin, 2.25rem)',
@@ -99,8 +129,8 @@ const config = {
         'note': '25dvh',
         'note-sm': '20dvh',
       },
-    },
-  },
+    }, // End of extend
+  }, // End of theme
   plugins: [
     require("tailwindcss-animate"),
     plugin(({ addVariant }) => {
@@ -110,11 +140,11 @@ const config = {
     plugin(({ addBase }) => {
       addBase({
         ':root': {
-          '--radius': '0.5rem',
+          '--radius': '0.5rem', // This seems like a reasonable place for CSS variables
         },
       });
     }),
   ],
-} satisfies Config
+} satisfies Config; // Use 'satisfies Config' if you imported the type
 
-export default config
+export default config;

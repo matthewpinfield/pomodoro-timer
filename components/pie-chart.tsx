@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { Task } from "@/types/task"
 import { Clock, Plus, Play } from "lucide-react"
@@ -12,6 +12,7 @@ interface PieChartProps {
   onTaskSelect: (taskId: string) => void
   onCenterClick: () => void
   workdayHours?: number
+  className?: string;
 }
 
 export function PieChart({
@@ -21,54 +22,70 @@ export function PieChart({
   workdayHours = 8, // Default to 8 hours
 }: PieChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [hoveredSlice, setHoveredSlice] = useState<number | null>(null)
   const [selectedSlice, setSelectedSlice] = useState<number | null>(null)
   const [isHoveringCenter, setIsHoveringCenter] = useState(false)
+  const [chartSize, setChartSize] = useState({ width: 320, height: 320 })
   const [isAnimating, setIsAnimating] = useState(false)
 
   // Convert workday hours to minutes
   const workdayMinutes = workdayHours * 60
 
-  // Draw the pie chart
+  const updateChartSize = useCallback(() => {
+    if (containerRef.current) {
+      const { width } = containerRef.current.getBoundingClientRect();
+      const size = Math.max(10, Math.min(width, 320)); // Limit max size, ensure min size > 0
+      setChartSize({ width: size, height: size });
+    }
+  }, []);
+
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    updateChartSize();
 
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    const resizeObserver = new ResizeObserver(updateChartSize);
+    const currentContainer = containerRef.current;
 
-    // Set canvas dimensions based on actual element size and DPR
-    const rect = canvas.getBoundingClientRect();
+    if (currentContainer) {
+      resizeObserver.observe(currentContainer);
+    }
+
+    return () => {
+      if (currentContainer) {
+        resizeObserver.unobserve(currentContainer);
+      }
+      resizeObserver.disconnect();
+    };
+  }, [updateChartSize]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || chartSize.width === 0) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-
-    // Use actual rendered dimensions for calculations
-    const width = rect.width;
-    const height = rect.height;
+    canvas.width = chartSize.width * dpr;
+    canvas.height = chartSize.height * dpr;
+    ctx.scale(dpr, dpr)
 
     // Clear canvas
-    ctx.clearRect(0, 0, width, height)
+    ctx.clearRect(0, 0, chartSize.width, chartSize.height);
 
-    const centerX = width / 2
-    const centerY = height / 2
-    const baseRadius = Math.min(centerX, centerY);
-    const radius = baseRadius * 0.9; // Outer radius of pie
-    const innerRadius = radius * 0.6; // Inner radius (center hole)
+    const centerX = chartSize.width / 2
+    const centerY = chartSize.height / 2
+    const radius = Math.min(centerX, centerY) - 20
+    const innerRadius = radius * 0.6
 
-    // Responsive font sizes based on chart width
-    const titleFontSize = Math.max(12, Math.min(20, width * 0.1)); // Clamp font size
-    const detailFontSize = Math.max(10, Math.min(14, width * 0.07)); // Clamp font size
+    const titleFontSize = chartSize.width < 250 ? 16 : 20
+    const detailFontSize = chartSize.width < 250 ? 12 : 14
 
-    // If no tasks, draw empty circle with gradient
     if (tasks.length === 0) {
-      // Create gradient background
-      const gradient = ctx.createLinearGradient(0, 0, width, height)
+      const gradient = ctx.createLinearGradient(0, 0, chartSize.width, chartSize.height)
       gradient.addColorStop(0, "#f1f5f9")
       gradient.addColorStop(1, "#e2e8f0")
 
-      // Draw outer circle with shadow
       ctx.save()
       ctx.shadowColor = "rgba(0, 0, 0, 0.1)"
       ctx.shadowBlur = 15
@@ -80,81 +97,64 @@ export function PieChart({
       ctx.fill()
       ctx.restore()
 
-      // Draw the white center
       ctx.beginPath()
       ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2)
       ctx.fillStyle = isHoveringCenter ? "#f8fafc" : "#ffffff"
       ctx.fill()
 
-      // Draw text (using responsive sizes)
       ctx.font = `bold ${titleFontSize}px Inter, system-ui, sans-serif`
       ctx.fillStyle = "#64748b"
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
-      ctx.fillText("No tasks yet", centerX, centerY - detailFontSize * 0.7) // Adjust text position based on font size
+      ctx.fillText("No tasks yet", centerX, centerY - 10)
 
       ctx.font = `${detailFontSize}px Inter, system-ui, sans-serif`
       ctx.fillStyle = "#94a3b8"
-      ctx.fillText("Click to add tasks", centerX, centerY + detailFontSize * 1.5) // Adjust text position
+      ctx.fillText("Click to add tasks", centerX, centerY + 20)
 
-      // Draw plus icon if hovering center
       if (isHoveringCenter) {
-        const iconBaseY = centerY + detailFontSize * 3; // Adjust icon position
-        const iconRadius = detailFontSize * 0.8;
         ctx.fillStyle = "#3b82f6"
         ctx.beginPath()
-        ctx.arc(centerX, iconBaseY, iconRadius, 0, Math.PI * 2)
+        ctx.arc(centerX, centerY + 45, 12, 0, Math.PI * 2)
         ctx.fill()
 
         ctx.fillStyle = "#ffffff"
-        const plusSize = iconRadius * 0.8;
-        ctx.fillRect(centerX - plusSize / 2, iconBaseY - plusSize / 10, plusSize, plusSize / 5) // Horizontal bar
-        ctx.fillRect(centerX - plusSize / 10, iconBaseY - plusSize / 2, plusSize / 5, plusSize) // Vertical bar
+        ctx.fillRect(centerX - 5, centerY + 40, 10, 2)
+        ctx.fillRect(centerX - 1, centerY + 36, 2, 10)
       }
 
       return
     }
 
-    // Calculate total goal time
     const totalGoalTime = tasks.reduce((sum, task) => sum + task.goalTimeMinutes, 0)
 
-    // STEP 1: Draw all pie segments first (including the gray segment)
-    let startAngle = -Math.PI / 2 // Start from 12 o'clock position
+    let startAngle = -Math.PI / 2
 
-    // Draw colored task segments
     tasks.forEach((task, index) => {
-      // Calculate slice angle based on proportion of workday
       const sliceAngle = (task.goalTimeMinutes / workdayMinutes) * Math.PI * 2
       const endAngle = startAngle + sliceAngle
 
-      // Calculate midpoint angle for the slice
       const midAngle = startAngle + sliceAngle / 2
 
-      // Determine if slice should be "pulled out" (hovered or selected)
       const isHovered = hoveredSlice === index
-      // Restore pull distance based on hover - make it relative
-      const pullDistance = isHovered ? baseRadius * 0.05 : 0 
+      const pullDistance = isHovered ? 10 : 0
 
-      // Calculate offset for pulled out slice
       const offsetX = Math.cos(midAngle) * pullDistance
       const offsetY = Math.sin(midAngle) * pullDistance
 
-      // Draw slice (use offsetX, offsetY)
       ctx.beginPath()
-      ctx.moveTo(centerX + offsetX, centerY + offsetY) // Apply offset
-      ctx.arc(centerX + offsetX, centerY + offsetY, radius, startAngle, endAngle) // Apply offset
-      ctx.lineTo(centerX + offsetX, centerY + offsetY) // Apply offset
+      ctx.moveTo(centerX + offsetX, centerY + offsetY)
+      ctx.arc(centerX + offsetX, centerY + offsetY, radius, startAngle, endAngle)
+      ctx.lineTo(centerX + offsetX, centerY + offsetY)
       ctx.closePath()
 
-      // Fill with task color or slightly lighter if hovered
-      if (isHovered) { // Use isHovered directly for color change
+      if (isHovered) {
         ctx.fillStyle = task.color + "ee"
       } else {
         ctx.fillStyle = task.color
       }
       ctx.fill()
 
-      // Draw progress arc (inner arc)
       if (task.progressMinutes > 0) {
         const progressRatio = Math.min(1, task.progressMinutes / task.goalTimeMinutes)
         const progressAngle = sliceAngle * progressRatio
@@ -165,15 +165,13 @@ export function PieChart({
         ctx.lineTo(centerX + offsetX, centerY + offsetY)
         ctx.closePath()
 
-        // Fill with darker shade of task color
-        ctx.fillStyle = task.color + "99" // Add transparency
+        ctx.fillStyle = task.color + "99"
         ctx.fill()
       }
 
       startAngle = endAngle
     })
 
-    // Draw gray segment if total task time is less than workday
     if (totalGoalTime < workdayMinutes) {
       const remainingAngle = ((workdayMinutes - totalGoalTime) / workdayMinutes) * Math.PI * 2
       const endAngle = startAngle + remainingAngle
@@ -184,39 +182,32 @@ export function PieChart({
       ctx.lineTo(centerX, centerY)
       ctx.closePath()
 
-      // Fill with white/light gray
       ctx.fillStyle = "#f1f5f9"
       ctx.fill()
     }
 
-    // STEP 2: Draw the shadow for the center circle ON TOP of the pie segments
-    // This creates the illusion that the center circle is casting a shadow on the pie
     ctx.save()
 
-    // Draw an outer shadow ring - darker by 20%
     ctx.beginPath()
     ctx.arc(centerX, centerY, innerRadius + 2, 0, Math.PI * 2)
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.25)" // 20% darker (from 0.2 to 0.25)
-    ctx.lineWidth = 1 // Keep line width thin regardless of scale
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.25)"
+    ctx.lineWidth = 1
     ctx.stroke()
 
-    // Draw a much more prominent shadow - darker by 20%
     ctx.beginPath()
-    ctx.arc(centerX, centerY, innerRadius + baseRadius * 0.04, 0, Math.PI * 2) // Relative shadow offset
-    ctx.shadowColor = "rgba(0, 0, 0, 0.85)" // 20% darker (from 0.7 to 0.85)
-    ctx.shadowBlur = baseRadius * 0.12; // Relative shadow blur
+    ctx.arc(centerX, centerY, innerRadius + 8, 0, Math.PI * 2)
+    ctx.shadowColor = "rgba(0, 0, 0, 0.85)"
+    ctx.shadowBlur = 25
     ctx.shadowOffsetX = 0
-    ctx.shadowOffsetY = baseRadius * 0.04 // Relative shadow offset
-    ctx.fillStyle = "rgba(0, 0, 0, 0.36)" // 20% darker (from 0.3 to 0.36)
+    ctx.shadowOffsetY = 8
+    ctx.fillStyle = "rgba(0, 0, 0, 0.36)"
     ctx.fill()
     ctx.restore()
 
-    // STEP 3: Draw the white center circle ON TOP of everything
-    // Create a gradient for the center circle
     const centerGradient = ctx.createRadialGradient(
       centerX,
-      centerY - baseRadius * 0.07, // Relative gradient origin y
-      0, 
+      centerY - 15,
+      0,
       centerX,
       centerY,
       innerRadius,
@@ -224,13 +215,11 @@ export function PieChart({
     centerGradient.addColorStop(0, isHoveringCenter ? "#f0f9ff" : "#ffffff")
     centerGradient.addColorStop(1, isHoveringCenter ? "#e0f2fe" : "#f8fafc")
 
-    // Draw the white center circle
     ctx.beginPath()
     ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2)
     ctx.fillStyle = centerGradient
     ctx.fill()
 
-    // Add subtle inner shadow at the top to enhance 3D effect
     ctx.save()
     ctx.beginPath()
     ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2)
@@ -241,14 +230,12 @@ export function PieChart({
     ctx.fill()
     ctx.restore()
 
-    // STEP 4: Draw the text in the center (using responsive sizes)
     ctx.font = `bold ${titleFontSize}px Inter, system-ui, sans-serif`
     ctx.fillStyle = isHoveringCenter ? "#3b82f6" : "#1e293b"
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
-    ctx.fillText("Today", centerX, centerY - detailFontSize * 0.7) // Adjust based on detail font size
+    ctx.fillText("Today", centerX, centerY - 10)
 
-    // If a task is selected or hovered, show its name
     if (hoveredSlice !== null || selectedSlice !== null) {
       const taskIndex = selectedSlice !== null ? selectedSlice : hoveredSlice
       if (taskIndex !== null && taskIndex < tasks.length) {
@@ -256,49 +243,44 @@ export function PieChart({
 
         ctx.font = `${detailFontSize}px Inter, system-ui, sans-serif`
         ctx.fillStyle = "#64748b"
-        ctx.fillText(task.name, centerX, centerY + detailFontSize * 1.5) // Adjust based on detail font size
+        ctx.fillText(task.name, centerX, centerY + 15)
       }
     } else {
-      // Show total time and workday time
       const totalHours = Math.floor(totalGoalTime / 60)
       const totalMinutes = totalGoalTime % 60
       const timeText = `${totalHours > 0 ? `${totalHours}h ` : ""}${totalMinutes}m / ${workdayHours}h`
 
       ctx.font = `${detailFontSize}px Inter, system-ui, sans-serif`
       ctx.fillStyle = "#64748b"
-      ctx.fillText(timeText, centerX, centerY + detailFontSize * 1.5) // Adjust based on detail font size
+      ctx.fillText(timeText, centerX, centerY + 15)
     }
 
-    // Draw plus icon if hovering center
     if (isHoveringCenter) {
-      const iconBaseY = centerY + detailFontSize * 3; // Adjust icon position
-      const iconRadius = detailFontSize * 0.8;
       ctx.fillStyle = "#3b82f6"
       ctx.beginPath()
-      ctx.arc(centerX, iconBaseY, iconRadius, 0, Math.PI * 2)
+      ctx.arc(centerX, centerY + 45, 12, 0, Math.PI * 2)
       ctx.fill()
 
       ctx.fillStyle = "#ffffff"
-      const plusSize = iconRadius * 0.8;
-      ctx.fillRect(centerX - plusSize / 2, iconBaseY - plusSize / 10, plusSize, plusSize / 5) // Horizontal bar
-      ctx.fillRect(centerX - plusSize / 10, iconBaseY - plusSize / 2, plusSize / 5, plusSize) // Vertical bar
+      ctx.fillRect(centerX - 5, centerY + 40, 10, 2)
+      ctx.fillRect(centerX - 1, centerY + 36, 2, 10)
     }
-  }, [tasks, hoveredSlice, selectedSlice, isHoveringCenter, workdayHours, workdayMinutes])
+  }, [tasks, hoveredSlice, selectedSlice, chartSize, isHoveringCenter, workdayHours, workdayMinutes]);
 
-  // Helper function to determine slice index from coordinates
   const getSliceIndexFromCoords = (x: number, y: number): number | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / (rect.width * (window.devicePixelRatio || 1));
-    const scaleY = canvas.height / (rect.height * (window.devicePixelRatio || 1));
-    
+    const dpr = window.devicePixelRatio || 1;
+    const scaleX = canvas.width / (rect.width * dpr);
+    const scaleY = canvas.height / (rect.height * dpr);
+
     const canvasX = (x - rect.left) * scaleX;
     const canvasY = (y - rect.top) * scaleY;
 
-    const centerX = canvas.width / (window.devicePixelRatio || 1) / 2;
-    const centerY = canvas.height / (window.devicePixelRatio || 1) / 2;
+    const centerX = chartSize.width / 2;
+    const centerY = chartSize.height / 2;
     const radius = Math.min(centerX, centerY) - 20;
     const innerRadius = radius * 0.6;
 
@@ -306,18 +288,16 @@ export function PieChart({
     const dy = canvasY - centerY;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Check if click is within the pie area (outside the center circle)
     if (distance < innerRadius || distance > radius) {
-      return null; // Clicked center or outside
+      return null;
     }
 
     let angle = Math.atan2(dy, dx);
     if (angle < -Math.PI / 2) {
-      angle += Math.PI * 2; // Adjust angle to start from 12 o'clock
+      angle += Math.PI * 2;
     }
 
     let startAngle = -Math.PI / 2;
-    const workdayMinutes = workdayHours * 60;
 
     for (let i = 0; i < tasks.length; i++) {
       const sliceAngle = (tasks[i].goalTimeMinutes / workdayMinutes) * Math.PI * 2;
@@ -329,28 +309,33 @@ export function PieChart({
       startAngle = endAngle;
     }
 
-    return null; // Should not happen if click is within a segment, but safety return
+    return null;
   };
 
-  // Update handleMouseMove
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const sliceIndex = getSliceIndexFromCoords(e.clientX, e.clientY);
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / (rect.width * (window.devicePixelRatio || 1));
-    const scaleY = canvas.height / (rect.height * (window.devicePixelRatio || 1));
-    const canvasX = (e.clientX - rect.left) * scaleX;
-    const canvasY = (e.clientY - rect.top) * scaleY;
-    const centerX = canvas.width / (window.devicePixelRatio || 1) / 2;
-    const centerY = canvas.height / (window.devicePixelRatio || 1) / 2;
+
+    const centerX = chartSize.width / 2;
+    const centerY = chartSize.height / 2;
     const radius = Math.min(centerX, centerY) - 20;
     const innerRadius = radius * 0.6;
-    const dx = canvasX - centerX;
-    const dy = canvasY - centerY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance < innerRadius) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+
+    const elementCenterX = rect.width / 2;
+    const elementCenterY = rect.height / 2;
+    const dxClient = clientX - elementCenterX;
+    const dyClient = clientY - elementCenterY;
+    const distanceClient = Math.sqrt(dxClient * dxClient + dyClient * dyClient);
+
+    const scaleFactor = rect.width / chartSize.width;
+    const innerRadiusClient = innerRadius * scaleFactor;
+
+    if (distanceClient < innerRadiusClient) {
         setIsHoveringCenter(true);
         setHoveredSlice(null);
     } else {
@@ -359,36 +344,32 @@ export function PieChart({
     }
   };
 
-  // Update handleMouseLeave
   const handleMouseLeave = () => {
     setHoveredSlice(null);
     setIsHoveringCenter(false);
   };
 
-  // Update handleClick
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / (rect.width * (window.devicePixelRatio || 1));
-    const scaleY = canvas.height / (rect.height * (window.devicePixelRatio || 1));
-    const canvasX = (e.clientX - rect.left) * scaleX;
-    const canvasY = (e.clientY - rect.top) * scaleY;
-    const centerX = canvas.width / (window.devicePixelRatio || 1) / 2;
-    const centerY = canvas.height / (window.devicePixelRatio || 1) / 2;
-    const radius = Math.min(centerX, centerY) - 20;
-    const innerRadius = radius * 0.6;
-    const dx = canvasX - centerX;
-    const dy = canvasY - centerY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Check center click first
-    if (distance < innerRadius) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+    const elementCenterX = rect.width / 2;
+    const elementCenterY = rect.height / 2;
+    const dxClient = clientX - elementCenterX;
+    const dyClient = clientY - elementCenterY;
+    const distanceClient = Math.sqrt(dxClient * dxClient + dyClient * dyClient);
+
+    const scaleFactor = rect.width / chartSize.width;
+    const innerRadiusClient = (chartSize.width / 2 * 0.6) * scaleFactor;
+
+    if (distanceClient < innerRadiusClient) {
       onCenterClick();
       return;
     }
 
-    // Get clicked slice directly
     const clickedSliceIndex = getSliceIndexFromCoords(e.clientX, e.clientY);
 
     if (clickedSliceIndex !== null && clickedSliceIndex < tasks.length) {
@@ -400,30 +381,36 @@ export function PieChart({
         setIsAnimating(false);
         setSelectedSlice(null);
         onTaskSelect(taskId);
-      }, 300); // Keep delay for visual feedback
+      }, 150);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-full">
+    <div ref={containerRef} className="flex flex-col items-center justify-center w-full max-w-full">
       <div
-        className="relative flex justify-center items-center mb-4 w-full h-full"
+       className="relative flex justify-center items-center"
+        style={{
+        width: `${chartSize.width}px`,
+        height: `${chartSize.height}px`,
+        }}
       >
         <canvas
           ref={canvasRef}
-          className="cursor-pointer rounded-full w-full h-full block"
+          width={chartSize.width}
+          height={chartSize.height}
+          style={{ width: `${chartSize.width}px`, height: `${chartSize.height}px` }}
+          className="absolute top-0 left-0 cursor-pointer rounded-full"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={handleClick}
         />
       </div>
 
-      {/* Task count and workday indicator - moved down by 10% */}
       {tasks.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center text-sm text-gray-500 mb-2 mt-4" // Added mt-4 to move it down by 10%
+          className="flex items-center text-sm text-slate-500 dark:text-slate-400 mb-2 mt-2"
         >
           <Clock className="w-4 h-4 mr-1" />
           <span>
