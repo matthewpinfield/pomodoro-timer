@@ -1,3 +1,5 @@
+**app function**
+
 pomodoro app
 
 if you leave the app  paused after 2 minutes it starts a light bleep to remind you its paused

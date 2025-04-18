@@ -20,7 +20,7 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
 
   if (tasks.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-md bg-white/50 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
+      <div className="text-center text-gray-500 py-4 bg-white/50 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
         <Clock className="w-icon-base h-icon-base mx-auto mb-sm text-gray-400" />
         <p>No tasks yet. Add tasks to see them here.</p>
       </div>
@@ -28,7 +28,7 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
   }
 
   return (
-    <div className="space-y-md bg-white/80 backdrop-blur-sm rounded-xl p-md shadow-sm border border-gray-100">
+    <div className="space-y-4 bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-gray-100">
       <h3 className="font-medium text-gray-700 mb-sm">Task Overview</h3>
       {tasks.map((task, index) => {
         const isCompleted = task.progressMinutes >= task.goalTimeMinutes
@@ -41,7 +41,7 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
         return (
           <motion.div
             key={task.id}
-            className="flex items-center p-sm rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+            className="flex items-center p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -62,7 +62,7 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
                 )}
               </div>
               <div className="text-sm text-gray-500 flex flex-wrap items-center">
-                <span className="mr-sm bg-gray-100 text-gray-600 px-sm py-xs rounded-full text-xs">
+                <span className="mr-2 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
                   {goalHours > 0 ? `${goalHours}h ` : ""}
                   {goalMinutes}m
                 </span>
@@ -80,7 +80,7 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
       {/* Show remaining time if tasks don't fill the workday */}
       {remainingMinutes > 0 && (
         <motion.div
-          className="flex items-center p-sm mt-sm border-t pt-md"
+          className="flex items-center p-2 mt-2 border-t pt-4"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: tasks.length * 0.1 }}

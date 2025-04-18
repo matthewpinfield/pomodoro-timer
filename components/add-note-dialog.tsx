@@ -33,7 +33,7 @@ export function AddNoteDialog({ open, onOpenChange, taskId }: AddNoteDialogProps
             Add a note to your task to track progress or record thoughts.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-md">
+        <div className="py-4">
           <Textarea
             placeholder="Write your note here..."
             value={note}

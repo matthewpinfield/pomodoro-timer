@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Defines the limited set of allowed Shadcn UI components (Button, Dialog, Input, Label, Alert, Textarea, Toggle) and the command to add new ones if necessary. Enforces reuse.
+---
+
+# **UI Components: Shadcn UI (Limited Set)**
+
+*   **Library:** Shadcn UI, built on Radix UI primitives and styled with Tailwind CSS.
+*   **Available Core Components:** ONLY use the following components from `/components/ui`: `Button`, `Dialog`, `Input`, `Label`, `Alert`, `Textarea`, `Toggle`.
+*   **Constraint:** Many Shadcn UI components were *removed*. Do NOT use or suggest components other than those listed above. If a new one is needed, the command is `pnpm dlx shadcn-ui@latest add [component-name]`.
+*   **Priority:** Reuse these existing components whenever applicable.
+
+---

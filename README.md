@@ -1,6 +1,6 @@
 # Pomodoro Timer
 
-A modern, feature-rich Pomodoro timer application built with Next.js, TypeScript, and Tailwind CSS.
+A modern, feature-rich Pomodoro timer application built with Next.js 15.2, React 19, TypeScript 5, and Tailwind CSS 3.4.
 
 ## Features
 
@@ -17,14 +17,14 @@ A modern, feature-rich Pomodoro timer application built with Next.js, TypeScript
 
 ### Prerequisites
 
-- Node.js 18.x or later
-- pnpm (recommended) or npm
+- Node.js 22.x or later
+- pnpm
 
 ### Installation
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/pomodoro-timer.git
+git clone https://github.com/matthewpinfield/pomodoro-timer.git
 cd pomodoro-timer
 ```
 
@@ -57,6 +57,21 @@ pnpm dev
    - View task distribution in pie chart
    - Track daily progress
    - Monitor time spent on tasks
+
+## Tech Stack
+
+- **Frontend Framework**: [Next.js 15.2.4](https://nextjs.org/)
+- **UI Library**: [React 19](https://react.dev/)
+- **Type System**: [TypeScript 5](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS 3.4.17](https://tailwindcss.com/)
+- **Component Library**: [Radix UI](https://www.radix-ui.com/) (various components 1.x-2.x)
+- **Animation**: [Framer Motion](https://www.framer.com/motion/)
+- **Form Handling**: [React Hook Form 7.54.1](https://react-hook-form.com/) with [Zod 3.24.1](https://zod.dev/) validation
+- **Date Handling**: [date-fns 4.1.0](https://date-fns.org/)
+- **Theming**: [next-themes 0.4.4](https://github.com/pacocoursey/next-themes)
+- **Icons**: [Lucide React 0.454.0](https://lucide.dev/)
+- **Unique IDs**: [UUID](https://github.com/uuidjs/uuid)
+- **Toast Notifications**: [Sonner 1.7.1](https://sonner.emilkowal.ski/)
 
 ## Contributing
 

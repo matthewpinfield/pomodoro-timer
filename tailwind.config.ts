@@ -29,22 +29,10 @@ const config = {
         'popover': 'hsl(0 0% 100%)',
         'card': 'hsl(0 0% 100%)'
       },
-      spacing: {
-        'xs': '0.3dvh',
-        'sm': '0.5dvh',
-        'md': '1dvh',
-        'lg': '1.5dvh',
-        'xl': '2dvh',
-        'w-xs': '0.3dvw',
-        'w-sm': '0.5dvw',
-        'w-md': '1dvw',
-        'w-lg': '1.5dvw',
-        'w-xl': '2dvw'
-      },
-     
+           
       fontSize: {
         // Target: ~9.6px (~375px) to ~12.8px (~1440px)
-        'xs': [`clamp(0.5rem, 0.515rem + 0.226vw, 0.8rem)`, { lineHeight: '1.5' }],
+        'xs': [`clamp(0.55rem, 0.44rem + 0.226vw, 0.8rem)`, { lineHeight: '1.5' }],
         // Target: ~11.2px (~375px) to ~14.4px (~1440px)
         'sm': [`clamp(0.7rem, 0.615rem + 0.226vw, 0.9rem)`, { lineHeight: '1.5' }],
         // Target: 12.8px (~375px) to 16px (~1440px) - Your new base reference
@@ -64,8 +52,7 @@ const config = {
       
       fontFamily: {
         'sans': ['var(--font-sans)', 'system-ui', 'sans-serif'],
-        'mono': ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-        'doto': ['var(--font-doto)', 'system-ui', 'sans-serif']
+        'mono': ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
       },
 
       // --- Other customizations from your original config ---

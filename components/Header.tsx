@@ -123,7 +123,7 @@ export function Header() {
   return (
     // ***** Apply conditional transform and transition *****
     <header className={cn(
-      "py-md pt-xl px-w-md bg-background border-b flex justify-between items-center sticky top-0 z-50 safe-top",
+      "py-2 pt-8 px-4 bg-background border-b flex justify-between items-center sticky top-0 z-50 safe-top",
       "transition-transform duration-300 ease-in-out", // Add transition
       // Apply transform only when header should be hidden
       // Use md:translate-y-0 to disable the hiding effect on medium screens and up
@@ -137,14 +137,14 @@ export function Header() {
            <Image
             src={basePath + "/icon-192x192.png"}
             alt="FocusPie Logo"
-            width={48} height={48}
+            width={47} height={47}
             className="w-logo-mobile h-logo-mobile sm:w-logo-desktop sm:h-logo-desktop mr-w-xs pointer-events-none"
             priority loading="eager" fetchPriority="high"
           />
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">FocusPie</h1>
-          <p className="text-xs text-gray-600 dark:text-gray-400">Your Daily Focus Plan</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400 -mt-1">Your Daily Focus Plan</p>
         </div>
       </div>
 

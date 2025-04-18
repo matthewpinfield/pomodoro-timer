@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Utility library guidelines - Use date-fns for date/time, uuid (v4/v7) for unique IDs (see state management rule for details), and framer-motion for subtle animations.
+---
+
+# **Utility Libraries**
+
+*   **Date/Time:** Use `date-fns` for all date/time formatting and manipulation.
+*   **Unique IDs:** Use `uuid` (specifically `v4()` or `v7()`) for generating unique identifiers, especially within `TaskContext`. **See State Management section for v4 vs v7 considerations.**
+*   **Animation:** Use `framer-motion` for subtle UI animations or transitions where appropriate for MVP.
+
+---

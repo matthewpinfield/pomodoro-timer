@@ -30,7 +30,7 @@ export function TaskList({ tasks = [], onEditTask }: TaskListProps) {
   }
 
   if (tasks.length === 0) {
-    return <div className="text-center text-gray-500 py-md text-task-title">No tasks yet. Add your first task below.</div>
+    return <div className="text-center text-gray-500 py-4 text-task-title">No tasks yet. Add your first task below.</div>
   }
 
   return (
@@ -38,7 +38,7 @@ export function TaskList({ tasks = [], onEditTask }: TaskListProps) {
       {tasks.map((task) => (
         <div key={task.id}>
           {editingTaskId === task.id ? (
-            <div className="p-md border rounded-md bg-white shadow-sm">
+            <div className="p-4 border rounded-md bg-white shadow-sm">
               <h3 className="font-medium mb-md">Edit Task</h3>
               <TaskForm
                 initialValues={{
@@ -53,19 +53,24 @@ export function TaskList({ tasks = [], onEditTask }: TaskListProps) {
               />
             </div>
           ) : (
-            <div className="flex items-center justify-between p-lg bg-gray-50 rounded-md">
+            <div className="flex items-center justify-between p-6 bg-gray-50 rounded-md">
               <div className="flex items-center">
                 <div className="w-icon-lg h-icon-lg rounded-full mr-lg" style={{ backgroundColor: task.color }} />
                 <div className="flex flex-col gap-xs">
-                  <div className="text-[hsl(var(--foreground))] font-medium px-sm">{task.name}</div>
-                  <div className="text-task-time text-gray-500 px-sm">
+                  <div className="text-[hsl(var(--foreground))] font-medium px-2">{task.name}</div>
+                  <div className="text-task-time text-gray-500 px-2">
                     {Math.floor(task.goalTimeMinutes / 60) > 0 && `${Math.floor(task.goalTimeMinutes / 60)}h `}
                     {task.goalTimeMinutes % 60}m
+                    {task.progressMinutes > 0 && (
+                      <span className="ml-2 text-xs">
+                        • {task.progressMinutes}m worked
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-sm">
+              <div className="flex gap-2">
                 <Button 
                   variant="ghost" 
                   size="icon" 

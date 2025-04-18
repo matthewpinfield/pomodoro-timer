@@ -1,0 +1,27 @@
+---
+description: Guidelines for mobile web responsiveness in React CSS. Details prioritizing dvh for height, rem for scaling, use of media queries, and leveraging Flexbox/Grid. Differentiates from React Native. Use when discussing or implementing mobile styling or layout strategies.
+globs: 
+alwaysApply: false
+---
+# **Rule: Dimension Systems for Mobile Web Responsiveness (React)**
+
+*   **Context:** This rule applies when generating CSS styles, discussing layout strategies, or providing guidance for **React web applications** specifically intended for **mobile browsers**.
+*   **Core Principle:** Mobile web environments require careful consideration of dimension units due to varying screen sizes and viewport changes caused by browser UI.
+*   **Key Guidelines & Recommendations:**
+    1.  **Use Modern Viewport Units Appropriately:**
+        *   **For Heights:** Prioritize `dvh`, `svh`, `lvh` for **`height`** and **`max-height`** properties, especially when needing elements to adapt to dynamic mobile browser UI (e.g., `height: 100dvh;`, `max-height: 90dvh;`). *(Note: These units have good support in modern browsers)*.
+        *   **Avoid for General Spacing:** **Do NOT** use viewport units (`dvh`, `dvw`, `svh`, etc.) to define the general layout spacing scale (e.g., padding, margin, gap values in `tailwind.config.ts` or utility classes). **Stick to Tailwind's standard `rem`-based numeric scale** (e.g., `p-4`, `m-2`, `gap-6`) for consistent and predictable spacing.
+        *   **Other Units:** Use `vw`, `vh`, `vmin`, `vmax` cautiously for specific element sizing where dimensions relative to the viewport width/height or aspect ratio are explicitly required.
+    2.  **Leverage Relative & Font-Based Units:**
+        *   Percentages (`%`): Relative to parent.
+        *   `rem`: **Crucial for accessibility and scalability** (font sizes, padding, margins, dimensions).
+        *   `em`: Relative to parent font size (use more sparingly).
+    3.  **Employ Media Queries (`@media`):**
+        *   **Essential** for applying styles based on screen characteristics. Define breakpoints.
+    4.  **Utilize Modern Layout Models:**
+        *   **Flexbox & CSS Grid:** Create inherently flexible and responsive structures.
+    5.  **Combine Techniques Strategically:** Use a mix of `dvh`, percentages, `rem`, media queries, and Flexbox/Grid.
+*   **Important Distinction: React Native:**
+    *   Applies to **React for the web**.
+    *   React Native uses `Dimensions` API (unitless dp/dip), Flexbox (`flex: 1`), and percentages.
+*   **Summary:** Prioritize `dvh` for full height, `rem` for scaling, use media queries, and structure with Flexbox/Grid for React mobile web CSS.

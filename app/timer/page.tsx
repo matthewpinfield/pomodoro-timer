@@ -115,7 +115,7 @@ export default function TimerPage() {
     return (
         <div className="flex flex-col h-full">
             <motion.main
-                className="flex-1 w-full px-w-xs sm:px-w-sm py-md flex flex-col items-center md:flex-row md:justify-center md:items-start md:gap-xl md:max-w-4xl lg:max-w-5xl mx-auto"
+                className="flex-1 w-full px-4 sm:px-4 py-4 flex flex-col items-center md:flex-row md:justify-center md:items-start md:gap-8 md:max-w-4xl lg:max-w-5xl mx-auto"
                 initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
             >
@@ -140,7 +140,7 @@ export default function TimerPage() {
                         )}
 
                         {/* Legends and Skip Button */}
-                         <div className="mt-sm sm:mt-md flex justify-center items-center gap-md text-xs text-gray-600 dark:text-gray-400">
+                         <div className="mt-2 sm:mt-4 flex justify-center items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
                              <div className="flex items-center gap-2">
                                  <div className="h-2 w-2 rounded-full bg-red-500"></div>
                                  <span>Current Task</span>
@@ -164,7 +164,7 @@ export default function TimerPage() {
                     {/* Right Column */}
                     <div className="flex flex-col items-center w-full md:w-1/2">
                         <motion.div
-                            className="w-full bg-white dark:bg-slate-800 rounded-xl shadow-sm p-md sm:p-lg mt-md sm:mt-xl md:mt-0"
+                            className="w-full bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 mt-4 sm:mt-8 md:mt-0"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: 0.3 }}
@@ -185,7 +185,7 @@ export default function TimerPage() {
                         <div className="flex justify-center mt-md sm:mt-lg w-full">
                             <Button
                                 onClick={() => setNoteDialogOpen(true)}
-                                className="w-full max-w-md flex items-center justify-center gap-sm bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all"
+                                className="w-full max-w-md flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all"
                                 size="lg"
                                 disabled={!currentTask}
                             >

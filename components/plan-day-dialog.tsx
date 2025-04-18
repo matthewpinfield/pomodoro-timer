@@ -65,7 +65,7 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
           <Button 
             onClick={() => onOpenChange(false)}
             variant="ghost" 
-            className="text-base px-w-lg py-md font-medium hover:bg-gray-100 dark:hover:bg-slate-700"
+            className="text-base px-6 py-4 font-medium hover:bg-gray-100 dark:hover:bg-slate-700"
           >
             Done
           </Button>
@@ -92,7 +92,7 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
               />
             </div>
           ) : (
-            <Button onClick={() => setIsAddingTask(true)} className="w-full flex items-center justify-center gap-md bg-blue-500 hover:bg-blue-600 text-white font-semibold py-lg px-xl rounded-lg shadow-md hover:shadow-lg transition-all text-dialog-button">
+            <Button onClick={() => setIsAddingTask(true)} className="w-full flex items-center justify-center gap-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-6 px-8 rounded-lg shadow-md hover:shadow-lg transition-all text-dialog-button">
               <PlusCircle className="w-icon-lg h-icon-lg" />
               Add New Task
             </Button>

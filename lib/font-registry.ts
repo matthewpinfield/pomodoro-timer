@@ -1,22 +1,23 @@
 /**
- * Font Registry for FocusPie
+ * Font Registry
  * Integrates with Shadcn UI's font system
  */
 
 import type { NextFont } from 'next/dist/compiled/@next/font';
-import { tokens } from './design-tokens';
 
 // Extended NextFont type that includes the variable property
 interface ExtendedNextFont extends NextFont {
   variable: string;
 }
 
-// Type for font configuration
+// Type for font configuration - removed Doto
 type FontConfig = {
   sans: ExtendedNextFont;
   mono: ExtendedNextFont;
-  doto: ExtendedNextFont;
 };
+
+// Define font names type for type safety
+type FontName = 'sans' | 'mono';
 
 // Global registry to store font information
 let registeredFonts: FontConfig | null = null;
@@ -87,7 +88,7 @@ export function getRegisteredFonts(): FontConfig | null {
  * @param fontName The name of the font to check
  * @returns True if the font is loaded, false otherwise
  */
-export function isFontLoaded(fontName: keyof typeof tokens.fontFamilies): boolean {
+export function isFontLoaded(fontName: FontName): boolean {
   if (typeof window === 'undefined') return false;
   
   const isLoaded = window.__FOCUSPIE_FONTS?.[fontName]?.loaded || false;
@@ -100,7 +101,7 @@ export function isFontLoaded(fontName: keyof typeof tokens.fontFamilies): boolea
  * @param fontName The name of the font
  * @returns The CSS variable name or empty string if not found
  */
-export function getFontVariable(fontName: keyof typeof tokens.fontFamilies): string {
+export function getFontVariable(fontName: FontName): string {
   if (typeof window === 'undefined') return '';
   
   return window.__FOCUSPIE_FONTS?.[fontName]?.variable || '';

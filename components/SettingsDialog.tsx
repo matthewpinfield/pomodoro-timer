@@ -33,7 +33,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </DialogDescription>
         </DialogHeader>
         {/* Container for settings rows - Added space-y for vertical spacing */}
-        <div className="py-md space-y-md">
+        <div className="py-4 space-y-4">
           {/* --- Existing Auto-pause setting --- */}
           <div className="flex items-center justify-between">
             {/* Use text-foreground for theme-aware text color */}

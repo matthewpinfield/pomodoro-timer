@@ -117,7 +117,7 @@ export function TaskForm({
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-md">
       {error && (
-        <Alert variant="destructive" className="py-sm">
+        <Alert variant="destructive" className="py-2">
           <AlertCircle className="w-icon-base h-icon-base" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
@@ -130,11 +130,11 @@ export function TaskForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Enter task name"
-          className="w-full px-w-lg py-lg text-base"
+          className="w-full px-6 py-6 text-base"
         />
       </div>
       
-      <div className="grid grid-cols-2 gap-md">
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-md">
           <Label htmlFor="hours" className="text-base px-w-xs">Hours</Label>
           <Input
@@ -145,7 +145,7 @@ export function TaskForm({
             value={hours}
             onChange={(e) => setHours(e.target.value)}
             placeholder="0"
-            className="w-full px-w-lg py-lg text-base"
+            className="w-full px-6 py-6 text-base"
           />
         </div>
         
@@ -159,12 +159,12 @@ export function TaskForm({
             value={minutes}
             onChange={(e) => setMinutes(e.target.value)}
             placeholder="0"
-            className="w-full px-w-lg py-lg text-base"
+            className="w-full px-6 py-6 text-base"
           />
         </div>
       </div>
       
-      <div className="flex justify-end space-x-w-md pt-md">
+      <div className="flex justify-end space-x-4 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>

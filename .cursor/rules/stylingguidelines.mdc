@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Styling guidelines - Strictly use Tailwind CSS v3.x utility classes, manage classnames with the cn() utility, and use dark: variant for theming via next-themes.
+---
+
+# **Styling: Tailwind CSS & Classname Utils**
+
+*   **Styling Method:** Strictly use **Tailwind CSS v3.x (latest stable)** utility classes. *(Note: Tailwind CSS v4 is in alpha/beta as of late 2024)*. Avoid custom CSS files unless necessary and matching existing patterns.
+*   **Tooling:** Utilizes the modern Tailwind engine (PostCSS/Autoprefixer often handled implicitly).
+*   **Classname Management:** Use the `cn(...)` utility function for conditional (`clsx`) and merged (`tailwind-merge`) classes. Example: `className={cn("base-class", { "conditional-class": condition })}`
+*   **Theming:** Use Tailwind's `dark:` variant for dark mode styles (`next-themes` is configured).
+
+---

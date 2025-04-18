@@ -4,7 +4,6 @@ import { useRef, useEffect, useCallback, memo, useLayoutEffect } from "react"
 import { Clock } from "lucide-react"
 import type { TimerMode } from "@/context/timer-context"
 import { useTimer } from "@/context/timer-context"
-import { isFontLoaded } from "@/lib/font-registry"
 
 interface TimerCircleProps {
   mode: TimerMode
@@ -80,7 +79,8 @@ const TimerCircle = memo(function TimerCircle({
     // Font sizes based on canvas size
     const viewportSize = Math.min(width, height);
     const baseFontSize = viewportSize * 0.01;
-    const subtitleFontSize = viewportSize * 0.005;
+    // Calculate subtitle font size in pixels for measurement
+    const subtitleFontSizePx = Math.max(8, viewportSize * 0.04); // Adjusted calculation, min 8px
     const taskTimeFontSize = viewportSize * 0.04;
 
     // Layer 1: Base (Gray Track)
@@ -181,13 +181,8 @@ const TimerCircle = memo(function TimerCircle({
     }
     ctx.restore();
 
-    // Use Doto font if loaded, otherwise fallback to system font
-    const isDotoLoaded = isFontLoaded('doto');
-    const fontFamily = isDotoLoaded ? "var(--font-doto), system-ui, sans-serif" : "system-ui, sans-serif";
-    const adjustedFontSize = isDotoLoaded ? baseFontSize * 1.1 : baseFontSize; // Scale up for Doto
-
     // Timer text Pomodoro
-    ctx.font = `bold ${adjustedFontSize}rem ${fontFamily}`;
+    ctx.font = `bold ${baseFontSize}rem system-ui, sans-serif`;
     ctx.fillStyle = "#666666";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -199,9 +194,27 @@ const TimerCircle = memo(function TimerCircle({
     if (mode === 'longBreak') subtitle = 'Long Break';
     if (mode === 'idle') subtitle = 'Ready';
 
-    ctx.font = `${subtitleFontSize}rem ${fontFamily}`;
+    // Set font for potential measurement
+    ctx.font = `${subtitleFontSizePx}px system-ui, sans-serif`;
     ctx.fillStyle = "#666666";
-    ctx.fillText(subtitle, centerX, centerY + iconSize * 0.75);
+
+    // --- Truncate Subtitle if needed ---
+    const maxWidth = innerRadius * 1.8; // Max width (90% of inner diameter)
+    let finalSubtitle = subtitle;
+    let measuredWidth = ctx.measureText(subtitle).width;
+
+    if (measuredWidth > maxWidth) {
+        let truncatedSubtitle = subtitle;
+        // Simple truncation loop
+        while (ctx.measureText(truncatedSubtitle + "...").width > maxWidth && truncatedSubtitle.length > 0) {
+            truncatedSubtitle = truncatedSubtitle.slice(0, -1);
+        }
+        finalSubtitle = truncatedSubtitle + "...";
+    }
+    // --- End Truncation ---
+
+    // Draw the potentially truncated subtitle
+    ctx.fillText(finalSubtitle, centerX, centerY + iconSize * 0.75);
 
     // The task remaining timer
     if (mode === 'working' && taskTimeLeftSeconds !== undefined && taskTimeLeftSeconds >= 0) {
@@ -256,18 +269,6 @@ const TimerCircle = memo(function TimerCircle({
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [settings.autoPauseEnabled, isRunning, onTimerClick]);
-
-  // Redraw when Doto font loads
-  useEffect(() => {
-    const handleFontsLoaded = () => {
-      if (mountedRef.current) {
-        draw();
-      }
-    };
-
-    window.addEventListener('fontsloaded', handleFontsLoaded);
-    return () => window.removeEventListener('fontsloaded', handleFontsLoaded);
-  }, [draw]);
 
   return (
     <div className="flex flex-col items-center">

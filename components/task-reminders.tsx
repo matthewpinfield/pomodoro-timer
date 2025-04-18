@@ -34,7 +34,7 @@ export function TaskReminders({ tasks }: TaskRemindersProps) {
                 <div className="w-icon-sm h-icon-sm rounded-full mr-sm" style={{ backgroundColor: task.color }} />
                 <span>{task.name}</span>
               </div>
-              <span className="text-xs bg-gray-100 px-sm py-xs rounded-full">{timeDisplay}</span>
+              <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">{timeDisplay}</span>
             </motion.li>
           )
         })}

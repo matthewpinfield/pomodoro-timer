@@ -1,7 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-
-upon 3 unsuccesfull file repair attempts. stop and admit you are unable to fix, do not try and fix errors or refactor code, without knowing the exact fix. use docs and first source of information.

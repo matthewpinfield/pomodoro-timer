@@ -3,6 +3,13 @@
 @tailwind utilities;
 
 
+@media (min-width: 695px) {
+  .task-list-container {
+    min-height: 50dvh;
+  }
+}
+
+
 /* Mobile viewport height fix */
 @supports (-webkit-touch-callout: none) {
   .min-h-screen {

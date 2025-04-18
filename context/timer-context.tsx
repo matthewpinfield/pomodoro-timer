@@ -1,6 +1,7 @@
 "use client"; // Mark this context as a Client Component
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { useTasks } from "./task-context"; // Corrected import path
 
 // --- Constants ---
 const POMODORO_DURATION = 25 * 60; // 25 minutes
@@ -50,6 +51,10 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   const [timeLeftInMode, setTimeLeftInMode] = useState<number>(settings.pomodoro);
   const [pomodorosCompletedCycle, setPomodorosCompletedCycle] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false); // Internal state to control interval
+  const [secondsThisTick, setSecondsThisTick] = useState<number>(0); // New state for seconds counter
+
+  // Get Task Context functions/state
+  const { updateTaskProgress, currentTaskId } = useTasks();
 
   // --- Timer Logic ---
   useEffect(() => {
@@ -57,16 +62,21 @@ export function TimerProvider({ children }: { children: ReactNode }) {
 
     if (isRunning && timeLeftInMode > 0) {
       interval = setInterval(() => {
+        // Only decrement time and increment seconds counter here
         setTimeLeftInMode((prevTime) => prevTime - 1);
+        if (mode === 'working') {
+          setSecondsThisTick(prevSeconds => prevSeconds + 1);
+        }
       }, 1000);
     } else if (isRunning && timeLeftInMode === 0) {
       // Time's up, handle transition
       setIsRunning(false); // Stop the timer interval
+      setSecondsThisTick(0); // Reset seconds counter
 
       if (mode === "working") {
         const completed = pomodorosCompletedCycle + 1;
         setPomodorosCompletedCycle(completed);
-
+        // No progress update needed here anymore
         // Determine next break
         if (completed % settings.pomodorosUntilLongBreak === 0) {
           setMode("longBreak");
@@ -92,11 +102,25 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Cleanup interval on unmount or when isRunning/timeLeft changes
+    // Cleanup interval
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRunning, timeLeftInMode, mode, settings, pomodorosCompletedCycle]);
+  }, [isRunning, timeLeftInMode, mode]); // Removed context dependencies from *this* effect
+
+  // --- Effect for Per-Minute Progress Update ---
+  useEffect(() => {
+    if (mode === 'working' && secondsThisTick >= 60) {
+      if (currentTaskId) {
+        updateTaskProgress(currentTaskId, 1); // Update progress by 1 minute
+        console.log(`TIMER CONTEXT (Effect): Updated progress for task ${currentTaskId} by 1 minute.`); // Debug log
+      } else {
+         console.warn("TIMER CONTEXT (Effect): Minute finished, but no currentTaskId found to update progress.");
+      }
+      setSecondsThisTick(0); // Reset counter after update
+    }
+  // Depend on secondsThisTick to trigger check, mode/context vars for conditions
+  }, [secondsThisTick, mode, currentTaskId, updateTaskProgress]);
 
   // --- Actions ---
   const startWork = useCallback(() => {

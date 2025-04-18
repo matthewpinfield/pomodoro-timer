@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: State management guidelines - Use React Context API for simple/moderate state. Follow TimerContext/TaskContext patterns. Use uuid v4 or v7 for task IDs (prefer v7 for sorting). Avoid Redux/Zustand for MVPs.
+---
+
+# **State Management: React Context API**
+
+*   **Primary Method:** Use React Context API for new simple-to-moderate shared state needs.
+*   **Existing Patterns:** Follow the structure found in `TimerContext` and `TaskContext`.
+*   **Task IDs:** Use `uuid` (likely `v4()` or `v7()`) for generating unique IDs within `TaskContext`. **Consider `v7` for time-ordered, sortable IDs (e.g., DB keys); `v4` is suitable for purely random IDs.**
+*   **Avoid:** Do not introduce complex global state libraries (Redux, Zustand) for MVPs.
+
+---

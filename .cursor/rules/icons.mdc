@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Icon guidelines - Use lucide-react for all icons, importing them directly by name.
+---
+
+# **Icons: Lucide React**
+
+*   **Library:** Use `lucide-react` for all icons.
+*   **Usage:** Import icons directly by name, e.g., `import { Check, PlusCircle } from 'lucide-react';`.
+
+---

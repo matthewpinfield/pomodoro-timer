@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Defines core project principles and tech stack foundation - MVP focus, Next.js 15.1+, React 19, TypeScript 5.8+, ESLint 9.x, and pnpm package manager.
+---
+
+# **Core Principles & MVP Focus (Tech Stack)**
+
+*   **Goal:** Generate code for MVPs, prioritizing functionality and reusability.
+*   **Framework:** Next.js **v15.1+ (latest stable, App Router)**
+*   **UI Library:** React **v19 (latest stable)**
+*   **Language:** TypeScript **v5.8+ (latest stable, Strict mode preferred)**
+*   **Linting:** Ensure code conforms to **ESLint v9.x** rules (`next lint`).
+*   **Package Manager:** Use `pnpm` for all package operations.
+
+---

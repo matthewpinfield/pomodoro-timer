@@ -1,0 +1,20 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Form handling guidelines - Use React Hook Form (RHF) v7.55+ and Zod v3.x for validation via @hookform/resolvers/zod. Follow the defined pattern: Zod schema -> useForm -> integrate with Shadcn UI -> handleSubmit.
+---
+
+# **Forms: React Hook Form (RHF) & Zod**
+
+*   **Library:** Use React Hook Form (RHF) **v7.55+ (latest stable)**.
+*   **Validation:** Use Zod **v3.x (latest stable)** for schema definition and validation via `@hookform/resolvers/zod`.
+*   **Pattern:**
+    1.  Define Zod schema.
+    2.  Use RHF `useForm` hook with Zod resolver.
+    3.  Integrate with Shadcn UI components (`Input`, `Textarea`, etc.) using RHF `register` or `<Controller>`.
+    4.  Handle submission via `handleSubmit` from `useForm`.
+
+---

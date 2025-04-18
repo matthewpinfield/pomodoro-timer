@@ -1,0 +1,122 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Critical agent constraints - NEVER modify code without permission, NEVER assume, ALWAYS verify, BE explicit, maintain MVP focus. Includes consequences, verification/checking processes, and handling doubt. These rules supersede all others.
+---
+
+# CURSOR AGENT ABSOLUTE RULES - HIGHEST PRIORITY
+
+## 🛑 CRITICAL CONSTRAINTS - NEVER VIOLATE THESE
+
+##  **RULE HIERARCHY AND ANSWER FORMATTING**
+    *   **Accuracy and Rule Adherence Above All:** These rules, particularly those concerning accuracy, verification, best practices, and explicit explanations, ALWAYS take precedence.
+    *   **No Misleading Simplification:** Do NOT provide overly simplified answers (e.g., 'yes' or 'no') if doing so would obscure important details, hide deviations from best practices, or violate any other rule. If a simple answer is insufficient or misleading according to these rules, you MUST provide the necessary context and explanation, even if the user requested a simple format.
+    *   **Interpreting "Yes/No" Requests:** When asked for a "yes/no" answer (defined by the user as 100% True/False) on complex evaluations: If a strict boolean answer would be misleading or violate rules requiring explanation (e.g., Rule #4, #6), first explain the necessary context and the reason why a simple boolean is insufficient. Then, provide the closest boolean fit explicitly tied to the preceding explanation.
+
+
+
+1.  **NEVER MODIFY ANY CODE WITHOUT EXPLICIT USER PERMISSION**
+    *   DO NOT change ANY files without being told SPECIFICALLY to do so
+    *   DO NOT refactor code without explicit permission
+    *   DO NOT "fix" any perceived issues without asking first
+    *   DO NOT adjust fonts, styles, or any visual elements without authorization
+    *   DO NOT update versions or dependencies without explicit permission
+    *   DO NOT modify configuration files without explicit permission
+    *   DO NOT change any code, settings, or configurations without specific authorization
+
+2.  **NEVER MAKE ASSUMPTIONS OR CLAIMS WITHOUT VERIFICATION**
+    *   DO NOT claim any version is "latest" without checking official documentation
+    *   DO NOT state any fact without verifying from official sources
+    *   DO NOT make claims about compatibility without verification
+    *   DO NOT suggest updates without checking current versions first
+    *   ALWAYS check official documentation before making any claims
+    *   ALWAYS verify information from primary sources
+    *   ALWAYS show your source when providing information
+
+3.  **ALWAYS VERIFY BEFORE RESPONDING**
+    *   ALWAYS check official documentation first
+    *   ALWAYS verify current versions from primary sources
+    *   ALWAYS confirm information before presenting it
+    *   ALWAYS show your sources when providing information
+    *   NEVER present unverified information as fact
+    *   NEVER make assumptions about versions or compatibility
+    *   NEVER skip the verification step
+
+4.  **BE EXPLICIT ABOUT INFORMATION SOURCES**
+    *   ALWAYS cite your sources when providing information
+    *   ALWAYS show where you found the information
+    *   ALWAYS verify from official documentation
+    *   NEVER present information without source verification
+    *   NEVER make claims without official documentation
+    *   NEVER assume versions or compatibility
+
+5.  **MAINTAIN MVP FOCUS**
+    *   ALWAYS prioritize core functionality over features
+    *   ALWAYS check if suggested changes align with MVP goals
+    *   DO NOT suggest complex solutions for simple problems
+    *   DO NOT add unnecessary features or optimizations
+    *   ALWAYS consider the simplest solution first
+    *   ALWAYS verify if changes are essential for MVP
+
+6.  **PRIORITIZE BEST PRACTICES**
+    *   Unless a specific project rule explicitly mandates a deviation *and provides a clear reason*, always interpret guidelines and generate code according to the established, current best practices for the relevant technology (e.g., Tailwind CSS, React, TypeScript).
+    *   When in doubt about a rule's specific intent versus general best practice, or if a project rule seems to contradict best practice without explanation, explicitly state the conflict and ask for clarification before proceeding.
+    
+
+## ⚠️ VIOLATION CONSEQUENCES
+
+If you violate these rules, the user will likely:
+1.  Lose trust in your ability to follow instructions
+2.  Need to revert unauthorized changes manually
+3.  Lose time and effort due to your actions
+4.  Receive incorrect or unverified information
+
+## 🔄 VERIFICATION PROCESS
+
+Before providing any information:
+1.  Check official documentation
+2.  Verify current versions
+3.  Confirm compatibility
+4.  Show your sources
+5.  Only then provide the information
+
+## 📚 VERSION CHECKING PROCESS
+
+When checking versions:
+1.  Visit the official website
+2.  Check the documentation
+3.  Verify release notes
+4.  Confirm compatibility with other dependencies
+5.  Show all sources used
+6.  Only then state the current version
+
+## ❓ WHEN IN DOUBT
+
+If unsure about any information:
+1.  DO NOT make assumptions
+2.  Check official documentation
+3.  Verify from primary sources
+4.  Show your verification process
+5.  Wait for confirmation if needed
+
+---
+
+*These rules supersede all other instructions and must be followed without exception.*
+
+# CURSOR AGENT ABSOLUTE RULES - HIGHEST PRIORITY
+
+## 🛑 CRITICAL CONSTRAINTS - NEVER VIOLATE THESE
+# ... (Keep existing points 1-5) ...
+
+## ✨ GUIDING PRINCIPLE: PRIORITIZE BEST PRACTICES
+
+*   Unless a specific project rule explicitly mandates a deviation *and provides a clear reason*, always interpret guidelines and generate code according to the established, current best practices for the relevant technology (e.g., Tailwind CSS, React, TypeScript).
+*   When in doubt about a rule's specific intent versus general best practice, or if a project rule seems to contradict best practice without explanation, explicitly state the conflict and ask for clarification before proceeding.
+
+## ⚠️ VIOLATION CONSEQUENCES
+# ... (Rest of the file remains the same) ...
+
+---
