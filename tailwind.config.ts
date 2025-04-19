@@ -16,18 +16,40 @@ const config = {
     extend: {
       
       colors: {
-        'primary': 'hsl(221.2 83.2% 53.3%)',
-        'background': 'hsl(0 0% 100%)',
-        'foreground': 'hsl(222.2 84% 4.9%)',
-        'border': 'hsl(214.3 31.8% 91.4%)',
-        'input': 'hsl(214.3 31.8% 91.4%)',
-        'ring': 'hsl(221.2 83.2% 53.3%)',
-        'secondary': 'hsl(210 40% 96.1%)',
-        'destructive': 'hsl(0 84.2% 60.2%)',
-        'muted': 'hsl(210 40% 96.1%)',
-        'accent': 'hsl(210 40% 96.1%)',
-        'popover': 'hsl(0 0% 100%)',
-        'card': 'hsl(0 0% 100%)'
+        // Reference CSS variables directly
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        primary: {
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
+        },
+        secondary: {
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
+        },
+        destructive: {
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
+        },
+        muted: {
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
+        },
+        accent: {
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
+        },
+        popover: {
+          DEFAULT: "var(--popover)",
+          foreground: "var(--popover-foreground)",
+        },
+        card: {
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
+        },
       },
            
       fontSize: {
@@ -55,6 +77,31 @@ const config = {
         'mono': ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
       },
 
+      width: {
+        'icon-sm': 'clamp(1.5rem, 2.25dvmin, 2.25rem)',
+        'icon-base': 'clamp(2rem, 3dvmin, 3rem)',
+        'icon-lg': 'clamp(2.5rem, 3.75dvmin, 3.75rem)',
+        'logo-mobile': 'clamp(2rem, 6dvmin, 3rem)',
+        'logo-desktop': 'clamp(2rem, 4dvmin, 2.75rem)',
+      },
+      height: {
+        'icon-sm': 'clamp(1.5rem, 2.25dvmin, 2.25rem)',
+        'icon-base': 'clamp(2rem, 3dvmin, 3rem)',
+        'icon-lg': 'clamp(2.5rem, 3.75dvmin, 3.75rem)',
+        'logo-mobile': 'clamp(2rem, 6dvmin, 3rem)',
+        'logo-desktop': 'clamp(2rem, 4dvmin, 2.75rem)',
+      },
+      minWidth: {
+        'icon-sm': 'clamp(1.5rem, 2.25dvmin, 2.25rem)',
+        'icon-base': 'clamp(2rem, 3dvmin, 3rem)',
+        'icon-lg': 'clamp(2.5rem, 3.75dvmin, 3.75rem)',
+      },
+      minHeight: {
+        'icon-sm': 'clamp(1.5rem, 2.25dvmin, 2.25rem)',
+        'icon-base': 'clamp(2rem, 3dvmin, 3rem)',
+        'icon-lg': 'clamp(2.5rem, 3.75dvmin, 3.75rem)',
+      },
+
       // --- Other customizations from your original config ---
 
       borderRadius: {
@@ -67,13 +114,7 @@ const config = {
         'task-hover': '0 0.25rem 0.375rem rgba(0, 0, 0, 0.05)',
         'dialog': '0 1.5625rem 3.125rem -0.75rem rgba(0, 0, 0, 0.25)',
         'input': 'inset 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05)',
-        'input-focus': '0 0 0 0.125rem rgba(59, 130, 246, 0.3)',
-      },
-      backgroundImage: {
-        'button-gradient': 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-        'button-gradient-hover': 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-        'card-gradient': 'linear-gradient(145deg, #ffffff, #f9fafb)',
-        'card-gradient-dark': 'linear-gradient(145deg, #1f2937, #111827)',
+        'input-focus': '0 0 0 0.125rem var(--ring)',
       },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" }, },
@@ -98,13 +139,6 @@ const config = {
         track: { width: '2.5rem', gap: '0.3125rem', },
         icon: { width: '1.5rem', height: '1.875rem', },
         shadow: { blur: '1.25rem', offset: '0.5rem', }
-      },
-      sizes: {
-        'icon-sm': 'clamp(1.5rem, 2.25dvmin, 2.25rem)',
-        'icon-base': 'clamp(2rem, 3dvmin, 3rem)',
-        'icon-lg': 'clamp(2.5rem, 3.75dvmin, 3.75rem)',
-        'logo-mobile': 'clamp(6rem, 10dvmin, 10rem)',
-        'logo-desktop': 'clamp(5rem, 8dvmin, 8rem)',
       },
       maxWidth: {
         'dialog-sm': '24rem',

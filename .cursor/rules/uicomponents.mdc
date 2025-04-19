@@ -4,14 +4,16 @@ globs:
 alwaysApply: true
 ---
 ---
-description: Defines the limited set of allowed Shadcn UI components (Button, Dialog, Input, Label, Alert, Textarea, Toggle) and the command to add new ones if necessary. Enforces reuse.
+description: DefinesShadcn UI components (Button, Dialog, Input, Label, Alert, Textarea, Toggle) and the command to add new ones if necessary. Enforces reuse.
 ---
 
-# **UI Components: Shadcn UI (Limited Set)**
+# **User Interface Components: Standardizing with Shadcn UI**
 
-*   **Library:** Shadcn UI, built on Radix UI primitives and styled with Tailwind CSS.
-*   **Available Core Components:** ONLY use the following components from `/components/ui`: `Button`, `Dialog`, `Input`, `Label`, `Alert`, `Textarea`, `Toggle`.
-*   **Constraint:** Many Shadcn UI components were *removed*. Do NOT use or suggest components other than those listed above. If a new one is needed, the command is `pnpm dlx shadcn-ui@latest add [component-name]`.
-*   **Priority:** Reuse these existing components whenever applicable.
+*   **Library Utilization:** The project employs the Shadcn UI library, which leverages Radix UI primitives and Tailwind CSS for the implementation of user interface components.
+*   **Emphasis on Core Components:** To ensure a high degree of consistency and facilitate maintainability, the preferential use of the following components, located within /components/ui, is mandated: Button, Dialog, Input, Label, Alert, Textarea, and Toggle.
+*   **Component Reuse Imperative:** Prior to the introduction of novel components, a thorough evaluation must be conducted to ascertain whether an existing core component can be suitably adapted or combined to fulfill the requisite functionality. The reuse of established components is paramount for maintaining a unified user experience and a streamlined codebase.
+*   **Protocol for Component Augmentation:** While the reuse of existing components is strongly advocated, it is acknowledged that specific requirements may necessitate the introduction of new components from the Shadcn UI library. In such instances, the following command shall be employed: pnpm dlx shadcn-ui@latest add [component-name].
+*   **Justification and Governance of New Components:** Any proposal for the addition of a new component must be accompanied by a comprehensive justification detailing the specific need and a clear rationale as to why the current set of core components is inadequate. The introduction of new components is subject to review during the code review process to ensure alignment with the established design system and overall project objectives.
+*   **Adherence to Design System Principles:** All user interface components, whether drawn from the core set or newly introduced, must strictly adhere to the principles and guidelines outlined within the project's design system to guarantee a cohesive and consistent user experience across the application.
 
 ---

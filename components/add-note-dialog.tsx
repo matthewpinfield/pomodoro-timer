@@ -26,7 +26,7 @@ export function AddNoteDialog({ open, onOpenChange, taskId }: AddNoteDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add Note</DialogTitle>
           <DialogDescription>
@@ -45,7 +45,7 @@ export function AddNoteDialog({ open, onOpenChange, taskId }: AddNoteDialogProps
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} className="bg-blue-500 hover:bg-blue-600 text-white">Save Note</Button>
+          <Button onClick={handleSubmit}>Save Note</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

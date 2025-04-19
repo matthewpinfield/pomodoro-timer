@@ -4,8 +4,10 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TaskProvider } from "@/context/task-context"
 import { TimerProvider } from "@/context/timer-context"
+import { SettingsProvider } from "@/context/settings-context"
 import { Header } from '@/components/Header' // Assuming Header has sticky/fixed positioning
 import { registerFonts } from "@/lib/font-registry"
+import { cn } from "@/lib/utils"
 
 // --- Font definitions ---
 export const inter = Inter({ subsets: ["latin"], display: 'swap', variable: '--font-sans', preload: false })
@@ -24,20 +26,26 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       {/* Removed h-full. Body uses min-h-screen to allow natural height growth */}
-      <body className={`${inter.variable} ${monoFont.variable} ${inter.className} min-h-screen bg-gray-50 dark:bg-slate-900`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <TaskProvider>
-            <TimerProvider>
-              {/* Header component - Must handle its own sticky/fixed positioning */}
-              <Header />
+      <body className={cn(inter.variable, monoFont.variable, "__className_7e024b min-h-screen")}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+        >
+          <SettingsProvider>
+            <TaskProvider>
+              <TimerProvider>
+                {/* Header component - Must handle its own sticky/fixed positioning */}
+                <Header />
 
-              {/* Main content area - Simplified, just provides padding and semantic meaning */}
-              <main id="main-content-area" className="p-6">
-                {children}
-              </main>
+                {/* Main content area - Simplified, just provides padding and semantic meaning */}
+                <main id="main-content-area" className="p-6">
+                  {children}
+                </main>
 
-            </TimerProvider>
-          </TaskProvider>
+              </TimerProvider>
+            </TaskProvider>
+          </SettingsProvider>
         </ThemeProvider>
       </body>
     </html>

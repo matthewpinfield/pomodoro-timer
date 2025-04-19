@@ -43,13 +43,21 @@ export default function TimerPage() {
     // --- useEffect hooks ---
     useEffect(() => { /* ... localStorage setup ... */ }, []);
     useEffect(() => { /* ... task selection/timing effect ... */
+        console.log(`TimerPage Effect: currentTaskId = ${currentTaskId}`); // Log ID
+        console.log(`TimerPage Effect: currentTask found = ${!!currentTask}`); // Log if task is found
+
         if (!currentTaskId || !currentTask) {
+            console.log("TimerPage Effect: Condition (!currentTaskId || !currentTask) is TRUE."); // Log condition met
             if (typeof window !== 'undefined' && !localStorage.getItem("focuspie-selecting-task")) {
+                console.log("TimerPage Effect: Redirecting to /pie-chart..."); // Log redirection
                 localStorage.removeItem("focuspie-taskTimeLeft");
                 setTaskTimeLeftSeconds(NaN);
                 router.push("/pie-chart");
+            } else {
+                 console.log("TimerPage Effect: Condition met, but redirection prevented by localStorage item."); // Log prevention
             }
         } else {
+            console.log("TimerPage Effect: Condition is FALSE, proceeding to load task time."); // Log condition not met
             let initialTaskTimeLeft = taskGoalSeconds > 0 ? taskGoalSeconds : settings.pomodoro * 60;
             if (typeof window !== 'undefined') {
                 const savedTaskTime = localStorage.getItem("focuspie-taskTimeLeft");
@@ -61,6 +69,7 @@ export default function TimerPage() {
                     }
                 }
             }
+            console.log(`TimerPage Effect: Setting taskTimeLeftSeconds to ${initialTaskTimeLeft}`); // Log time setting
             setTaskTimeLeftSeconds(initialTaskTimeLeft);
         }
     }, [currentTaskId, currentTask, router, taskGoalSeconds, settings.pomodoro]);
@@ -164,7 +173,7 @@ export default function TimerPage() {
                     {/* Right Column */}
                     <div className="flex flex-col items-center w-full md:w-1/2">
                         <motion.div
-                            className="w-full bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 mt-4 sm:mt-8 md:mt-0"
+                            className="w-full bg-card border rounded-xl shadow-md p-4 sm:p-6 mt-4 sm:mt-8 md:mt-0"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: 0.3 }}
@@ -172,20 +181,18 @@ export default function TimerPage() {
                             <div className="mb-md sm:mb-xl">
                                 <TaskReminders tasks={filteredTasks} />
                             </div>
-                            {/* ***** CORRECTED PLACEMENT OF suppressHydrationWarning ***** */}
                             <div
-                                className="text-center text-gray-500 dark:text-gray-400 text-sm"
-                                suppressHydrationWarning={true} // CORRECTLY PLACED INSIDE THE DIV TAG
+                                className="text-center text-muted-foreground text-sm"
+                                suppressHydrationWarning={true}
                             >
                                 {formattedTime}
                             </div>
-                        </motion.div> {/* Closing motion.div */}
+                        </motion.div>
 
-                        {/* Add Note Button */}
                         <div className="flex justify-center mt-md sm:mt-lg w-full">
                             <Button
                                 onClick={() => setNoteDialogOpen(true)}
-                                className="w-full max-w-md flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all"
+                                className="w-full max-w-md flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
                                 size="lg"
                                 disabled={!currentTask}
                             >
@@ -197,7 +204,6 @@ export default function TimerPage() {
                 </div>
             </motion.main>
 
-            {/* Render Dialog only if task ID exists */}
             {currentTaskId && (
                 <AddNoteDialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen} taskId={currentTaskId} />
             )}

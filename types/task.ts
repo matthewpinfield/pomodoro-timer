@@ -9,7 +9,8 @@ export interface Task {
   name: string
   goalTimeMinutes: number
   progressMinutes: number
-  color: string
+  chartIndex: number
+  isPriority?: boolean
   notes: Note[]
 }
 

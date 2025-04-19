@@ -27,10 +27,11 @@
         "./*"
       ]
     },
-    "types": [
-      "jest",
-      "node"
-    ]
+    // Commenting out the 'types' array to allow automatic type discovery
+    // "types": [
+    //   "jest",
+    //   "node"
+    // ]
   },
   "include": [
     "**/*.ts",

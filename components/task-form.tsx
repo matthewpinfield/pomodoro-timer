@@ -6,22 +6,17 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { getRandomColor } from "@/lib/utils"
 import { useTasks } from "@/context/task-context"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
+import type { Task } from "@/types/task"
 
 interface TaskFormProps {
-  onSubmit: (task: { name: string; goalTimeMinutes: number; color: string }) => void
-  onCancel: () => void
-  initialValues?: {
-    id: string
-    name: string
-    goalTimeMinutes: number
-    color: string
-  }
-  useAutoColors?: boolean
+  onSubmit: (task: { name: string; goalTimeMinutes: number; isPriority?: boolean }) => void
+  onCancel?: () => void
+  initialValues?: Partial<Task>
   workdayHours?: number
   standalone?: boolean
 }
@@ -30,75 +25,47 @@ export function TaskForm({
   onSubmit,
   onCancel,
   initialValues,
-  useAutoColors = false,
   workdayHours = 8,
   standalone = false,
 }: TaskFormProps) {
   const { tasks } = useTasks()
   const [name, setName] = useState(initialValues?.name || "")
-  const [hours, setHours] = useState(initialValues ? Math.floor(initialValues.goalTimeMinutes / 60).toString() : "")
-  const [minutes, setMinutes] = useState(initialValues ? (initialValues.goalTimeMinutes % 60).toString() : "")
-  const [color, setColor] = useState(initialValues?.color || getRandomColor())
+  const [hours, setHours] = useState(Math.floor((initialValues?.goalTimeMinutes || 0) / 60).toString())
+  const [minutes, setMinutes] = useState(((initialValues?.goalTimeMinutes || 0) % 60).toString())
+  const [isPriority, setIsPriority] = useState(initialValues?.isPriority || false)
   const [error, setError] = useState<string | null>(null)
 
-  // Get a unique color that's not already used by other tasks
   useEffect(() => {
-    if (useAutoColors && !initialValues) {
-      const usedColors = tasks.map((task) => task.color)
-      let newColor = getRandomColor()
-
-      // Try up to 10 times to get a unique color
-      let attempts = 0
-      while (usedColors.includes(newColor) && attempts < 10) {
-        newColor = getRandomColor()
-        attempts++
-      }
-
-      setColor(newColor)
-    }
-  }, [useAutoColors, initialValues, tasks])
+    setName(initialValues?.name || "")
+    setHours(Math.floor((initialValues?.goalTimeMinutes || 0) / 60).toString())
+    setMinutes(((initialValues?.goalTimeMinutes || 0) % 60).toString())
+    setIsPriority(initialValues?.isPriority || false)
+    setError(null)
+  }, [initialValues])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    const hoursNum = Number.parseInt(hours) || 0
-    const minutesNum = Number.parseInt(minutes) || 0
-    const goalTimeMinutes = hoursNum * 60 + minutesNum
+    const parsedHours = parseInt(hours, 10) || 0
+    const parsedMinutes = parseInt(minutes, 10) || 0
+    const goalTimeMinutes = parsedHours * 60 + parsedMinutes
 
-    // Validate task name
-    if (name.trim() === "") {
-      setError("Task name cannot be empty")
+    if (!name.trim()) {
+      setError("Task name cannot be empty.")
       return
     }
 
-    // Check for duplicate task name
-    const isDuplicateName = tasks.some(
-      (task) => task.name.toLowerCase() === name.toLowerCase() && (!initialValues || task.id !== initialValues.id),
-    )
-
-    if (isDuplicateName) {
-      setError("A task with this name already exists")
+    if (goalTimeMinutes <= 0) {
+      setError("Task duration must be greater than 0.")
       return
     }
 
-    // Validate task time
-    if (goalTimeMinutes === 0) {
-      setError("Task time must be greater than 0")
-      return
-    }
-
-    // Check if total time exceeds workday
+    const otherTasksTotalMinutes = tasks
+      .filter((task) => task.id !== initialValues?.id)
+      .reduce((sum, task) => sum + task.goalTimeMinutes, 0)
+    const newTotalMinutes = otherTasksTotalMinutes + goalTimeMinutes
     const workdayMinutes = workdayHours * 60
-    const currentTotalMinutes = tasks.reduce((sum, task) => {
-      // Don't count the current task if we're editing it
-      if (initialValues && task.id === initialValues.id) {
-        return sum
-      }
-      return sum + task.goalTimeMinutes
-    }, 0)
-
-    const newTotalMinutes = currentTotalMinutes + goalTimeMinutes
 
     if (newTotalMinutes > workdayMinutes) {
       setError(
@@ -110,8 +77,15 @@ export function TaskForm({
     onSubmit({
       name,
       goalTimeMinutes,
-      color: useAutoColors ? color : color,
+      isPriority,
     })
+
+    if (standalone || !initialValues?.id) {
+      setName("")
+      setHours("0")
+      setMinutes("0")
+      setIsPriority(false)
+    }
   }
 
   const formContent = (
@@ -123,14 +97,14 @@ export function TaskForm({
         </Alert>
       )}
       
-      <div className="space-y-md">
+      <div className="space-y-1 mb-4">
         <Label htmlFor="name" className="text-base px-w-xs">Task Name</Label>
         <Input
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Enter task name"
-          className="w-full px-6 py-6 text-base"
+          className="w-full px-3 py-2 text-base"
         />
       </div>
       
@@ -145,7 +119,7 @@ export function TaskForm({
             value={hours}
             onChange={(e) => setHours(e.target.value)}
             placeholder="0"
-            className="w-full px-6 py-6 text-base"
+            className="w-full px-3 py-2 text-base"
           />
         </div>
         
@@ -159,23 +133,40 @@ export function TaskForm({
             value={minutes}
             onChange={(e) => setMinutes(e.target.value)}
             placeholder="0"
-            className="w-full px-6 py-6 text-base"
+            className="w-full px-3 py-2 text-base"
           />
         </div>
       </div>
       
-      <div className="flex justify-end space-x-4 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit">
-          {initialValues ? "Update" : "Add"} Task
-        </Button>
+      <div className="flex items-center justify-between pt-4">
+        <div className="flex items-center gap-2">
+          <Switch
+            id="priority-switch"
+            checked={isPriority}
+            onCheckedChange={setIsPriority}
+            aria-label="Mark task as priority"
+          />
+          <Label htmlFor="priority-switch" className="text-base cursor-pointer">
+            Mark as Priority
+          </Label>
+        </div>
+
+        <div className="flex space-x-4">
+          <Button 
+            type="button" 
+            variant="outline"
+            onClick={onCancel}
+           >
+            Reset
+          </Button>
+          <Button type="submit">
+            {initialValues?.id ? "Update" : "Add"} Task
+          </Button>
+        </div>
       </div>
     </form>
   )
 
-  // If standalone is true, wrap the form in a Dialog
   if (standalone) {
     return (
       <Dialog>
@@ -194,7 +185,6 @@ export function TaskForm({
     )
   }
 
-  // Otherwise, just return the form content
   return formContent
 }
 

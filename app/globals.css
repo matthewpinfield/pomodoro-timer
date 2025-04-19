@@ -2,13 +2,164 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light Mode - Sage Green Primary with improved depth */
+:root {
+  --radius: 0.625rem;
+
+  /* Neutrals - Softened white background */
+  --background: oklch(0.98 0.02 135);  /* Slightly off-white with warmth */
+  --foreground: oklch(0.2 0.01 90);   /* More neutral dark text */
+
+  /* Surfaces - Added subtle variations for depth */
+  --card: oklch(0.99 0.01 135);
+  --card-foreground: oklch(0.2 0.01 90);
+  --popover: oklch(0.99 0.01 135);
+  --popover-foreground: oklch(0.2 0.01 90);
+
+  /* Sidebar - Slightly distinct from main background */
+  --sidebar: oklch(0.97 0.03 135);
+  --sidebar-foreground: oklch(0.2 0.01 90);
+
+  /* Accents & Interaction - LIGHTER SAGE GREEN PRIMARY */
+  --primary: oklch(0.7 0.14 145);          /* Lighter, more muted Sage Green */
+  --primary-foreground: oklch(0.98 0.01 135); /* Off-white for contrast */
+  --primary-hover: oklch(0.68 0.16 145);     /* Slightly darker on hover */
+  --primary-active: oklch(0.66 0.17 145);    /* Even darker when active */
+  --sidebar-primary: oklch(0.7 0.14 145);
+  --sidebar-primary-foreground: oklch(0.98 0.01 135);
+
+  /* Secondary & Muted - More distinct from background */
+  --secondary: oklch(0.92 0.04 135);
+  --secondary-foreground: oklch(0.3 0.02 90);
+  --muted: oklch(0.94 0.03 135);
+  --muted-foreground: oklch(0.45 0.02 90);
+  --accent: oklch(0.92 0.05 145);        /* Very light sage for accent areas */
+  --accent-foreground: oklch(0.3 0.02 90);
+  --sidebar-accent: oklch(0.92 0.05 145);
+  --sidebar-accent-foreground: oklch(0.3 0.02 90);
+
+  /* Destructive */
+  --destructive: oklch(0.65 0.23 25);
+  --destructive-foreground: oklch(0.98 0.01 135);
+
+  /* Borders, Inputs, Rings - More visible */
+  --border: oklch(0.85 0.03 135);        /* Darker border for better visibility */
+  --input: oklch(0.85 0.03 135 / 0.7);   /* More visible input borders */
+  --ring: oklch(0.7 0.14 145 / 0.5);    /* Sage Green primary with alpha */
+  --sidebar-border: oklch(0.85 0.03 135);
+  --sidebar-ring: oklch(0.7 0.14 145 / 0.5);
+
+  /* Chart Colors - Kept as in original */
+  --chart-1: oklch(0.7 0.2 25);    /* Red */
+  --chart-2: oklch(0.75 0.18 55);   /* Orange */
+  --chart-3: oklch(0.8 0.15 90);    /* Yellow */
+  --chart-4: oklch(0.7 0.2 130);   /* Green */
+  --chart-5: oklch(0.65 0.18 160);  /* Teal */
+  --chart-6: oklch(0.7 0.15 195);   /* Cyan */
+  --chart-7: oklch(0.6 0.2 240);   /* Blue */
+  --chart-8: oklch(0.65 0.22 275);  /* Purple */
+  --chart-9: oklch(0.7 0.2 310);   /* Magenta */
+  --chart-10: oklch(0.7 0.18 340);  /* Pink */
+  --chart-11: oklch(0.72 0.19 40);  /* Orange-Red */
+  --chart-12: oklch(0.78 0.16 75);  /* Gold */
+  --chart-13: oklch(0.75 0.17 110); /* Lime */
+  --chart-14: oklch(0.68 0.19 145); /* Forest Green */
+  --chart-15: oklch(0.66 0.16 180); /* Dark Teal */
+  --chart-16: oklch(0.62 0.18 215); /* Sky Blue */
+  --chart-17: oklch(0.58 0.21 260); /* Indigo */
+  --chart-18: oklch(0.67 0.23 295); /* Violet */
+  --chart-19: oklch(0.72 0.21 325); /* Hot Pink */
+  --chart-20: oklch(0.68 0.2 5);     /* Crimson */
+}
+
+/* Dark Mode - GRAY PRIMARY with sage green accents */
+.dark {
+  /* Neutrals - More neutral dark background (closer to rgb(27, 28, 29)) */
+  --background: oklch(0.17 0.01 90);  /* Very neutral dark gray, no blue tint */
+  --foreground: oklch(0.95 0.01 90);  /* Neutral white text */
+
+  /* Surfaces - Added subtle variations for depth */
+  --card: oklch(0.19 0.01 90);        /* Distinct card background */
+  --card-foreground: oklch(0.95 0.01 90);
+  --popover: oklch(0.21 0.01 90);     /* Distinct popover */
+  --popover-foreground: oklch(0.95 0.01 90);
+
+  /* Sidebar - Slightly distinct from main background */
+  --sidebar: oklch(0.18 0.01 90);
+  --sidebar-foreground: oklch(0.95 0.01 90);
+
+  /* Accents & Interaction - LIGHT GRAY PRIMARY */
+  --primary: oklch(0.85 0.01 90);          /* Light Gray as primary action color, no blue tint */
+  --primary-foreground: oklch(0.15 0.01 90); /* Dark text for contrast */
+  --primary-hover: oklch(0.88 0.01 90);     /* Lighter on hover */
+  --primary-active: oklch(0.9 0.01 90);     /* Even lighter when active */
+  --sidebar-primary: oklch(0.85 0.01 90);
+  --sidebar-primary-foreground: oklch(0.15 0.01 90);
+
+  /* Secondary & Muted - with sage green accent preserved */
+  --secondary: oklch(0.25 0.03 90);
+  --secondary-foreground: oklch(0.85 0.01 90);
+  --muted: oklch(0.22 0.03 90);
+  --muted-foreground: oklch(0.65 0.02 90);
+  --accent: oklch(0.3 0.07 145);           /* Subtle sage accent in dark mode */
+  --accent-foreground: oklch(0.9 0.01 90);
+  --sidebar-accent: oklch(0.3 0.07 145);
+  --sidebar-accent-foreground: oklch(0.9 0.01 90);
+
+  /* Destructive */
+  --destructive: oklch(0.7 0.22 25);
+  --destructive-foreground: oklch(0.15 0.01 90);
+
+  /* Borders, Inputs, Rings - More visible */
+  --border: oklch(0.28 0.02 90);
+  --input: oklch(0.28 0.02 90 / 0.7);
+  --ring: oklch(0.85 0.01 90 / 0.5);     /* Light Gray primary with alpha */
+  --sidebar-border: oklch(0.28 0.02 90);
+  --sidebar-ring: oklch(0.85 0.01 90 / 0.5);
+
+  /* Chart Colors - Vibrant Set (Dark Mode - Adjusted for Visibility) */
+  --chart-1: oklch(0.75 0.19 25);
+  --chart-2: oklch(0.8 0.17 55);
+  --chart-3: oklch(0.85 0.14 90);  /* Lighter Yellow for dark mode */
+  --chart-4: oklch(0.75 0.19 130);
+  --chart-5: oklch(0.7 0.17 160);
+  --chart-6: oklch(0.75 0.14 195);
+  --chart-7: oklch(0.65 0.19 240);
+  --chart-8: oklch(0.7 0.21 275);
+  --chart-9: oklch(0.75 0.19 310);
+  --chart-10: oklch(0.75 0.17 340);
+  --chart-11: oklch(0.77 0.18 40);
+  --chart-12: oklch(0.83 0.15 75);
+  --chart-13: oklch(0.8 0.16 110);
+  --chart-14: oklch(0.73 0.18 145);
+  --chart-15: oklch(0.71 0.15 180);
+  --chart-16: oklch(0.67 0.17 215);
+  --chart-17: oklch(0.63 0.20 260);
+  --chart-18: oklch(0.72 0.22 295);
+  --chart-19: oklch(0.77 0.20 325);
+  --chart-20: oklch(0.73 0.19 5);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* REMOVING old shadow/button rules as they should be handled by utilities or component variants */
+/* .card, .popover { ... } */
+/* .dark .card, .dark .popover { ... } */
+/* .btn-primary:hover { ... } */
+/* .btn-primary:active { ... } */
 
 @media (min-width: 695px) {
   .task-list-container {
     min-height: 50dvh;
   }
 }
-
 
 /* Mobile viewport height fix */
 @supports (-webkit-touch-callout: none) {

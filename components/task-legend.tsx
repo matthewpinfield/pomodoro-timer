@@ -3,6 +3,13 @@
 import type { Task } from "@/types/task"
 import { Check, Clock } from "lucide-react"
 import { motion } from "framer-motion"
+import { useState, useEffect } from "react"
+
+// Helper function to get CSS variable value
+const getCssVariable = (variableName: string): string => {
+  if (typeof window === "undefined") return "#808080";
+  return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim() || "#808080";
+};
 
 // Update the TaskLegendProps interface to include an onTaskClick handler
 interface TaskLegendProps {
@@ -18,18 +25,34 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
   const workdayMinutes = workdayHours * 60
   const remainingMinutes = Math.max(0, workdayMinutes - totalTaskMinutes)
 
+  // State to store computed colors
+  const [computedColors, setComputedColors] = useState<{ [key: number]: string }>({});
+  const [secondaryColor, setSecondaryColor] = useState('#f1f5f9'); // Default fallback
+
+  // Effect to compute colors
+  useEffect(() => {
+    const newComputedColors: { [key: number]: string } = {};
+    tasks.forEach(task => {
+      if (task.chartIndex) {
+        newComputedColors[task.chartIndex] = getCssVariable(`--chart-${task.chartIndex}`);
+      }
+    });
+    setComputedColors(newComputedColors);
+    setSecondaryColor(getCssVariable('--secondary')); // Get secondary color
+  }, [tasks]);
+
   if (tasks.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-4 bg-white/50 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
-        <Clock className="w-icon-base h-icon-base mx-auto mb-sm text-gray-400" />
+      <div className="text-center text-muted-foreground py-4 bg-card/80 backdrop-blur-sm rounded-xl shadow-sm border">
+        <Clock className="w-icon-base h-icon-base mx-auto mb-sm text-muted-foreground/80" />
         <p>No tasks yet. Add tasks to see them here.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4 bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-gray-100">
-      <h3 className="font-medium text-gray-700 mb-sm">Task Overview</h3>
+    <div className="space-y-4 bg-card/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border">
+      <h3 className="font-medium text-foreground mb-sm">Task Overview</h3>
       {tasks.map((task, index) => {
         const isCompleted = task.progressMinutes >= task.goalTimeMinutes
         const progressText = isCompleted ? "Goal Achieved!" : "Progress"
@@ -41,7 +64,7 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
         return (
           <motion.div
             key={task.id}
-            className="flex items-center p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+            className="flex items-center p-2 rounded-lg hover:bg-accent transition-colors cursor-pointer"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -50,19 +73,19 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
           >
             <div
               className="w-icon-sm h-icon-sm rounded-full mr-md flex-shrink-0 shadow-sm"
-              style={{ backgroundColor: task.color }}
+              style={{ backgroundColor: computedColors[task.chartIndex] || '#cccccc' }}
             />
             <div className="flex-1">
               <div className="flex items-center">
-                <span className="font-medium text-gray-800">{task.name}</span>
+                <span className="font-medium text-foreground">{task.name}</span>
                 {isCompleted && (
                   <div className="ml-sm bg-green-100 text-green-600 rounded-full p-xs">
                     <Check className="w-icon-xs h-icon-xs" />
                   </div>
                 )}
               </div>
-              <div className="text-sm text-gray-500 flex flex-wrap items-center">
-                <span className="mr-2 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+              <div className="text-sm text-muted-foreground flex flex-wrap items-center">
+                <span className="mr-2 bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-xs">
                   {goalHours > 0 ? `${goalHours}h ` : ""}
                   {goalMinutes}m
                 </span>
@@ -85,12 +108,15 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: tasks.length * 0.1 }}
         >
-          <div className="w-icon-sm h-icon-sm rounded-full mr-md flex-shrink-0" style={{ backgroundColor: "#f1f5f9" }} />
+          <div 
+            className="w-icon-sm h-icon-sm rounded-full mr-md flex-shrink-0"
+            style={{ backgroundColor: secondaryColor }} 
+          />
           <div className="flex-1">
             <div className="flex items-center">
-              <span className="font-medium text-gray-400">Unallocated Time</span>
+              <span className="font-medium text-muted-foreground">Unallocated Time</span>
             </div>
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-muted-foreground">
               {Math.floor(remainingMinutes / 60)}h {remainingMinutes % 60}m remaining in your {workdayHours}h day
             </div>
           </div>

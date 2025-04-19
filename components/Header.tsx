@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react'; // Added useCallback
-import { Menu, Settings, PieChart, Clock, AlertCircle, XCircle, Palette } from "lucide-react";
+import { Menu, Settings, PieChart, Clock, AlertCircle, XCircle, Palette, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from './SettingsDialog';
+import { FeaturesDialog } from './features-dialog';
 import { useTasks } from "@/context/task-context";
 import Image from 'next/image';
 import Link from "next/link";
@@ -16,8 +17,9 @@ const HIDE_THRESHOLD = 60; // Adjust based on your header's approx height
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isFeaturesOpen, setIsFeaturesOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { tasks } = useTasks();
+  const { tasks, currentTaskId, hasRealTasks } = useTasks();
   const hasTasks = tasks && tasks.length > 0;
   const [showTooltip, setShowTooltip] = useState(false);
   const router = useRouter();
@@ -101,20 +103,25 @@ export function Header() {
     // ... your menu items ...
      {
       name: "Task Planning",
-      icon: <PieChart className="w-icon-base h-icon-base" />,
+      icon: <PieChart className="w-icon-base h-icon-base text-popover-foreground" />,
       onClick: () => { router.push(basePath + "/pie-chart"); setIsMenuOpen(false); },
     },
     {
       name: "Timer",
-      icon: <Clock className="w-icon-base h-icon-base" />,
-      onClick: () => { if (hasTasks) { router.push(basePath + "/timer"); setIsMenuOpen(false); } },
-      disabled: !hasTasks,
+      icon: <Clock className="w-icon-base h-icon-base text-popover-foreground" />,
+      onClick: () => { if (hasRealTasks && currentTaskId) { router.push(basePath + "/timer"); setIsMenuOpen(false); } },
+      disabled: !hasRealTasks,
       tooltip: "You need to create tasks first"
     },
     {
       name: "Settings",
-      icon: <Settings className="w-icon-base h-icon-base" />,
+      icon: <Settings className="w-icon-base h-icon-base text-popover-foreground" />,
       onClick: () => { setIsSettingsOpen(true); setIsMenuOpen(false); },
+    },
+    {
+      name: "About",
+      icon: <Info className="w-icon-base h-icon-base text-popover-foreground" />,
+      onClick: () => { setIsFeaturesOpen(true); setIsMenuOpen(false); },
     },
   ];
 
@@ -123,15 +130,14 @@ export function Header() {
   return (
     // ***** Apply conditional transform and transition *****
     <header className={cn(
+      // Use background and border theme variables
       "py-2 pt-8 px-4 bg-background border-b flex justify-between items-center sticky top-0 z-50 safe-top",
-      "transition-transform duration-300 ease-in-out", // Add transition
-      // Apply transform only when header should be hidden
-      // Use md:translate-y-0 to disable the hiding effect on medium screens and up
+      "transition-transform duration-300 ease-in-out",
       !isHeaderVisible ? "-translate-y-full" : "translate-y-0",
-      "md:translate-y-0" // Always visible on md+ screens
+      "md:translate-y-0"
     )}>
       {/* --- Header content (Logo, Title, Menu Button) --- */}
-      <div className="flex items-center space-x-w-xs">
+      <div className="flex items-center space-x-3">
         {/* ... Logo Link ... */}
         <Link href={basePath + "/"} className="relative z-0">
            <Image
@@ -143,8 +149,9 @@ export function Header() {
           />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">FocusPie</h1>
-          <p className="text-xs text-gray-600 dark:text-gray-400 -mt-1">Your Daily Focus Plan</p>
+          {/* Use theme text colors */}
+          <h1 className="text-2xl font-bold text-foreground">FocusPie</h1>
+          <p className="text-xs text-muted-foreground -mt-1">Your Daily Focus Plan</p>
         </div>
       </div>
 
@@ -152,25 +159,22 @@ export function Header() {
         ref={menuRef}
         className="relative"
       >
-        {/* ... Menu Button ... */}
+        {/* Use theme colors for menu button */}
         <button
           onClick={toggleMenu}
-          className="flex flex-col justify-center items-center gap-1 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700"
+          className="flex flex-col justify-center items-center gap-1 p-2 rounded-md hover:bg-accent"
           aria-label="Menu"
         >
-          <span className="block w-5 h-0.5 bg-gray-600 dark:bg-gray-300"></span>
-          <span className="block w-5 h-0.5 bg-gray-600 dark:bg-gray-300"></span>
-          <span className="block w-5 h-0.5 bg-gray-600 dark:bg-gray-300"></span>
+          <span className="block w-5 h-0.5 bg-foreground"></span>
+          <span className="block w-5 h-0.5 bg-foreground"></span>
+          <span className="block w-5 h-0.5 bg-foreground"></span>
         </button>
 
-
-        {/* --- Menu Flyout (existing logic) --- */}
         {isMenuOpen && (
           <div
             className={cn(
-              // Adjusted position: fixed top-[actual header height] might be better than rem
-              // Or calculate dynamically if needed. For now, let's assume ~4rem is okay.
-              "fixed top-[4.5rem] right-0 h-[calc(100vh-4.5rem)] w-64 bg-popover text-foreground border-l border-border overflow-y-auto z-40" // Lower z-index than header
+              // Use theme colors
+              "fixed top-[4.5rem] right-0 h-[calc(100vh-4.5rem)] w-64 bg-popover text-popover-foreground border-l border-border overflow-y-auto z-40 shadow-md"
             )}
             role="menu"
           >
@@ -179,8 +183,10 @@ export function Header() {
                  <div
                    key={index}
                    className={cn(
-                     "flex items-center gap-3 px-4 py-3 hover:bg-slate-100 active:bg-slate-200 dark:hover:bg-slate-700 dark:active:bg-slate-600 cursor-pointer relative",
-                     item.disabled && "opacity-50 cursor-not-allowed hover:bg-white dark:hover:bg-slate-800"
+                     // Use theme hover/active colors
+                     "flex items-center gap-3 px-4 py-2 hover:bg-accent active:bg-accent/80 cursor-pointer relative",
+                     // Use theme background for disabled hover
+                     item.disabled && "opacity-50 cursor-not-allowed hover:bg-background"
                    )}
                    onClick={item.disabled ? undefined : item.onClick}
                    onMouseEnter={() => item.disabled && item.tooltip ? setShowTooltip(true) : null}
@@ -188,9 +194,10 @@ export function Header() {
                  >
                    {item.icon}
                    <span className="font-medium">{item.name}</span>
-                   {item.disabled && ( <AlertCircle className="w-icon-sm h-icon-sm text-amber-500 ml-auto" /> )}
+                   {item.disabled && ( <AlertCircle className="w-icon-sm h-icon-sm text-amber-500 ml-auto" /> )} {/* Keep amber warning icon for now */}
                    {item.disabled && item.tooltip && showTooltip && (
-                        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 bg-slate-800 text-white text-xs px-2 py-1 rounded shadow-md z-50 whitespace-nowrap">
+                        // Use theme popover colors for tooltip
+                        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded shadow-md z-50 whitespace-nowrap">
                           {item.tooltip}
                         </div>
                     )}
@@ -205,6 +212,10 @@ export function Header() {
       <SettingsDialog
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
+      />
+      <FeaturesDialog 
+        open={isFeaturesOpen}
+        onOpenChange={setIsFeaturesOpen}
       />
     </header>
   );
