@@ -8,6 +8,7 @@ const DEFAULT_POMODORO_MINUTES = 25;
 const DEFAULT_SHORT_BREAK_MINUTES = 5;
 const DEFAULT_LONG_BREAK_MINUTES = 15;
 const DEFAULT_POMODOROS_UNTIL_LONG_BREAK = 4;
+const DEFAULT_MONOCHROME = false;
 const SETTINGS_STORAGE_KEY = "focuspie-timer-settings";
 
 // --- Types ---
@@ -21,6 +22,7 @@ export interface TimerSettings {
   shortBreak: number; // Duration in seconds
   longBreak: number; // Duration in seconds
   pomodorosUntilLongBreak: number;
+  monochromeEnabled?: boolean; // Re-add monochrome setting
   autoPauseEnabled: boolean; // Added auto-pause setting
 }
 
@@ -234,7 +236,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       ...prevSettings,
       autoPauseEnabled: !prevSettings.autoPauseEnabled,
     }));
-  }, []);
+    console.log(`TIMER_CONTEXT: Toggled autoPause to ${!settings.autoPauseEnabled}`);
+  }, [settings.autoPauseEnabled]);
 
   // NEW: Function to update timer duration settings
   const updateTimerSetting = useCallback((key: keyof Omit<TimerSettings, 'autoPauseEnabled'>, valueInMinutes: number) => {

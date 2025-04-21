@@ -1,115 +1,189 @@
-# How the Pomodoro Timer Circle Works (For Dummies)
+# How the Pomodoro Timer Circle Works (Technical Description)
 
-This document explains how the circular timer in `components/timer-circle.tsx` displays time.
+This document provides a technical explanation of how the circular timer component (`components/timer-circle.tsx`) renders visual representations of time.
 
-## Core Idea
+## Core Concept
 
-Imagine a clock face. The timer uses arcs (curved lines) on this circle to show time passing.
+The timer utilizes concentric arcs drawn on an HTML canvas element to represent different time segments concurrently.
 
-*   **Red Arc:** Shows time left for the **entire task** you are working on.
-*   **Blue Arc:** Shows time left for the **current work session** (like a 25-minute Pomodoro).
-*   **Green Arc:** Shows time left for the **current break session** (short or long break).
+*   **Red Arc (Task Time Remaining):** Represents the fraction of the total defined task duration (`taskGoalMinutes`) that remains (`taskTimeLeftSeconds`).
+*   **Blue Arc (Work Session Progress):** Represents the progress through the current work session (e.g., Pomodoro cycle). Its maximum potential length is relative to the total task duration, and its current length reflects the time elapsed within the work session.
+*   **Green Arc (Break Session Progress):** Represents the progress through the current break session (short or long). Its length is directly proportional to the time remaining in the break.
 
-All time is measured in seconds internally, but displayed in minutes and seconds.
+All time values are handled in seconds internally for calculation accuracy, though often sourced from minute-based props or settings.
 
-## The Circle Parts
+## Canvas and Coordinate System
 
-*   **Canvas:** The digital drawing board where the circle is drawn (`canvasRef`).
-*   **Center:** The middle point of the circle (`centerX`, `centerY`).
-*   **Radius:** How big the circle is (`radius`).
-*   **Track Width:** How thick the colored arcs are (`trackWidth`).
-*   **Inner Radius:** The size of the white circle in the middle (`innerRadius`).
-*   **Start Angle:** The top of the circle (12 o\'clock position, `startAngle = -Math.PI / 2`).
-*   **Full Circle:** Represents 360 degrees (`fullCircle = Math.PI * 2`).
+*   **Canvas Element:** A reference (`canvasRef`) to the `<canvas>` DOM element is maintained.
+*   **Rendering Context:** A 2D rendering context (`ctx`) is obtained from the canvas.
+*   **Device Pixel Ratio (DPR):** The canvas buffer size is adjusted based on `window.devicePixelRatio` to ensure sharpness on high-resolution displays. The context is scaled accordingly.
+*   **Center Point:** Calculations are based on the canvas dimensions (`width`, `height`) to find the center (`centerX`, `centerY`).
+*   **Radii:**
+    *   `outerRadius`: Defines the outermost boundary of the arcs.
+    *   `innerRadius`: Defines the boundary of the central circular area.
+    *   `trackWidth`: The calculated thickness of the drawn arcs (`outerRadius - innerRadius`).
+*   **Angles:**
+    *   `startAngle`: The initial angle from which arcs are drawn, typically oriented towards the top (12 o'clock position, `-Math.PI / 2`), potentially with a slight rotation offset applied.
+    *   `endAngle`: The angle to which an arc is drawn clockwise from the `startAngle`.
+    *   `fullCircle`: Represents a full 360-degree rotation in radians (`Math.PI * 2`).
 
-## Drawing the Arcs
+## Arc Rendering Logic
 
-The computer draws arcs using `ctx.arc(centerX, centerY, radius, startAngle, endAngle)`.
-
-*   It starts drawing at `startAngle`.
-*   It draws **clockwise** to `endAngle`.
+Arcs are rendered using `ctx.arc(centerX, centerY, radius, startAngle, endAngle)`. The `radius` used is typically the midpoint of the track (`outerRadius - trackWidth / 2`). `lineCap` is often set to `"round"` for smoother arc ends.
 
 ### 1. Background Track
 
-*   A simple light gray full circle is drawn first as a background.
+*   **Purpose:** Provides a visual base layer for the progress arcs.
+*   **Implementation:** A full circle arc (0 to `fullCircle`) is drawn using the `trackWidth` and styled with a neutral background color (e.g., `--muted` CSS variable).
+
     ```javascript
-    ctx.arc(centerX, centerY, radius - trackWidth / 2, 0, fullCircle);
-    ctx.strokeStyle = "#e2e8f0"; // Light gray
+    // Example: Drawing the background track
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, outerRadius - trackWidth / 2, 0, fullCircle); // Use calculated outerRadius and trackWidth
+    ctx.lineWidth = trackWidth;
+    ctx.strokeStyle = getCssVariable('--muted', 'hsl(210, 40%, 96.1%)'); // Use theme color
+    ctx.stroke();
     ```
 
-### 2. Red Arc (Total Task Time Remaining)
+### 2. Red Arc (Task Time Remaining)
 
-*   **Purpose:** Shows how much of the total task duration is left.
-*   **Anchor Point:** Starts firmly at 12 o\'clock (`startAngle`). **This never moves.**
+*   **Purpose:** Displays the remaining duration of the overall task goal.
+*   **Anchor Point:** Starts at the defined `startAngle` (top, possibly rotated). **This start point is fixed.**
 *   **Length Calculation:**
-    *   `totalTaskSeconds`: Goal time for the task in seconds (`taskGoalMinutes * 60`).
-    *   `taskTimeLeftSeconds`: How many seconds are actually left for the task (this counts down).
-    *   `taskArcFraction`: What fraction of the task is left (`taskTimeLeftSeconds / totalTaskSeconds`).
-    *   `taskArcSize`: How long the red arc should be (`fullCircle * taskArcFraction`).
+    *   `totalTaskSeconds`: The task's goal duration converted to seconds (`taskGoalMinutes * 60`).
+    *   `taskTimeLeftSeconds`: The remaining time for the task in seconds (passed as prop).
+    *   `taskArcFraction`: The proportion of time remaining (`taskTimeLeftSeconds / totalTaskSeconds`), clamped between 0 and 1.
+    *   `taskArcSize`: The angular size of the arc (`fullCircle * taskArcFraction`).
 *   **Drawing:**
+    *   `taskEndAngle = startAngle + taskArcSize`
+    *   Draws an arc from `startAngle` to `taskEndAngle` using the task-specific color (e.g., `--destructive` CSS variable).
+
     ```javascript
-    // Draws from 12 o\'clock (startAngle), clockwise, by the calculated length (taskArcSize)
-    ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle, startAngle + taskArcSize);
-    ctx.strokeStyle = `#ef4444`; // Red
+    // Example: Drawing the Red Task Arc
+    const taskEndAngle = startAngle + taskArcSize;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, outerRadius - trackWidth / 2, startAngle, taskEndAngle);
+    ctx.lineWidth = trackWidth;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = getCssVariable('--destructive', 'hsl(0, 84.2%, 60.2%)');
+    ctx.stroke();
     ```
-*   **Recession (How it gets shorter):** As `taskTimeLeftSeconds` decreases, `taskArcSize` gets smaller. The arc\'s end point moves **counter-clockwise** back towards the 12 o'clock anchor.
+*   **Behavior:** As `taskTimeLeftSeconds` decreases, `taskArcSize` decreases, causing the `taskEndAngle` to move counter-clockwise towards the `startAngle`.
 
-### 3. Blue Arc (Current Work Session Time Remaining)
+### 3. Blue Arc (Work Session Progress)
 
-*   **Purpose:** Shows progress within the current work session (e.g., 25 mins), displayed *relative* to the total task time.
-*   **Anchor Point:** Starts where the Red Arc **ends**. (`blueArcStartAngle = startAngle + completedTaskArc`). **This point moves** as the Red Arc changes.
-    *   `completedTaskArc`: Calculates the *empty* part of the circle *not* covered by the Red Arc (`fullCircle * (1 - taskArcFraction)`).
-*   **Length Calculation (Relative Scaling is KEY):**
-    *   `modeProgress`: Progress within the current session (0 to 1) (`timeLeftInMode / currentModeTotalDuration`).
-    *   `maxWorkSessionArc`: Maximum size the *entire* blue session *could* take up relative to the *entire* task time (`(currentModeTotalDuration / totalTaskSeconds) * fullCircle`).
-    *   `currentModeArcSize`: Actual length of the blue arc right now (`modeProgress * maxWorkSessionArc`). This scales the session progress to fit visually within the task context.
+*   **Purpose:** Shows progress within the current work session (e.g., Pomodoro), with its maximum length relative to the total task duration.
+*   **Anchor Point:** Starts at the **same** defined `startAngle` as the Red Arc (top, possibly rotated). **This start point is fixed, causing overlap with the Red Arc.**
+*   **Length Calculation (Relative Scaling):**
+    *   `pomodoroDurationSeconds`: The total duration of the current work session mode (e.g., `settings.pomodoro`).
+    *   `totalTaskSeconds`: The task's goal duration in seconds (`taskGoalMinutes * 60`).
+    *   `timeLeftInMode`: Remaining time in the current work session (passed as prop).
+    *   `maxPomodoroRatio`: The maximum proportion of the circle this work session represents relative to the task (`pomodoroDurationSeconds / totalTaskSeconds`), clamped > 0.
+    *   `maxPomodoroArcSize`: The maximum angular size the blue arc *could* have (`fullCircle * maxPomodoroRatio`). This determines the scale.
+    *   `modeProgress`: The current progress within the work session (`timeLeftInMode / pomodoroDurationSeconds`), clamped between 0 and 1.
+    *   `currentBlueArcSize`: The actual angular size to draw (`maxPomodoroArcSize * modeProgress`).
 *   **Drawing:**
+    *   `blueArcEndAngle = startAngle + currentBlueArcSize`
+    *   Draws an arc from `startAngle` to `blueArcEndAngle` using the work session color (e.g., `--primary` CSS variable).
+
     ```javascript
-    // Draws from where the red arc ends (blueArcStartAngle), clockwise, by its calculated relative length (currentModeArcSize)
-    const blueArcEndAngle = blueArcStartAngle + currentModeArcSize;
-    ctx.arc(centerX, centerY, radius - trackWidth / 2, blueArcStartAngle, blueArcEndAngle);
-    ctx.strokeStyle = `#3b82f6`; // Blue
+    // Example: Drawing the Blue Work Arc (Illustrative Calculation)
+    const pomodoroDurationSeconds = currentModeTotalDuration; // Assuming work mode
+    const totalTaskSeconds = (taskGoalMinutes || 1) * 60;
+    const maxPomodoroRatio = totalTaskSeconds > 0 ? pomodoroDurationSeconds / totalTaskSeconds : 0;
+    const maxPomodoroArcSize = fullCircle * maxPomodoroRatio;
+    const modeProgress = pomodoroDurationSeconds > 0 ? timeLeftInMode / pomodoroDurationSeconds : 0;
+    const currentBlueArcSize = maxPomodoroArcSize * Math.max(0, modeProgress); // Ensure non-negative
+
+    const blueArcEndAngle = startAngle + currentBlueArcSize;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, outerRadius - trackWidth / 2, startAngle, blueArcEndAngle);
+    ctx.lineWidth = trackWidth;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = getCssVariable('--primary', 'hsl(221.2, 83.2%, 53.3%)');
+    ctx.stroke();
     ```
-*   **Recession:** As `timeLeftInMode` decreases, `currentModeArcSize` gets smaller. The arc\'s end point moves **counter-clockwise** back towards its *moving* start point (`blueArcStartAngle`).
+*   **Behavior:** As `timeLeftInMode` decreases, `modeProgress` decreases, causing `currentBlueArcSize` to decrease. The `blueArcEndAngle` moves counter-clockwise towards the `startAngle`. The arc's maximum potential length is scaled by the ratio of the Pomodoro duration to the Task duration.
 
-### 4. Green Arc (Break Session Time Remaining)
+### 4. Green Arc (Break Session Progress)
 
-*   **Purpose:** Shows time left in a short or long break.
-*   **Anchor Point:** Starts firmly at 12 o\'clock (`startAngle`). **This never moves.**
-*   **Length Calculation:**
-    *   `modeProgress`: Progress within the break (0 to 1) (`timeLeftInMode / currentModeTotalDuration`).
-    *   `currentModeArcSize`: How long the green arc should be (`fullCircle * modeProgress`). No relative scaling needed here.
+*   **Purpose:** Shows progress within the current break session.
+*   **Anchor Point:** Starts at the **same** defined `startAngle` as the Red and Blue Arcs (top, possibly rotated). **Fixed start point.**
+*   **Length Calculation (Absolute Progress):**
+    *   `breakDurationSeconds`: The total duration of the current break mode (e.g., `settings.shortBreak` or `settings.longBreak`).
+    *   `timeLeftInMode`: Remaining time in the current break session (passed as prop).
+    *   `modeProgress`: The current progress within the break (`timeLeftInMode / breakDurationSeconds`), clamped between 0 and 1.
+    *   `currentGreenArcSize`: The angular size to draw (`fullCircle * modeProgress`).
 *   **Drawing:**
+    *   `greenArcEndAngle = startAngle + currentGreenArcSize`
+    *   Draws an arc from `startAngle` to `greenArcEndAngle` using the break color (e.g., `--success` CSS variable).
+
     ```javascript
-    // Draws from 12 o\'clock (startAngle), clockwise, by the calculated length (currentModeArcSize)
-    const breakArcEndAngle = startAngle + currentModeArcSize;
-    ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle, breakArcEndAngle);
-    ctx.strokeStyle = `#10b981`; // Green
+    // Example: Drawing the Green Break Arc
+    const breakDurationSeconds = currentModeTotalDuration; // Assuming break mode
+    const modeProgress = breakDurationSeconds > 0 ? timeLeftInMode / breakDurationSeconds : 0;
+    const currentGreenArcSize = fullCircle * Math.max(0, modeProgress);
+
+    const greenArcEndAngle = startAngle + currentGreenArcSize;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, outerRadius - trackWidth / 2, startAngle, greenArcEndAngle);
+    ctx.lineWidth = trackWidth;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = getCssVariable('--success', 'hsl(142.1, 76.2%, 36.3%)');
+    ctx.stroke();
     ```
-*   **Recession:** As `timeLeftInMode` decreases, `currentModeArcSize` gets smaller. The arc\'s end point moves **counter-clockwise** back towards the 12 o'clock anchor.
+*   **Behavior:** As `timeLeftInMode` decreases, `modeProgress` decreases, causing `currentGreenArcSize` to decrease. The `greenArcEndAngle` moves counter-clockwise towards the `startAngle`.
 
-## Center White Circle and Text
+## Center Circle and Text
 
-*   A white circle is drawn in the middle (`innerRadius`) with a shadow effect.
-*   **Main Time (`timeDisplay`):** Shows `timeLeftInMode` formatted like MM:SS.
-*   **Subtitle (`subtitle`):** Shows the current `taskName` (if working) or \'Short Break\'/\'Long Break\'/\'Ready\'.
-*   **Task Time Remaining (`taskTimeDisplay`):** Shows `taskTimeLeftSeconds` formatted like H:MM \'remaining\' (only shown during \'working\' mode).
-*   **Play/Pause Icon:** Drawn in the very center, changes based on `isRunning` state.
+*   **Inner Circle:** A central circle is drawn using `innerRadius`, typically filled with a background color (e.g., `--card`) and potentially styled with borders or shadows to match UI conventions (e.g., the pie chart's center).
+*   **Text Elements:**
+    *   **Main Time (`timeDisplay`):** Displays the primary countdown time (usually `timeLeftInMode` for the active mode) formatted as MM:SS. Font size is typically large and bold.
+    *   **Subtitle (`subtitle`):** Displays context-dependent text below the main time (e.g., current `taskName`, "Short Break", "Long Break", "Ready"). Text may be truncated if it exceeds the available width within the inner circle.
+    *   **Task Time Remaining:** Optionally displays the total remaining task time (`taskTimeLeftSeconds`) formatted as H:MM, typically shown only during 'working' mode.
+*   **Play/Pause Icon:** An icon (triangle for play, bars for pause) is drawn in the center, visually indicating the timer's `isRunning` state.
 
-## Static Time Below Timer
+## State Management and Props
 
-*   In `app/timer/page.tsx`, there\'s a separate piece of text showing the current actual time (like 10:30 AM). This comes from `new Date()` and is stored in `formattedTime`.
+*   **Core Logic:** The timer's state transitions (`mode` changes, starting/pausing, cycle completion) are managed externally, typically within a React Context (`TimerContext`).
+*   **Task Data:** Information about the current task (`taskName`, `taskGoalMinutes`) and potentially its overall progress is managed externally (`TaskContext`).
+*   **Props:** The `TimerCircle` component receives all necessary data to render the current state via props (`mode`, `timeLeftInMode`, `isRunning`, `taskName`, `taskGoalMinutes`, `taskTimeLeftSeconds`, etc.).
+*   **Redrawing:** The component uses `useCallback` for the `draw` function and `useEffect` or `useLayoutEffect` hooks to trigger redraws when relevant props change or when the timer is running (using `requestAnimationFrame` for smooth updates). `taskTimeLeftSeconds` is updated and persisted via `localStorage` in the parent `app/timer/page.tsx` component.
 
-## How the Numbers Change (State Management)
+This updated description reflects the intended functionality, particularly the shared start angle and the relative scaling calculation for the blue work arc.
 
-*   The actual numbers (`timeLeftInMode`, `taskTimeLeftSeconds`, `mode`, `isRunning`, etc.) are managed by React Context (`useTimer`, `useTasks`).
-*   Functions like `startWork`, `pauseTimer`, `skipBreak` in the context update these numbers.
-*   The `TimerCircle` component receives these numbers as `props`.
-*   A `useEffect` hook inside `TimerCircle` watches for changes in these props and redraws the canvas whenever a number changes.
-*   In `app/timer/page.tsx`, `useEffect` hooks handle the countdown logic for `taskTimeLeftSeconds` and save/load it from the browser\'s Local Storage (`focuspie-taskTimeLeft`) so it doesn\'t reset if you close the page.
 
-## Opacity
+#length of pomodoro calculation examples
 
-*   When the timer is paused (`isRunning` is false), the Red, Blue, and Green arcs are drawn slightly transparent (using `opacitySuffix = "80"`).
+pomodoro in these examples is based 25 minutes:
+example 1:  current task is 1 hour so pomodoro is  41.67% of current task arc
+example 2:  current task is 50 minutes so pomodoro is 50% of current task arc
+example 3:  current task is 2 hours  so pomodoro is 20.83% of current task arc
 
-This covers the main parts of how the timer circle works visually and functionally.
+Example 1:
+
+Current task: 1 hour = 60 minutes
+Pomodoro duration: 25 minutes
+Percentage:  
+60
+25
+​
+ ×100%≈41.67%
+Example 2:
+
+Current task: 50 minutes
+Pomodoro duration: 25 minutes
+Percentage:  
+50
+25
+​
+ ×100%=50%
+Example 3:
+
+Current task: 2 hours = 120 minutes
+Pomodoro duration: 25 minutes
+Percentage:  
+120
+25
+​
+ ×100%≈20.83%

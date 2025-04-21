@@ -70,6 +70,30 @@
   --chart-18: oklch(0.67 0.23 295); /* Violet */
   --chart-19: oklch(0.72 0.21 325); /* Hot Pink */
   --chart-20: oklch(0.68 0.2 5);     /* Crimson */
+
+
+    /* --- Pre-defined Monochrome Green Gradient --- */
+  
+  --mono-1: oklch(0.33 0.1031 145);  /* Lightness: 0.33 (Darkest) to 0.70 (Lightest) */
+  --mono-2: oklch(0.3564 0.1057 145);
+  --mono-3: oklch(0.3829 0.1084 145);
+  --mono-4: oklch(0.4093 0.1110 145);
+  --mono-5: oklch(0.4357 0.1136 145);
+  --mono-6: oklch(0.4621 0.1163 145);
+  --mono-7: oklch(0.4886 0.1189 145);
+  --mono-8: oklch(0.5150 0.1216 145); /* Mid-tone */
+  --mono-9: oklch(0.5414 0.1242 145);
+  --mono-10: oklch(0.5679 0.1268 145);
+  --mono-11: oklch(0.5943 0.1295 145);
+  --mono-12: oklch(0.6207 0.1321 145);
+  --mono-13: oklch(0.6471 0.1347 145);
+  --mono-14: oklch(0.6736 0.1374 145);
+  --mono-15: oklch(0.7000 0.1400 145); /* Lightest */
+  /* --- End Monochrome Gradient --- */
+
+  /* NEW Fixed Timer Arc Colors */
+  --timer-work-fixed: oklch(0.75 0.1 240); /* Soft Pastel Blue */
+  --timer-rest-fixed: oklch(0.8 0.08 145); /* Soft Pastel Sage/Green */
 }
 
 /* Dark Mode - GRAY PRIMARY with sage green accents */
@@ -138,6 +162,26 @@
   --chart-18: oklch(0.72 0.22 295);
   --chart-19: oklch(0.77 0.20 325);
   --chart-20: oklch(0.73 0.19 5);
+
+    /* --- Pre-defined Monochrome Green Gradient (Dark Mode) --- */
+  /* Decide if you want the same or a different gradient for dark mode */
+  /* Example: Using the same as light mode */
+  --mono-1: oklch(0.33 0.1031 145);
+  --mono-2: oklch(0.3564 0.1057 145);
+  --mono-3: oklch(0.3829 0.1084 145);
+  --mono-4: oklch(0.4093 0.1110 145);
+  --mono-5: oklch(0.4357 0.1136 145);
+  --mono-6: oklch(0.4621 0.1163 145);
+  --mono-7: oklch(0.4886 0.1189 145);
+  --mono-8: oklch(0.5150 0.1216 145);
+  --mono-9: oklch(0.5414 0.1242 145);
+  --mono-10: oklch(0.5679 0.1268 145);
+  --mono-11: oklch(0.5943 0.1295 145);
+  --mono-12: oklch(0.6207 0.1321 145);
+  --mono-13: oklch(0.6471 0.1347 145);
+  --mono-14: oklch(0.6736 0.1374 145);
+  --mono-15: oklch(0.7000 0.1400 145);
+  /* --- End Monochrome Gradient --- */
 }
 
 @layer base {

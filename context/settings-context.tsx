@@ -13,8 +13,8 @@ const WORKDAY_HOURS_STORAGE_KEY = "focuspie-settings-workdayHours"; // Use a con
 interface SettingsContextType {
   workdayHours: number;
   updateWorkdayHours: (hours: number) => void;
-  useMonochromeChart: boolean; // Add new setting state
-  updateMonochromeChart: (useMonochrome: boolean) => void; // Add updater function
+  useMonochromeChart: boolean;
+  updateMonochromeChart: (useMonochrome: boolean) => void;
   // Add other settings here later (timer durations, theme)
 }
 
@@ -25,7 +25,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export function SettingsProvider({ children }: { children: ReactNode }) {
   // --- State ---
   const [workdayHours, setWorkdayHours] = useState<number>(DEFAULT_WORKDAY_HOURS);
-  const [useMonochromeChart, setUseMonochromeChart] = useState<boolean>(false); // Add state for monochrome setting
+  const [useMonochromeChart, setUseMonochromeChart] = useState<boolean>(false);
 
   // Load settings from localStorage on initial render
   useEffect(() => {
@@ -40,14 +40,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    // Load Monochrome Setting
+    // Re-add Load Monochrome Setting
     const savedMonochrome = localStorage.getItem(MONOCHROME_STORAGE_KEY);
     // Check for 'true' string explicitly, as any non-empty string is truthy
     if (savedMonochrome === 'true') { 
       setUseMonochromeChart(true);
     } else if (savedMonochrome === 'false') {
         setUseMonochromeChart(false);
-        // Optional: Remove item if it's 'false' to keep localStorage cleaner? Or leave it.
     } // If item doesn't exist or has other value, default 'false' is used.
 
   }, []);
@@ -57,7 +56,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(WORKDAY_HOURS_STORAGE_KEY, workdayHours.toString());
   }, [workdayHours]);
   
-  // Save useMonochromeChart to localStorage whenever it changes
+  // Re-add Save useMonochromeChart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem(MONOCHROME_STORAGE_KEY, useMonochromeChart.toString());
   }, [useMonochromeChart]);
@@ -72,7 +71,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Add updater function for monochrome setting
+  // Re-add updater function for monochrome setting
   const updateMonochromeChart = (useMonochrome: boolean) => {
     setUseMonochromeChart(useMonochrome);
   };
@@ -81,8 +80,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const value = {
     workdayHours,
     updateWorkdayHours,
-    useMonochromeChart,       // Add state to value
-    updateMonochromeChart,    // Add updater to value
+    useMonochromeChart,
+    updateMonochromeChart,
     // Add other settings values/updaters here
   };
 

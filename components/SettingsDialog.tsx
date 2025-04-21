@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"; // Import Input
 import { Switch } from "@/components/ui/switch"; // Import Switch
 import { Button } from "@/components/ui/button"; // Ensure Button is imported
 import { useTheme } from "next-themes"; // Import the useTheme hook
-import { Sun, Moon, PauseCircle, Palette, RotateCcw } from "lucide-react"; // Re-import icons
+import { PauseCircle, Palette, RotateCcw } from "lucide-react"; // Re-import icons
 import * as React from "react"; // Import React itself
 import { useRef, useEffect } from "react"; // Import useRef and useEffect
 
@@ -22,9 +22,8 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   // Get settings and the new update function from useTimer
   const { settings: timerSettings, toggleAutoPause, updateTimerSetting } = useTimer(); 
-  const { theme, setTheme } = useTheme();
-  // Get the new monochrome setting and its updater
-  const { workdayHours, updateWorkdayHours, useMonochromeChart, updateMonochromeChart } = useSettings();
+  // Re-import and use useMonochromeChart and updateMonochromeChart from useSettings
+  const { workdayHours, updateWorkdayHours, useMonochromeChart, updateMonochromeChart } = useSettings(); 
   const contentRef = useRef<HTMLDivElement>(null); // Ref for DialogContent
 
   // Handler for duration inputs
@@ -176,7 +175,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </div>
           </div>
 
-          {/* --- Monochrome Chart Setting --- */}
+          {/* --- Monochrome CHART Setting --- */}
           <div className="flex items-center justify-between">
             <div className="space-y-1 pr-4">
               <Label htmlFor="monochrome-chart-switch" className="text-foreground cursor-pointer">
@@ -190,7 +189,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 id="monochrome-chart-switch"
                 checked={useMonochromeChart}
                 onCheckedChange={(checked) => {
-                  console.log(`SETTINGS_DIALOG: Monochrome switch clicked. New checked state should be: ${checked}`);
+                  console.log(`SETTINGS_DIALOG: Monochrome Chart switch clicked. New checked state should be: ${checked}`);
                   updateMonochromeChart(checked);
                 }}
                 aria-label="Toggle monochrome pie chart colors"
@@ -198,31 +197,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </div>
           </div>
 
-          {/* --- Theme Setting --- */}
-          <div className="flex items-center justify-between">
-            <Label className="text-foreground">
-              Appearance Theme
-            </Label>
-            <div className="flex gap-1"> {/* Container for buttons */}
-              <Button
-                variant={theme === 'light' ? 'secondary' : 'outline'} // Highlight if active
-                size="icon"
-                onClick={() => setTheme('light')}
-                aria-label="Set light theme"
-              >
-                <Sun className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={theme === 'dark' ? 'secondary' : 'outline'} // Highlight if active
-                size="icon"
-                onClick={() => setTheme('dark')}
-                aria-label="Set dark theme"
-              >
-                <Moon className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
+          
           {/* --- Reset Welcome Screen --- */}
           <div className="flex items-center justify-between pt-4 border-t">
             <div className="space-y-1 pr-4">

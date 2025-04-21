@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 import type { Task } from "@/types/task"; // Import Task type
 import { Clock, Plus, Play } from "lucide-react"
 import { useTheme } from "next-themes"; // Import useTheme
+import { getTaskDisplayColor } from '@/lib/utils'; // Adjust path if needed
 
 interface PieChartProps {
   tasks: Task[]
@@ -86,38 +87,19 @@ export function PieChart({
     const newSliceColors: { [key: string]: string } = {};
     const primaryColor = getCssVariable('--primary');
     
-    if (forceMonochrome) {
-        // --- Monochrome Logic --- 
-        // Simple lightness adjustment example (more sophisticated logic possible)
-        const baseLightness = 70; // Adjust base lightness (0-100) as needed
-        const lightnessStep = 5; // Adjust step between shades
-        
-        tasks.forEach((task, index) => {
-            // Calculate lightness: start lighter, get slightly darker
-            // Ensure lightness stays within reasonable bounds (e.g., 30-90)
-            const lightness = Math.max(30, Math.min(90, baseLightness - (index * lightnessStep)));
-            // Reconstruct color (assuming OKLCH primary color format)
-            // This assumes --primary is defined like: oklch(L C H)
-            // We will replace L with the calculated lightness
-            const parts = primaryColor.match(/oklch\(([^ ]+) ([^ ]+) ([^)]+)\)/);
-            if (parts) {
-                 // Construct OKLCH string with new lightness
-                 newSliceColors[task.chartIndex] = `oklch(${lightness / 100} ${parts[2]} ${parts[3]})`;
-            } else {
-                 // Fallback if primary color isn't OKLCH or parsing fails
-                 // Could use tinycolor2 here for HSL manipulation as fallback
-                 newSliceColors[task.chartIndex] = primaryColor; // Just use primary as fallback
-            }
-        });
-        setComputedEmptyColor(getCssVariable('--secondary')); // Use secondary for empty space in monochrome
-
-    } else {
-        // --- Standard Theme Color Logic --- 
-        tasks.forEach(task => {
-            newSliceColors[task.chartIndex] = getCssVariable(`--chart-${task.chartIndex}`);
-        });
-        setComputedEmptyColor(getCssVariable('--secondary')); // Use secondary for empty space
-    }
+    tasks.forEach(task => {
+      // *** Use the shared utility function ***
+      const color = getTaskDisplayColor(task, forceMonochrome);
+      // Use chartIndex as the key for the color map
+      // Ensure task.chartIndex exists and is a number before using it as a key
+      if (task && typeof task.chartIndex === 'number') {
+          newSliceColors[task.chartIndex] = color;
+      } else {
+          console.warn(`PieChart ColorEffect: Task missing or has invalid chartIndex:`, task);
+      }
+  });
+  // We still need to set the empty color outside the loop
+  setComputedEmptyColor(getCssVariable('--secondary'));
 
     setComputedSliceColors(newSliceColors);
     // Update other fixed colors (could also be made monochrome)
