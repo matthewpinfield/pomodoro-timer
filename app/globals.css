@@ -2,38 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Light Mode - Sage Green Primary with improved depth */
+/* Light Mode Defaults */
 :root {
   --radius: 0.625rem;
 
-  /* Neutrals - Softened white background */
-  --background: oklch(0.98 0.02 135);  /* Slightly off-white with warmth */
-  --foreground: oklch(0.2 0.01 90);   /* More neutral dark text */
+  /* Neutrals */
+  --background: oklch(0.98 0.02 135);
+  --foreground: oklch(0.2 0.01 90);
 
-  /* Surfaces - Added subtle variations for depth */
+  /* Surfaces */
   --card: oklch(0.99 0.01 135);
   --card-foreground: oklch(0.2 0.01 90);
   --popover: oklch(0.99 0.01 135);
   --popover-foreground: oklch(0.2 0.01 90);
 
-  /* Sidebar - Slightly distinct from main background */
+  /* Sidebar */
   --sidebar: oklch(0.97 0.03 135);
   --sidebar-foreground: oklch(0.2 0.01 90);
 
-  /* Accents & Interaction - LIGHTER SAGE GREEN PRIMARY */
-  --primary: oklch(0.7 0.14 145);          /* Lighter, more muted Sage Green */
-  --primary-foreground: oklch(0.98 0.01 135); /* Off-white for contrast */
-  --primary-hover: oklch(0.68 0.16 145);     /* Slightly darker on hover */
-  --primary-active: oklch(0.66 0.17 145);    /* Even darker when active */
+  /* Accents & Interaction */
+  --primary: oklch(0.7 0.14 145);
+  --primary-foreground: oklch(0.98 0.01 135);
+  --primary-hover: oklch(0.68 0.16 145);
+  --primary-active: oklch(0.66 0.17 145);
   --sidebar-primary: oklch(0.7 0.14 145);
   --sidebar-primary-foreground: oklch(0.98 0.01 135);
 
-  /* Secondary & Muted - More distinct from background */
+  /* Secondary & Muted */
   --secondary: oklch(0.92 0.04 135);
   --secondary-foreground: oklch(0.3 0.02 90);
   --muted: oklch(0.94 0.03 135);
   --muted-foreground: oklch(0.45 0.02 90);
-  --accent: oklch(0.92 0.05 145);        /* Very light sage for accent areas */
+  --accent: oklch(0.92 0.05 145);
   --accent-foreground: oklch(0.3 0.02 90);
   --sidebar-accent: oklch(0.92 0.05 145);
   --sidebar-accent-foreground: oklch(0.3 0.02 90);
@@ -42,14 +42,14 @@
   --destructive: oklch(0.65 0.23 25);
   --destructive-foreground: oklch(0.98 0.01 135);
 
-  /* Borders, Inputs, Rings - More visible */
-  --border: oklch(0.85 0.03 135);        /* Darker border for better visibility */
-  --input: oklch(0.85 0.03 135 / 0.7);   /* More visible input borders */
-  --ring: oklch(0.7 0.14 145 / 0.5);    /* Sage Green primary with alpha */
+  /* Borders, Inputs, Rings */
+  --border: oklch(0.85 0.03 135);
+  --input: oklch(0.85 0.03 135 / 0.7);
+  --ring: oklch(0.7 0.14 145 / 0.5);
   --sidebar-border: oklch(0.85 0.03 135);
   --sidebar-ring: oklch(0.7 0.14 145 / 0.5);
 
-  /* Chart Colors - Kept as in original */
+  /* Chart Colors - Base (Light Mode) */
   --chart-1: oklch(0.7 0.2 25);    /* Red */
   --chart-2: oklch(0.75 0.18 55);   /* Orange */
   --chart-3: oklch(0.8 0.15 90);    /* Yellow */
@@ -71,61 +71,148 @@
   --chart-19: oklch(0.72 0.21 325); /* Hot Pink */
   --chart-20: oklch(0.68 0.2 5);     /* Crimson */
 
-
-    /* --- Pre-defined Monochrome Green Gradient --- */
-  
-  --mono-1: oklch(0.33 0.1031 145);  /* Lightness: 0.33 (Darkest) to 0.70 (Lightest) */
+  /* Monochrome Green Gradient - Base (Light Mode) */
+  --mono-1: oklch(0.33 0.1031 145);
   --mono-2: oklch(0.3564 0.1057 145);
   --mono-3: oklch(0.3829 0.1084 145);
   --mono-4: oklch(0.4093 0.1110 145);
   --mono-5: oklch(0.4357 0.1136 145);
   --mono-6: oklch(0.4621 0.1163 145);
   --mono-7: oklch(0.4886 0.1189 145);
-  --mono-8: oklch(0.5150 0.1216 145); /* Mid-tone */
+  --mono-8: oklch(0.5150 0.1216 145);
   --mono-9: oklch(0.5414 0.1242 145);
   --mono-10: oklch(0.5679 0.1268 145);
   --mono-11: oklch(0.5943 0.1295 145);
   --mono-12: oklch(0.6207 0.1321 145);
   --mono-13: oklch(0.6471 0.1347 145);
   --mono-14: oklch(0.6736 0.1374 145);
-  --mono-15: oklch(0.7000 0.1400 145); /* Lightest */
-  /* --- End Monochrome Gradient --- */
+  --mono-15: oklch(0.7000 0.1400 145);
 
-  /* NEW Fixed Timer Arc Colors */
+  /* --- Color Calculation Reference ---
+  WORK MODE VARIANTS (Darker/Focused):
+  - Decrease base Lightness (L) by 0.15 (ensure L >= 0)
+  - Keep base Chroma (C) the same
+  - Keep base Hue (H) the same
+  Example (Light): --chart-1: oklch(0.7 0.2 25) → --work-chart-1: oklch(0.55 0.2 25)
+  Example (Dark): --chart-1: oklch(0.75 0.19 25) → --work-chart-1: oklch(0.60 0.19 25)
+
+  REST MODE VARIANTS (Lighter/Softer):
+  - Increase base Lightness (L) by 0.15 (ensure L <= 1)
+  - Keep base Chroma (C) the same
+  - Keep base Hue (H) the same
+  Example (Light): --chart-1: oklch(0.7 0.2 25) → --rest-chart-1: oklch(0.85 0.2 25)
+  Example (Dark): --chart-1: oklch(0.75 0.19 25) → --rest-chart-1: oklch(0.90 0.19 25)
+  --- End Color Calculation Reference --- */
+
+  /* Work Variants (Light Mode) - Based on :root base colors */
+  --work-chart-1: oklch(0.55 0.2 25);
+  --work-chart-2: oklch(0.60 0.18 55);
+  --work-chart-3: oklch(0.65 0.15 90);
+  --work-chart-4: oklch(0.55 0.2 130);
+  --work-chart-5: oklch(0.50 0.18 160);
+  --work-chart-6: oklch(0.55 0.15 195);
+  --work-chart-7: oklch(0.45 0.2 240);
+  --work-chart-8: oklch(0.50 0.22 275);
+  --work-chart-9: oklch(0.55 0.2 310);
+  --work-chart-10: oklch(0.55 0.18 340);
+  --work-chart-11: oklch(0.57 0.19 40);
+  --work-chart-12: oklch(0.63 0.16 75);
+  --work-chart-13: oklch(0.60 0.17 110);
+  --work-chart-14: oklch(0.53 0.19 145);
+  --work-chart-15: oklch(0.51 0.16 180);
+  --work-chart-16: oklch(0.47 0.18 215);
+  --work-chart-17: oklch(0.43 0.21 260);
+  --work-chart-18: oklch(0.52 0.23 295);
+  --work-chart-19: oklch(0.57 0.21 325);
+  --work-chart-20: oklch(0.53 0.2 5);
+  --work-mono-1: oklch(0.18 0.1031 145);
+  --work-mono-2: oklch(0.2064 0.1057 145);
+  --work-mono-3: oklch(0.2329 0.1084 145);
+  --work-mono-4: oklch(0.2593 0.1110 145);
+  --work-mono-5: oklch(0.2857 0.1136 145);
+  --work-mono-6: oklch(0.3121 0.1163 145);
+  --work-mono-7: oklch(0.3386 0.1189 145);
+  --work-mono-8: oklch(0.3650 0.1216 145);
+  --work-mono-9: oklch(0.3914 0.1242 145);
+  --work-mono-10: oklch(0.4179 0.1268 145);
+  --work-mono-11: oklch(0.4443 0.1295 145);
+  --work-mono-12: oklch(0.4707 0.1321 145);
+  --work-mono-13: oklch(0.4971 0.1347 145);
+  --work-mono-14: oklch(0.5236 0.1374 145);
+  --work-mono-15: oklch(0.5500 0.1400 145);
+
+  /* Rest Variants (Light Mode) - Based on :root base colors */
+  --rest-chart-1: oklch(0.85 0.2 25);
+  --rest-chart-2: oklch(0.90 0.18 55);
+  --rest-chart-3: oklch(0.95 0.15 90);
+  --rest-chart-4: oklch(0.85 0.2 130);
+  --rest-chart-5: oklch(0.80 0.18 160);
+  --rest-chart-6: oklch(0.85 0.15 195);
+  --rest-chart-7: oklch(0.75 0.2 240);
+  --rest-chart-8: oklch(0.80 0.22 275);
+  --rest-chart-9: oklch(0.85 0.2 310);
+  --rest-chart-10: oklch(0.85 0.18 340);
+  --rest-chart-11: oklch(0.87 0.19 40);
+  --rest-chart-12: oklch(0.93 0.16 75);
+  --rest-chart-13: oklch(0.90 0.17 110);
+  --rest-chart-14: oklch(0.83 0.19 145);
+  --rest-chart-15: oklch(0.81 0.16 180);
+  --rest-chart-16: oklch(0.77 0.18 215);
+  --rest-chart-17: oklch(0.73 0.21 260);
+  --rest-chart-18: oklch(0.82 0.23 295);
+  --rest-chart-19: oklch(0.87 0.21 325);
+  --rest-chart-20: oklch(0.83 0.2 5);
+  --rest-mono-1: oklch(0.48 0.1031 145);
+  --rest-mono-2: oklch(0.5064 0.1057 145);
+  --rest-mono-3: oklch(0.5329 0.1084 145);
+  --rest-mono-4: oklch(0.5593 0.1110 145);
+  --rest-mono-5: oklch(0.5857 0.1136 145);
+  --rest-mono-6: oklch(0.6121 0.1163 145);
+  --rest-mono-7: oklch(0.6386 0.1189 145);
+  --rest-mono-8: oklch(0.6650 0.1216 145);
+  --rest-mono-9: oklch(0.6914 0.1242 145);
+  --rest-mono-10: oklch(0.7179 0.1268 145);
+  --rest-mono-11: oklch(0.7443 0.1295 145);
+  --rest-mono-12: oklch(0.7707 0.1321 145);
+  --rest-mono-13: oklch(0.7971 0.1347 145);
+  --rest-mono-14: oklch(0.8236 0.1374 145);
+  --rest-mono-15: oklch(0.8500 0.1400 145);
+
+  /* Fixed Timer Arc Colors */
   --timer-work-fixed: oklch(0.75 0.1 240); /* Soft Pastel Blue */
   --timer-rest-fixed: oklch(0.8 0.08 145); /* Soft Pastel Sage/Green */
 }
 
-/* Dark Mode - GRAY PRIMARY with sage green accents */
+/* Dark Mode Overrides */
 .dark {
-  /* Neutrals - More neutral dark background (closer to rgb(27, 28, 29)) */
-  --background: oklch(0.17 0.01 90);  /* Very neutral dark gray, no blue tint */
-  --foreground: oklch(0.95 0.01 90);  /* Neutral white text */
+  /* Neutrals */
+  --background: oklch(0.17 0.01 90);
+  --foreground: oklch(0.95 0.01 90);
 
-  /* Surfaces - Added subtle variations for depth */
-  --card: oklch(0.19 0.01 90);        /* Distinct card background */
+  /* Surfaces */
+  --card: oklch(0.19 0.01 90);
   --card-foreground: oklch(0.95 0.01 90);
-  --popover: oklch(0.21 0.01 90);     /* Distinct popover */
+  --popover: oklch(0.21 0.01 90);
   --popover-foreground: oklch(0.95 0.01 90);
 
-  /* Sidebar - Slightly distinct from main background */
+  /* Sidebar */
   --sidebar: oklch(0.18 0.01 90);
   --sidebar-foreground: oklch(0.95 0.01 90);
 
-  /* Accents & Interaction - LIGHT GRAY PRIMARY */
-  --primary: oklch(0.85 0.01 90);          /* Light Gray as primary action color, no blue tint */
-  --primary-foreground: oklch(0.15 0.01 90); /* Dark text for contrast */
-  --primary-hover: oklch(0.88 0.01 90);     /* Lighter on hover */
-  --primary-active: oklch(0.9 0.01 90);     /* Even lighter when active */
+  /* Accents & Interaction */
+  --primary: oklch(0.85 0.01 90);
+  --primary-foreground: oklch(0.15 0.01 90);
+  --primary-hover: oklch(0.88 0.01 90);
+  --primary-active: oklch(0.9 0.01 90);
   --sidebar-primary: oklch(0.85 0.01 90);
   --sidebar-primary-foreground: oklch(0.15 0.01 90);
 
-  /* Secondary & Muted - with sage green accent preserved */
+  /* Secondary & Muted */
   --secondary: oklch(0.25 0.03 90);
   --secondary-foreground: oklch(0.85 0.01 90);
   --muted: oklch(0.22 0.03 90);
   --muted-foreground: oklch(0.65 0.02 90);
-  --accent: oklch(0.3 0.07 145);           /* Subtle sage accent in dark mode */
+  --accent: oklch(0.3 0.07 145);
   --accent-foreground: oklch(0.9 0.01 90);
   --sidebar-accent: oklch(0.3 0.07 145);
   --sidebar-accent-foreground: oklch(0.9 0.01 90);
@@ -134,17 +221,17 @@
   --destructive: oklch(0.7 0.22 25);
   --destructive-foreground: oklch(0.15 0.01 90);
 
-  /* Borders, Inputs, Rings - More visible */
+  /* Borders, Inputs, Rings */
   --border: oklch(0.28 0.02 90);
   --input: oklch(0.28 0.02 90 / 0.7);
-  --ring: oklch(0.85 0.01 90 / 0.5);     /* Light Gray primary with alpha */
+  --ring: oklch(0.85 0.01 90 / 0.5);
   --sidebar-border: oklch(0.28 0.02 90);
   --sidebar-ring: oklch(0.85 0.01 90 / 0.5);
 
-  /* Chart Colors - Vibrant Set (Dark Mode - Adjusted for Visibility) */
+  /* Chart Colors - Base (Dark Mode - Adjusted for Visibility) */
   --chart-1: oklch(0.75 0.19 25);
   --chart-2: oklch(0.8 0.17 55);
-  --chart-3: oklch(0.85 0.14 90);  /* Lighter Yellow for dark mode */
+  --chart-3: oklch(0.85 0.14 90);
   --chart-4: oklch(0.75 0.19 130);
   --chart-5: oklch(0.7 0.17 160);
   --chart-6: oklch(0.75 0.14 195);
@@ -163,9 +250,9 @@
   --chart-19: oklch(0.77 0.20 325);
   --chart-20: oklch(0.73 0.19 5);
 
-    /* --- Pre-defined Monochrome Green Gradient (Dark Mode) --- */
-  /* Decide if you want the same or a different gradient for dark mode */
-  /* Example: Using the same as light mode */
+  /* Monochrome Green Gradient - Base (Dark Mode) */
+  /* Using the same gradient as light mode for now. */
+  /* If you want a different base gradient for dark mode, define it here. */
   --mono-1: oklch(0.33 0.1031 145);
   --mono-2: oklch(0.3564 0.1057 145);
   --mono-3: oklch(0.3829 0.1084 145);
@@ -181,7 +268,86 @@
   --mono-13: oklch(0.6471 0.1347 145);
   --mono-14: oklch(0.6736 0.1374 145);
   --mono-15: oklch(0.7000 0.1400 145);
-  /* --- End Monochrome Gradient --- */
+
+  /* Work Variants (Dark Mode) - Based on .dark base colors */
+  --work-chart-1: oklch(0.60 0.19 25);
+  --work-chart-2: oklch(0.65 0.17 55);
+  --work-chart-3: oklch(0.70 0.14 90);
+  --work-chart-4: oklch(0.60 0.19 130);
+  --work-chart-5: oklch(0.55 0.17 160);
+  --work-chart-6: oklch(0.60 0.14 195);
+  --work-chart-7: oklch(0.50 0.19 240);
+  --work-chart-8: oklch(0.55 0.21 275);
+  --work-chart-9: oklch(0.60 0.19 310);
+  --work-chart-10: oklch(0.60 0.17 340);
+  --work-chart-11: oklch(0.62 0.18 40);
+  --work-chart-12: oklch(0.68 0.15 75);
+  --work-chart-13: oklch(0.65 0.16 110);
+  --work-chart-14: oklch(0.58 0.18 145);
+  --work-chart-15: oklch(0.56 0.15 180);
+  --work-chart-16: oklch(0.52 0.17 215);
+  --work-chart-17: oklch(0.48 0.20 260);
+  --work-chart-18: oklch(0.57 0.22 295);
+  --work-chart-19: oklch(0.62 0.20 325);
+  --work-chart-20: oklch(0.58 0.19 5);
+  /* Work Mono (Dark) - Based on .dark base mono colors */
+  /* Since base mono is same as light, these are the same values */
+  --work-mono-1: oklch(0.18 0.1031 145);
+  --work-mono-2: oklch(0.2064 0.1057 145);
+  --work-mono-3: oklch(0.2329 0.1084 145);
+  --work-mono-4: oklch(0.2593 0.1110 145);
+  --work-mono-5: oklch(0.2857 0.1136 145);
+  --work-mono-6: oklch(0.3121 0.1163 145);
+  --work-mono-7: oklch(0.3386 0.1189 145);
+  --work-mono-8: oklch(0.3650 0.1216 145);
+  --work-mono-9: oklch(0.3914 0.1242 145);
+  --work-mono-10: oklch(0.4179 0.1268 145);
+  --work-mono-11: oklch(0.4443 0.1295 145);
+  --work-mono-12: oklch(0.4707 0.1321 145);
+  --work-mono-13: oklch(0.4971 0.1347 145);
+  --work-mono-14: oklch(0.5236 0.1374 145);
+  --work-mono-15: oklch(0.5500 0.1400 145);
+
+  /* Rest Variants (Dark Mode) - Based on .dark base colors */
+  --rest-chart-1: oklch(0.90 0.19 25); /* L=1.00, C=0.19 clamped */
+  --rest-chart-2: oklch(0.95 0.17 55);
+  --rest-chart-3: oklch(1.00 0.14 90); /* L=1.00, C=0.14 clamped */
+  --rest-chart-4: oklch(0.90 0.19 130);
+  --rest-chart-5: oklch(0.85 0.17 160);
+  --rest-chart-6: oklch(0.90 0.14 195);
+  --rest-chart-7: oklch(0.80 0.19 240);
+  --rest-chart-8: oklch(0.85 0.21 275);
+  --rest-chart-9: oklch(0.90 0.19 310);
+  --rest-chart-10: oklch(0.90 0.17 340);
+  --rest-chart-11: oklch(0.92 0.18 40);
+  --rest-chart-12: oklch(0.98 0.15 75);
+  --rest-chart-13: oklch(0.95 0.16 110);
+  --rest-chart-14: oklch(0.88 0.18 145);
+  --rest-chart-15: oklch(0.86 0.15 180);
+  --rest-chart-16: oklch(0.82 0.17 215);
+  --rest-chart-17: oklch(0.78 0.20 260);
+  --rest-chart-18: oklch(0.87 0.22 295);
+  --rest-chart-19: oklch(0.92 0.20 325);
+  --rest-chart-20: oklch(0.88 0.19 5);
+  /* Rest Mono (Dark) - Based on .dark base mono colors */
+  /* Since base mono is same as light, these are the same values */
+  --rest-mono-1: oklch(0.48 0.1031 145);
+  --rest-mono-2: oklch(0.5064 0.1057 145);
+  --rest-mono-3: oklch(0.5329 0.1084 145);
+  --rest-mono-4: oklch(0.5593 0.1110 145);
+  --rest-mono-5: oklch(0.5857 0.1136 145);
+  --rest-mono-6: oklch(0.6121 0.1163 145);
+  --rest-mono-7: oklch(0.6386 0.1189 145);
+  --rest-mono-8: oklch(0.6650 0.1216 145);
+  --rest-mono-9: oklch(0.6914 0.1242 145);
+  --rest-mono-10: oklch(0.7179 0.1268 145);
+  --rest-mono-11: oklch(0.7443 0.1295 145);
+  --rest-mono-12: oklch(0.7707 0.1321 145);
+  --rest-mono-13: oklch(0.7971 0.1347 145);
+  --rest-mono-14: oklch(0.8236 0.1374 145);
+  --rest-mono-15: oklch(0.8500 0.1400 145);
+
+  /* Note: Fixed Timer Arc colors are inherited from :root unless overridden here */
 }
 
 @layer base {
@@ -192,12 +358,6 @@
     @apply bg-background text-foreground;
   }
 }
-
-/* REMOVING old shadow/button rules as they should be handled by utilities or component variants */
-/* .card, .popover { ... } */
-/* .dark .card, .dark .popover { ... } */
-/* .btn-primary:hover { ... } */
-/* .btn-primary:active { ... } */
 
 @media (min-width: 695px) {
   .task-list-container {
@@ -241,7 +401,6 @@ body {
   flex-direction: column;
 }
 
-/* Only keep essential utilities that can't be handled by Tailwind */
 @layer utilities {
   .safe-top {
     padding-top: env(safe-area-inset-top);
@@ -256,5 +415,3 @@ body {
     text-wrap: balance;
   }
 }
-
-/* Remove all other custom CSS - we'll handle these with Tailwind classes in the components */

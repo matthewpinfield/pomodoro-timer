@@ -12,7 +12,7 @@ import { useTasks } from "@/context/task-context";
 import { useTimer } from "@/context/timer-context";
 import { useSettings } from "@/context/settings-context";
 // Import from single utility file
-import { formatTime, getTaskDisplayColor, getCssVariable } from "@/lib/utils";
+import { formatTime, getCssVariable, getTaskModeColor } from "@/lib/utils";
 import { PlusCircle } from "lucide-react";
 
 export default function TimerPage() {
@@ -61,28 +61,29 @@ export default function TimerPage() {
     // Effect to compute ONLY the base task arc color
     useEffect(() => {
         if (!isClient) {
-             // *** ADDED LOG ***
-            console.log("[Color Effect] Skip: Not client yet.");
+             setClientTaskColor('transparent');
+             setClientWorkColor('transparent');
+             setClientRestColor('transparent');
+             setFinalTaskArcColor('transparent');
             return;
         }
-        let taskBaseColor: string;
-        if (currentTask) {
-            taskBaseColor = getTaskDisplayColor(currentTask, useMonochromeChart);
-             // *** ADDED LOG ***
-            console.log(`[Color Effect] Calculated task color for ${currentTask.name}: ${taskBaseColor}`);
-        } else {
-            taskBaseColor = 'transparent';
-             // *** ADDED LOG ***
-            console.log("[Color Effect] No current task, setting task color to transparent.");
-        }
-        setFinalTaskArcColor(taskBaseColor);
-        setClientTaskColor(taskBaseColor);
+    
+        const baseColor = getTaskModeColor(currentTask, useMonochromeChart, 'base');
+        setClientTaskColor(baseColor);
+        setFinalTaskArcColor(baseColor);
+    
+        const workColor = getTaskModeColor(currentTask, useMonochromeChart, 'work');
+        setClientWorkColor(workColor);
+    
+        const restColor = getTaskModeColor(currentTask, useMonochromeChart, 'rest');
+        setClientRestColor(restColor);
+    
     }, [isClient, currentTask, useMonochromeChart]);
 
     // Effect for loading/saving task time & redirection
      useEffect(() => {
          // *** ADDED LOG ***
-        console.log(`[Task Load Effect] Running. TaskId: ${currentTaskId}, Task Found: ${!!currentTask}, Mode: ${mode}`);
+         console.log(`[Task Load Effect] Running. TaskId: ${currentTaskId}, Task Found: ${!!currentTask}, Mode: ${mode}`);
         if (currentTaskId && currentTask) {
             // *** ADDED LOGS ***
             console.log(`[Task Load Effect] Task Goal Minutes: ${currentTask.goalTimeMinutes}, Goal Seconds: ${taskGoalSeconds}`);
@@ -105,7 +106,7 @@ export default function TimerPage() {
                         console.log(`[Task Load Effect] Using valid saved time: ${initialTaskTimeLeft}`);
                     } else {
                          // *** ADDED LOG ***
-                         console.log(`[Task Load Effect] Invalid saved time found: ${parsedSavedTime}. Removing from localStorage.`);
+                        console.log(`[Task Load Effect] Invalid saved time found: ${parsedSavedTime}. Removing from localStorage.`);
                         localStorage.removeItem(`focuspie-taskTimeLeft-${currentTaskId}`);
                     }
                 } else {
@@ -118,9 +119,9 @@ export default function TimerPage() {
             setTaskTimeLeftSeconds(initialTaskTimeLeft); // Set the state
 
             if (typeof window !== 'undefined') {
-                 localStorage.removeItem("focuspie-selecting-task");
+                localStorage.removeItem("focuspie-selecting-task");
                   // *** ADDED LOG ***
-                 console.log("[Task Load Effect] Removed selecting flag.");
+                console.log("[Task Load Effect] Removed selecting flag.");
             }
 
         } else if (!currentTaskId && mode !== 'idle') {
@@ -138,9 +139,9 @@ export default function TimerPage() {
             }
         } else {
              // *** ADDED LOG ***
-             console.log(`[Task Load Effect] Conditions not met for loading time (Task ID: ${currentTaskId}, Task Found: ${!!currentTask}, Mode: ${mode}). Setting time to NaN.`);
-             setTaskTimeLeftSeconds(NaN);
-             if (typeof window !== 'undefined') localStorage.removeItem("focuspie-selecting-task");
+            console.log(`[Task Load Effect] Conditions not met for loading time (Task ID: ${currentTaskId}, Task Found: ${!!currentTask}, Mode: ${mode}). Setting time to NaN.`);
+            setTaskTimeLeftSeconds(NaN);
+            if (typeof window !== 'undefined') localStorage.removeItem("focuspie-selecting-task");
         }
      }, [currentTaskId, currentTask, taskGoalSeconds, settings.pomodoro, mode, router]);
 
@@ -212,22 +213,21 @@ export default function TimerPage() {
                             <div>Select a task to begin</div> // Fallback
                         )}
 
-                        {/* Legends - Using STATIC work/rest colors */}
-                         <div className="mt-2 sm:mt-4 flex justify-center items-center gap-4 text-xs text-muted-foreground">
-                             <div className="flex items-center gap-2">
-                                 <div className="h-2 w-2 rounded-full" style={{ backgroundColor: clientTaskColor }}></div>
-                                 <span>Current Task</span>
-                             </div>
-                             <span>|</span>
-                             <div className="flex items-center gap-2">
-                                 {/* Using static colors */}
-                                 <div className="h-2 w-2 rounded-full" style={{ backgroundColor: clientWorkColor }}></div>
-                                 <span>Work</span>
-                                 <span>/</span>
-                                 <div className="h-2 w-2 rounded-full" style={{ backgroundColor: clientRestColor }}></div>
-                                 <span>Rest</span>
-                             </div>
-                         </div>
+                            {/* Legends - Using STATIC work/rest colors */}
+                            <div className="mt-2 sm:mt-4 flex justify-center items-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: clientTaskColor }}></div>
+                                <span>Current Task</span>
+                            </div>
+                            <span>|</span>
+                            <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: clientWorkColor }}></div>
+                                <span>Work</span>
+                                <span>/</span>
+                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: clientRestColor }}></div>
+                                <span>Rest</span>
+                            </div>
+                        </div>
                          {/* Skip Button */}
                          {(mode === 'shortBreak' || mode === 'longBreak') && ( <Button onClick={skipBreak} variant="secondary" size="sm" className="mt-sm sm:mt-md"> Skip Break </Button> )}
                     </div>

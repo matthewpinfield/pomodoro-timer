@@ -94,4 +94,51 @@ export function getTaskDisplayColor(
   return absoluteFallback;
 }
 
-// NOTE: calculateModeArcColor function is NOT defined here in this state.
+// NEW FUNCTION: Get task color for a specific mode (base, work, rest)
+export function getTaskModeColor(
+  task: Task | undefined | null,
+  isMonochrome: boolean,
+  mode: 'base' | 'work' | 'rest' // Add mode parameter
+): string {
+  const standardChartFallbackColor = "oklch(0.8 0.01 90)"; // Neutral gray fallback
+  const monoFallbackVariableName = "--mono-1";
+  const standardFallbackVariableName = "--chart-1";
+  const absoluteFallback = standardChartFallbackColor;
+
+  if (!task || typeof task.chartIndex !== 'number' || task.chartIndex < 1) {
+    return absoluteFallback;
+  }
+
+  const chartIndex = task.chartIndex;
+  let baseVariableName: string; // The name without the mode prefix
+
+  if (isMonochrome) {
+    const totalMonoColors = 15;
+    const monoIndex = Math.max(1, Math.min(totalMonoColors, (totalMonoColors + 1) - chartIndex));
+    baseVariableName = `mono-${monoIndex}`; // e.g., "mono-5"
+  } else {
+    baseVariableName = `chart-${chartIndex}`; // e.g., "chart-8"
+  }
+
+  // Determine the final variable name including the mode prefix
+  let finalVariableName: string;
+  if (mode === 'work') {
+    finalVariableName = `--work-${baseVariableName}`; // e.g., "--work-chart-8"
+  } else if (mode === 'rest') {
+    finalVariableName = `--rest-${baseVariableName}`; // e.g., "--rest-chart-8"
+  } else { // mode === 'base'
+    finalVariableName = `--${baseVariableName}`; // e.g., "--chart-8"
+  }
+
+  // Get the resolved color value for the final variable name
+  const specificColor = getCssVariable(finalVariableName, "");
+  if (specificColor) return specificColor;
+
+  // Fallback logic (try base variable if variant not found, then absolute)
+  // console.warn(`getTaskModeColor: CSS var ${finalVariableName} not found. Trying base --${baseVariableName}`);
+  const baseColor = getCssVariable(`--${baseVariableName}`, "");
+  if (baseColor) return baseColor;
+
+  // console.error(`getTaskModeColor: Base CSS var --${baseVariableName} also not found! Returning absolute fallback.`);
+  return absoluteFallback;
+}

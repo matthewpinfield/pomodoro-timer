@@ -22,19 +22,6 @@ interface TimerCircleProps {
   // NO modeColor prop
 }
 
-// Helper function to draw rounded end cap (Defined OUTSIDE component for clarity, or INSIDE if preferred)
-// If defined outside, it needs all parameters passed.
-const drawEndCap = (ctx: CanvasRenderingContext2D, centerX: number, centerY: number, angle: number, radius: number, capRadius: number, color: string) => {
-    if (!ctx || !color || color === 'transparent') return; // Avoid drawing if color is invalid
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    const capX = centerX + radius * Math.cos(angle);
-    const capY = centerY + radius * Math.sin(angle);
-    ctx.arc(capX, capY, capRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-};
 
 const TimerCircle = memo(function TimerCircle({
   mode,
@@ -71,7 +58,7 @@ const TimerCircle = memo(function TimerCircle({
     const trackWidth = outerRadius - innerRadius;
     const arcRadius = outerRadius - trackWidth / 2; // Radius for arc center line
     const capRadius = trackWidth / 2; // Radius for the end cap circle
-    const angleOffsetDegrees = 0; // Use 0 offset for 12 o'clock start
+    const angleOffsetDegrees = 10; // Use 0 offset for 12 o'clock start
     const angleOffsetRadians = angleOffsetDegrees * Math.PI / 180; const startAngle = -Math.PI / 2 + angleOffsetRadians;
     const fullCircle = Math.PI * 2;
     // --- End Dimensions ---
@@ -107,11 +94,10 @@ const TimerCircle = memo(function TimerCircle({
        ctx.beginPath();
        ctx.arc(centerX, centerY, arcRadius, startAngle, taskEndAngle);
        ctx.lineWidth = trackWidth;
-       ctx.lineCap = "butt"; // Use butt line cap for stroke
+       ctx.lineCap = "round" as CanvasLineCap;
        ctx.strokeStyle = finalTaskColor;
        ctx.stroke();
-       // Draw end cap AFTER stroking
-       drawEndCap(ctx, centerX, centerY, taskEndAngle, arcRadius, capRadius, finalTaskColor);
+            
     }
     ctx.restore();
 
@@ -136,35 +122,58 @@ const TimerCircle = memo(function TimerCircle({
     }
     // --- End Internal Calculation ---
 
-    // Layer 3: Mode Arc (Remaining Time in Mode - Using Reference Scaling)
-    ctx.save();
-    let currentModeArcSize = 0;
-    const safeTimeLeftInMode = isNaN(timeLeftInMode) ? 0 : timeLeftInMode;
-    if (currentModeTotalDuration > 0 && safeTimeLeftInMode >= 0) {
-        const modeRemainingFraction = Math.min(1, safeTimeLeftInMode / currentModeTotalDuration);
-        if (mode === 'working') {
-            const pomodoroDurationSeconds = currentModeTotalDuration;
-            const maxPomodoroRatio = totalTaskSeconds > 0 ? pomodoroDurationSeconds / totalTaskSeconds : 0;
-            const maxPomodoroArcSize = fullCircle * maxPomodoroRatio;
-            currentModeArcSize = maxPomodoroArcSize * modeRemainingFraction;
-        } else if (mode === 'shortBreak' || mode === 'longBreak') {
-            currentModeArcSize = fullCircle * modeRemainingFraction;
+    // Layer 3: Pomodoro Arc (Remaining Time in Mode - Using Reference Scaling)
+        // Layer 3: Pomodoro Arc (Remaining Time in Mode - Using Reference Scaling)
+        ctx.save();
+        let currentModeArcSize = 0;
+        const safeTimeLeftInMode = isNaN(timeLeftInMode) ? 0 : timeLeftInMode;
+        if (currentModeTotalDuration > 0 && safeTimeLeftInMode >= 0) {
+            const modeRemainingFraction = Math.min(1, safeTimeLeftInMode / currentModeTotalDuration);
+            if (mode === 'working') {
+                const pomodoroDurationSeconds = currentModeTotalDuration;
+                const maxPomodoroRatio = totalTaskSeconds > 0 ? pomodoroDurationSeconds / totalTaskSeconds : 0;
+                const maxPomodoroArcSize = fullCircle * maxPomodoroRatio;
+                currentModeArcSize = maxPomodoroArcSize * modeRemainingFraction;
+            } else if (mode === 'shortBreak' || mode === 'longBreak') {
+                currentModeArcSize = fullCircle * modeRemainingFraction;
+            }
         }
-    }
-    const modeEndAngle = startAngle + currentModeArcSize;
-    const finalModeColor = dynamicModeColor || 'blue'; // Fallback blue
+        const modeEndAngle = startAngle + currentModeArcSize;
+    
+        // --- Apply 80% Alpha (Simplified for OKLCH only) ---
+        // Declare the variable here
+        let finalModeColorWithAlpha = 'blue'; // Default fallback
+    
+        // Use the calculated dynamicModeColor from the section above
+        const baseModeColor = dynamicModeColor; // Use the color calculated based on taskColor
 
-    if (currentModeArcSize > 1e-6 && mode !== 'idle') {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, arcRadius, startAngle, modeEndAngle);
-        ctx.lineWidth = trackWidth;
-        ctx.lineCap = "butt"; // Use butt line cap for stroke
-        ctx.strokeStyle = finalModeColor;
-        ctx.stroke();
-        // Draw end cap AFTER stroking
-        drawEndCap(ctx, centerX, centerY, modeEndAngle, arcRadius, capRadius, finalModeColor);
-    }
-    ctx.restore();
+        // *** ADD LOGS HERE ***
+        console.log("Base Dynamic Mode Color:", baseModeColor); 
+        // *** END LOGS ***
+    
+        try {
+            // Assume baseModeColor is 'oklch(...)'
+            // Replace existing alpha (if any) or add new alpha '/ 0.8' before the closing ')'
+            finalModeColorWithAlpha = baseModeColor.replace(/(\/\s*[\d.]+)?\)$/, ' / 0.9)');
+        } catch (e) {
+            console.error("TimerCircle: Error applying alpha to oklch color:", baseModeColor, e);
+            // Fallback to the original calculated color or blue if it's totally invalid
+            finalModeColorWithAlpha = baseModeColor || 'blue';
+        }
+        // --- End Alpha Application ---
+    
+        if (currentModeArcSize > 1e-6 && mode !== 'idle') {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, arcRadius, startAngle, modeEndAngle);
+            ctx.lineWidth = trackWidth;
+            ctx.lineCap = "round" as CanvasLineCap;
+            // Use the color WITH alpha applied
+            ctx.strokeStyle = finalModeColorWithAlpha;
+            ctx.stroke();
+        }
+    
+        ctx.restore();
+    
 
     // Layer 4: Center Circle (Using Pie Chart Reference Style - No Gray Overlay)
     ctx.save();
@@ -195,20 +204,20 @@ const TimerCircle = memo(function TimerCircle({
     ctx.restore();
     // Timer text
     ctx.font = `bold ${timerFontSizePx}px ${timerFontStack}`; ctx.fillStyle = timerTextColor;
-    ctx.fillText(timeDisplay, centerX, centerY - (timerFontSizePx * 0.1));
+    ctx.fillText(timeDisplay, centerX, centerY);
     // Subtitle
     let subtitle = taskName;
     if (mode === 'shortBreak') subtitle = 'Short Break'; if (mode === 'longBreak') subtitle = 'Long Break'; if (mode === 'idle' && !taskName) subtitle = 'Ready';
     ctx.font = `${detailFontSizePx}px ${baseFontStack}`; ctx.fillStyle = subtitleColor;
     const maxWidth = innerRadius * 1.8; let finalSubtitle = subtitle;
     if (ctx.measureText(subtitle).width > maxWidth) { let truncatedSubtitle = subtitle; while (ctx.measureText(truncatedSubtitle + "...").width > maxWidth && truncatedSubtitle.length > 0) { truncatedSubtitle = truncatedSubtitle.slice(0, -1); } finalSubtitle = truncatedSubtitle + "..."; }
-    ctx.fillText(finalSubtitle, centerX, centerY + (timerFontSizePx * 0.4));
+    ctx.fillText(finalSubtitle, centerX, centerY + (timerFontSizePx * 0.6));
     // Task remaining text (Corrected Logic)
     if (mode === 'working' && taskGoalMinutes > 0 && !isNaN(safeTaskTimeLeft) && safeTaskTimeLeft >= 0) { // Use safeTaskTimeLeft
         const hoursLeft = Math.floor(safeTaskTimeLeft / 3600);
         const minutesLeft = Math.floor((safeTaskTimeLeft % 3600) / 60);
         ctx.font = `${detailFontSizePx}px ${baseFontStack}`; ctx.fillStyle = subtitleColor;
-        ctx.fillText(`${hoursLeft}h ${minutesLeft}m remaining`, centerX, centerY + (timerFontSizePx * 0.4) + (detailFontSizePx * 1.4));
+        ctx.fillText(`${hoursLeft}h ${minutesLeft}m remaining`, centerX, centerY + (timerFontSizePx * 0.6) + (detailFontSizePx * 1.4));
     }
     // --- End Text & Icons ---
 
