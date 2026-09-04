@@ -31,9 +31,7 @@ const TOTAL_CHART_COLORS = 20;
 // Function to create demo tasks - stable IDs are helpful for comparison
 const DEMO_TASK_1 = { id: "demo-1", name: "Project Design", goalTimeMinutes: 90, progressMinutes: 0, chartIndex: 1, isPriority: true, notes: [] };
 const DEMO_TASK_2 = { id: "demo-2", name: "Client Meeting Prep", goalTimeMinutes: 45, progressMinutes: 0, chartIndex: 2, isPriority: false, notes: [] };
-const DEMO_TASK_3 = { id: "demo-3", name: "Code Review - X", goalTimeMinutes: 60, progressMinutes: 0, chartIndex: 3, isPriority: false, notes: [] };
-const DEMO_TASK_4 = { id: "demo-4", name: "Research Competitors", goalTimeMinutes: 75, progressMinutes: 0, chartIndex: 4, isPriority: false, notes: [] };
-const DEMO_TASKS = [DEMO_TASK_1, DEMO_TASK_2, DEMO_TASK_3, DEMO_TASK_4];
+const DEMO_TASKS = [DEMO_TASK_1, DEMO_TASK_2];
 
 // Helper to check if the current task list IS the demo list
 const isDemoList = (currentTasks: Task[]): boolean => {

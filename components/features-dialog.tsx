@@ -35,10 +35,10 @@ export function FeaturesDialog({ open, onOpenChange }: FeaturesDialogProps) {
             <strong>Task Management:</strong> Add, edit, prioritize, and delete tasks using the 'Plan My Day' button.
           </p>
            <p>
-            <strong>Timer Integration:</strong> Start a task's timer directly from the pie chart slice or the task list's play button.
+            <strong>Timer Integration:</strong> Start a task's timer directly from the pie chart slice or by tapping a task in your list.
           </p>
            <p>
-            <strong>Progress Tracking:</strong> Notes can be added to tasks during a timer session (feature coming soon).
+            <strong>Progress Tracking:</strong> Add notes to a task during a timer session with the Quick Note button.
           </p>
         </div>
         <DialogFooter>

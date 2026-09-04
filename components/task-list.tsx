@@ -1,9 +1,10 @@
 "use client"
 
 import { useTasks } from "@/context/task-context"
+import { useTimer } from "@/context/timer-context"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, Flag, Play } from "lucide-react"
+import { Edit, Trash2, Flag } from "lucide-react"
 import { useState, useEffect } from "react"
 import { TaskForm } from "@/components/task-form"
 import type { Task } from "@/types/task"
@@ -29,7 +30,8 @@ export function TaskList({
   showControls = true,
   forceMonochrome = false,
 }: TaskListProps) {
-  const { deleteTask, updateTask, setCurrentTaskId } = useTasks()
+  const { deleteTask, updateTask, setCurrentTaskId, currentTaskId } = useTasks()
+  const { isRunning } = useTimer()
   const router = useRouter()
   const { theme } = useTheme()
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
@@ -80,6 +82,18 @@ export function TaskList({
 
   // Function to handle starting a task timer
   const handleStartTask = (taskId: string) => {
+    // Switching away from an already-running session (of a different task)
+    // stops that session regardless - don't compound it by silently starting
+    // this one too. Land idle instead so the switch is a conscious choice.
+    const wouldInterruptRunningSession = isRunning && currentTaskId !== taskId;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("focuspie-selecting-task", "true");
+      if (!wouldInterruptRunningSession) {
+        // Picked up by the timer page once the newly-selected task has loaded,
+        // so it can actually start the session instead of just landing idle.
+        localStorage.setItem("focuspie-autostart-task", "true");
+      }
+    }
     setCurrentTaskId(taskId); // Set the task as current
     router.push('/timer'); // Navigate to the timer page
   };
@@ -109,9 +123,19 @@ export function TaskList({
               />
             </div>
           ) : (
-            <div 
-              className="flex items-center justify-between p-4 sm:p-5 rounded-[1.25rem] border border-white/5 shadow-premium hover:-translate-y-1 transition-all duration-300 text-primary-foreground backdrop-blur-md relative overflow-hidden group/item"
+            <div
+              className={`flex items-center justify-between p-4 sm:p-5 rounded-[1.25rem] border border-white/5 shadow-premium hover:-translate-y-1 transition-all duration-300 text-primary-foreground backdrop-blur-md relative overflow-hidden group/item ${showControls && !task.id.startsWith("demo-") ? "cursor-pointer" : ""}`}
               style={{ backgroundColor: computedColors[task.chartIndex?.toString()] ? `${computedColors[task.chartIndex?.toString()]}` : 'var(--card)' }}
+              onClick={() => { if (showControls && !task.id.startsWith("demo-")) handleStartTask(task.id); }}
+              role={showControls && !task.id.startsWith("demo-") ? "button" : undefined}
+              tabIndex={showControls && !task.id.startsWith("demo-") ? 0 : undefined}
+              onKeyDown={(e) => {
+                if (showControls && !task.id.startsWith("demo-") && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  handleStartTask(task.id);
+                }
+              }}
+              aria-label={showControls && !task.id.startsWith("demo-") ? `Start focus session for ${task.name}` : undefined}
             >
               {/* Subtle overlay for depth */}
               <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none" />
@@ -137,33 +161,26 @@ export function TaskList({
               </div>
 
               {showControls && (
-                <div className="flex gap-1 sm:gap-2 relative z-10">
-                  <div className="flex sm:opacity-0 group-hover/item:opacity-100 transition-all duration-300 translate-x-4 group-hover/item:translate-x-0">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-white/25 text-white"
-                      onClick={() => handleEdit(task.id)}
-                    >
-                      <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-white/25 text-white"
-                      onClick={() => deleteTask(task.id)}
-                    >
-                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </Button>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-white/20 hover:bg-white/30 active:scale-95 text-white shadow-lg ring-1 ring-white/20 transition-all"
-                    onClick={() => handleStartTask(task.id)}
-                    disabled={task.id.startsWith("demo-")}
+                <div className="flex gap-1 sm:gap-2 relative z-10 sm:opacity-0 group-hover/item:opacity-100 transition-all duration-300 translate-x-4 group-hover/item:translate-x-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-white/25 text-white"
+                    onClick={(e) => { e.stopPropagation(); handleEdit(task.id); }}
+                    aria-label={`Edit ${task.name}`}
+                    title="Edit task"
                   >
-                    <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
+                    <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-white/25 text-white"
+                    onClick={(e) => { e.stopPropagation(); deleteTask(task.id); }}
+                    aria-label={`Delete ${task.name}`}
+                    title="Delete task"
+                  >
+                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                   </Button>
                 </div>
               )}

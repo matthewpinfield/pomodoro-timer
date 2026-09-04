@@ -18,8 +18,9 @@ interface TimerCircleProps {
   onTimerClick: () => void
   taskGoalMinutes: number
   taskTimeLeftSeconds: number; // Type is just number
-  taskColor: string // Base task color
-  // NO modeColor prop
+  taskColor: string // Base task color (task wedge)
+  workColor?: string // Mode wedge color during a work session
+  restColor?: string // Mode wedge color during a break
 }
 
 
@@ -34,6 +35,8 @@ const TimerCircle = memo(function TimerCircle({
   taskGoalMinutes,
   taskTimeLeftSeconds, // Receive number (parent handles NaN conversion)
   taskColor,
+  workColor,
+  restColor,
 }: TimerCircleProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
@@ -73,22 +76,47 @@ const TimerCircle = memo(function TimerCircle({
     ctx.fillStyle = secondaryColor;
     ctx.fill();
 
-    // --- Draw Active Timer Slice ---
+    // --- Draw Task Wedge (total task time remaining) ---
+    // Same radius as the mode wedge below, drawn first so the mode wedge overlaps it.
     const startAngle = -Math.PI / 2; // Top Center
+    const safeTaskTimeLeftSeconds = isNaN(taskTimeLeftSeconds) ? 0 : taskTimeLeftSeconds;
+    const totalTaskSeconds = taskGoalMinutes * 60;
+    if (totalTaskSeconds > 0) {
+        const taskFraction = Math.min(1, Math.max(0, safeTaskTimeLeftSeconds / totalTaskSeconds));
+        const taskArcSize = (Math.PI * 2) * taskFraction;
+        if (taskArcSize > 1e-6) {
+            const taskEndAngle = startAngle + taskArcSize;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, startAngle, taskEndAngle);
+            ctx.lineTo(centerX, centerY);
+            ctx.closePath();
+            ctx.fillStyle = taskColor || getCssVariable('--primary', '#3b82f6');
+            ctx.fill();
+        }
+    }
+
+    // --- Draw Mode Wedge (current work/break session), same radius, drawn on top ---
+    // During a work session its max size is capped relative to the task's total duration,
+    // so a short pomodoro inside a long task only ever covers a small bite of the circle.
     let currentModeArcSize = 0;
     const safeTimeLeftInMode = isNaN(timeLeftInMode) ? 0 : timeLeftInMode;
     if (currentModeTotalDuration > 0 && safeTimeLeftInMode >= 0) {
-        const modeRemainingFraction = Math.min(1, safeTimeLeftInMode / currentModeTotalDuration);
-        currentModeArcSize = (Math.PI * 2) * modeRemainingFraction;
+        const modeProgress = Math.min(1, Math.max(0, safeTimeLeftInMode / currentModeTotalDuration));
+        if (mode === 'working' && totalTaskSeconds > 0) {
+            const maxPomodoroRatio = Math.min(1, currentModeTotalDuration / totalTaskSeconds);
+            currentModeArcSize = (Math.PI * 2) * maxPomodoroRatio * modeProgress;
+        } else {
+            // Breaks aren't part of the task, so they use the full circle scale.
+            currentModeArcSize = (Math.PI * 2) * modeProgress;
+        }
     }
     const modeEndAngle = startAngle + currentModeArcSize;
 
     // Distinct Mode Colors
-    let finalModeColor = getCssVariable('--primary', '#3b82f6');
-    if (mode === 'working') {
-        finalModeColor = taskColor || getCssVariable('--timer-work-fixed', '#3b82f6'); 
-    } else if (mode === 'shortBreak' || mode === 'longBreak') {
-        finalModeColor = getCssVariable('--timer-rest-fixed', '#10b981');
+    let finalModeColor = workColor || getCssVariable('--timer-work-fixed', '#3b82f6');
+    if (mode === 'shortBreak' || mode === 'longBreak') {
+        finalModeColor = restColor || getCssVariable('--timer-rest-fixed', '#10b981');
     }
 
     if (currentModeArcSize > 1e-6 && mode !== 'idle') {
@@ -148,7 +176,7 @@ const TimerCircle = memo(function TimerCircle({
   }, [ // Dependencies
       mode, timeLeftInMode, isRunning, taskTimeLeftSeconds, timeDisplay,
       taskName, currentModeTotalDuration, taskGoalMinutes,
-      taskColor, settings?.autoPauseEnabled
+      taskColor, workColor, restColor, settings?.autoPauseEnabled
   ]);
 
   // --- Effects (layout, resize, visibility) ---

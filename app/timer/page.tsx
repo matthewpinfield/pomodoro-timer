@@ -86,6 +86,20 @@ export default function TimerPage() {
         }
      }, [currentTaskId, mode, router]);
 
+    // Effect to auto-start a session when arriving via a task's Play button
+    useEffect(() => {
+        if (
+            currentTask &&
+            mode === 'idle' &&
+            typeof window !== 'undefined' &&
+            localStorage.getItem("focuspie-autostart-task") === "true"
+        ) {
+            localStorage.removeItem("focuspie-autostart-task");
+            localStorage.removeItem("focuspie-selecting-task");
+            startWork();
+        }
+    }, [currentTask, mode, startWork]);
+
     // --- Conditional Rendering Logic ---
     const isLoading = isClient && currentTaskId && !currentTask;
     const canRenderTimer = isClient && (currentTask || mode === 'idle');
@@ -127,6 +141,8 @@ export default function TimerPage() {
                                 isRunning={isRunning}
                                 onTimerClick={handleTimerClick}
                                 taskColor={finalTaskArcColor}
+                                workColor={clientWorkColor}
+                                restColor={clientRestColor}
                             />
                         </div>
                     ) : (
@@ -141,52 +157,71 @@ export default function TimerPage() {
                     )}
 
                     {/* Legends - Premium pill design */}
-                    <div className="mt-2 flex flex-wrap justify-center items-center gap-3 sm:gap-6 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-card/40 backdrop-blur-md border border-white/10 shadow-sm text-[10px] sm:text-xs font-bold text-foreground/80 tracking-widest uppercase">
+                    <div className="mt-2 flex flex-wrap justify-center items-center gap-4 sm:gap-6 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-card/40 backdrop-blur-md border border-white/10 shadow-sm text-[10px] sm:text-xs font-bold text-foreground/80 tracking-widest uppercase">
                         <div className="flex items-center gap-2">
                             <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full ring-2 ring-background shadow-sm" style={{ backgroundColor: clientTaskColor }}></div>
                             <span>Task</span>
                         </div>
-                        <div className="hidden sm:block w-[1px] h-3 bg-border/50"></div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full ring-2 ring-background shadow-sm" style={{ backgroundColor: clientWorkColor }}></div>
-                                <span>Work</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full ring-2 ring-background shadow-sm" style={{ backgroundColor: clientRestColor }}></div>
-                                <span>Rest</span>
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full ring-2 ring-background shadow-sm" style={{ backgroundColor: clientWorkColor }}></div>
+                            <span>Pomodoro</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full ring-2 ring-background shadow-sm" style={{ backgroundColor: clientRestColor }}></div>
+                            <span>Rest</span>
                         </div>
                     </div>
                     
                     {/* Skip Button */}
                     {(mode === 'shortBreak' || mode === 'longBreak') && ( 
-                        <Button 
-                            onClick={skipBreak} 
-                            variant="secondary" 
-                            className="mt-6 w-[85%] sm:w-[80%] rounded-xl sm:rounded-2xl h-12 sm:h-14 bg-secondary/80 hover:bg-secondary backdrop-blur-sm transition-all shadow-lg font-bold text-sm sm:text-base border border-white/5 uppercase tracking-widest"
-                        > 
+                        <Button
+                            onClick={skipBreak}
+                            className="mt-6 w-[85%] sm:w-[80%] rounded-xl sm:rounded-2xl h-12 sm:h-14 bg-primary text-primary-foreground hover:bg-primary/90 backdrop-blur-sm transition-all shadow-lg font-bold text-sm sm:text-base border border-primary-foreground/10 uppercase tracking-widest"
+                        >
                             Skip Break 
                         </Button> 
                     )}
                 </div>
 
                 {/* Right Column - Tasks & Actions */}
-                <div className="w-full md:w-7/12 lg:w-[55%] flex flex-col relative glass-card rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 xl:p-10 mb-4">
-                   
+                <div className="w-full md:w-7/12 lg:w-[55%] flex flex-col relative glass-card rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 xl:p-10 mb-4 md:sticky md:self-start md:top-0 md:max-h-[calc(100vh-8rem)]">
+
                    <div className="absolute top-0 right-0 -mr-10 -mt-10 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-                   
+
                    {/* Content Section */}
-                   <div className="flex-1">
+                   <div className="flex-1 min-h-0 flex flex-col">
                        <motion.div
-                            className="w-full space-y-10"
+                            className="w-full flex-1 min-h-0 flex flex-col space-y-10"
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.5, delay: 0.2, type: "spring", stiffness: 100 }}
                         >
+                            {/* --- Now Focusing Section --- */}
+                            {currentTask && (
+                                <div className="flex-shrink-0">
+                                    <div className="flex items-center justify-between mb-4 sm:mb-6">
+                                        <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Now Focusing</h3>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between gap-3.5 p-3.5">
+                                            <div className="flex items-center gap-3.5 min-w-0">
+                                                <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: finalTaskArcColor }}></div>
+                                                <span className="text-base font-semibold text-foreground truncate">{currentTask.name}</span>
+                                            </div>
+                                            <span className="text-xs font-semibold bg-secondary/80 text-secondary-foreground/90 px-2.5 py-1 rounded-full shadow-sm flex-shrink-0">
+                                                {currentTask.progressMinutes >= 60 ? `${Math.floor(currentTask.progressMinutes / 60)}h ${currentTask.progressMinutes % 60}m` : `${currentTask.progressMinutes}m`}
+                                                {' / '}
+                                                {currentTask.goalTimeMinutes >= 60 ? `${Math.floor(currentTask.goalTimeMinutes / 60)}h ${currentTask.goalTimeMinutes % 60}m` : `${currentTask.goalTimeMinutes}m`}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* --- Up Next Section (Highest Priority) --- */}
-                            <div>
-                                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                            <div className="flex-1 min-h-0 flex flex-col">
+                                <div className="flex items-center justify-between mb-4 sm:mb-6 flex-shrink-0">
                                     <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Up Next</h3>
                                     {filteredTasks?.length > 0 && (
                                         <span className="text-xs font-bold px-3 py-1 rounded-full bg-primary/10 text-primary uppercase tracking-widest">
@@ -194,8 +229,8 @@ export default function TimerPage() {
                                         </span>
                                     )}
                                 </div>
-                                
-                                <div className="space-y-4">
+
+                                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-3 sm:pr-4 -mr-3 sm:-mr-4 space-y-4">
                                     {filteredTasks && filteredTasks.length > 0 ? (
                                          <TaskReminders tasks={filteredTasks} />
                                     ) : (
@@ -208,7 +243,7 @@ export default function TimerPage() {
                             </div>
 
                             {/* --- Actions & Notes Section --- */}
-                            <div className="space-y-6 pt-4 border-t border-border/40">
+                            <div className="space-y-6 pt-4 border-t border-border/40 flex-shrink-0">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-bold tracking-tight text-foreground/80">Session Notes</h3>
                                     <Button

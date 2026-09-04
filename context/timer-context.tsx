@@ -83,36 +83,36 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<TimerSettings>(getInitialSettings); // Load initial settings
   const [mode, setMode] = useState<TimerMode>("idle");
   
-  // Define calculateIdleDuration BEFORE it's used in state initialization or effects
+  // The upcoming/current work session is always the user's pomodoro setting —
+  // independent of the selected task's own duration.
   const calculateIdleDuration = useCallback(() => {
-    let duration = settings.pomodoro;
-    if (currentTask) {
-       let taskSecondsLeft = (currentTask.goalTimeMinutes * 60) - (currentTask.progressMinutes * 60);
-       if (typeof window !== 'undefined') {
-           const saved = localStorage.getItem(`focuspie-taskTimeLeft-${currentTask.id}`);
-           if (saved) {
-               const parsed = parseInt(saved, 10);
-               if (!isNaN(parsed) && parsed > 0) {
-                   taskSecondsLeft = parsed;
-               }
-           }
-       }
-       if (taskSecondsLeft > 0) {
-           duration = taskSecondsLeft;
-       }
-    }
-    return duration;
-  }, [settings.pomodoro, currentTask]);
+    return settings.pomodoro;
+  }, [settings.pomodoro]);
 
   const calculateSessionTotalDuration = useCallback(() => {
-    if (currentTask && currentTask.goalTimeMinutes > 0) {
-      return currentTask.goalTimeMinutes * 60;
-    }
     return settings.pomodoro;
-  }, [settings.pomodoro, currentTask]);
+  }, [settings.pomodoro]);
+
+  // The task's own remaining time, entirely separate from the session/pomodoro duration.
+  // Returns 0 (not settings.pomodoro) when currentTask isn't resolved yet — that field
+  // is unrelated to any task and was never a meaningful fallback for it.
+  const calculateTaskTimeLeft = useCallback(() => {
+    if (!currentTask) return 0;
+    let taskSecondsLeft = (currentTask.goalTimeMinutes * 60) - (currentTask.progressMinutes * 60);
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(`focuspie-taskTimeLeft-${currentTask.id}`);
+        if (saved) {
+            const parsed = parseInt(saved, 10);
+            if (!isNaN(parsed) && parsed > 0) {
+                taskSecondsLeft = parsed;
+            }
+        }
+    }
+    return Math.max(0, taskSecondsLeft);
+  }, [currentTask]);
 
   const [timeLeftInMode, setTimeLeftInMode] = useState<number>(calculateIdleDuration());
-  const [taskTimeLeft, setTaskTimeLeft] = useState<number>(calculateIdleDuration());
+  const [taskTimeLeft, setTaskTimeLeft] = useState<number>(calculateTaskTimeLeft());
   const [sessionTotalDuration, setSessionTotalDuration] = useState<number>(calculateSessionTotalDuration());
   const [pomodorosCompletedCycle, setPomodorosCompletedCycle] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false); // Internal state to control interval
@@ -151,23 +151,40 @@ export function TimerProvider({ children }: { children: ReactNode }) {
        setIsRunning(false);
        setMode("idle");
        setSecondsThisTick(0);
-       
-       // Sync taskTimeLeft when switching
-       const newIdleDur = calculateIdleDuration();
-       setTaskTimeLeft(newIdleDur);
-       setTimeLeftInMode(newIdleDur);
+
+       // Sync taskTimeLeft to the new task; timeLeftInMode/sessionTotalDuration
+       // preview the upcoming pomodoro, independent of the task.
+       setTaskTimeLeft(calculateTaskTimeLeft());
+       setTimeLeftInMode(calculateIdleDuration());
        setSessionTotalDuration(calculateSessionTotalDuration());
-       
+
        prevTaskIdRef.current = currentTaskId;
     }
-  }, [currentTaskId, calculateIdleDuration, calculateSessionTotalDuration]);
+  }, [currentTaskId, calculateIdleDuration, calculateSessionTotalDuration, calculateTaskTimeLeft]);
+
+  // --- Adjust taskTimeLeft when the CURRENT task's own goal time is edited ---
+  // (a task switch is handled above; this only fires for an in-place edit of
+  // the task you're already on, shifting taskTimeLeft by the exact delta so
+  // an in-progress countdown isn't reset or otherwise disturbed)
+  const prevGoalTrackRef = React.useRef<{ id: string | null; goal: number | undefined }>({ id: currentTaskId, goal: currentTask?.goalTimeMinutes });
+  useEffect(() => {
+    const prev = prevGoalTrackRef.current;
+    if (currentTask && prev.id === currentTaskId && prev.goal !== undefined && prev.goal !== currentTask.goalTimeMinutes) {
+      const deltaSeconds = (currentTask.goalTimeMinutes - prev.goal) * 60;
+      setTaskTimeLeft(prevTime => Math.max(0, prevTime + deltaSeconds));
+    }
+    prevGoalTrackRef.current = { id: currentTaskId, goal: currentTask?.goalTimeMinutes };
+  }, [currentTaskId, currentTask?.goalTimeMinutes]);
 
   // --- Effect to persist taskTimeLeft to localStorage ---
+  // Only once currentTask has actually resolved — otherwise a value computed
+  // before the task data loaded (e.g. on a fresh page load) could get written
+  // and then wrongly trusted as "saved progress" on every future load.
   useEffect(() => {
-    if (currentTaskId && !isNaN(taskTimeLeft)) {
+    if (currentTaskId && currentTask && !isNaN(taskTimeLeft)) {
       localStorage.setItem(`focuspie-taskTimeLeft-${currentTaskId}`, taskTimeLeft.toString());
     }
-  }, [taskTimeLeft, currentTaskId]);
+  }, [taskTimeLeft, currentTaskId, currentTask]);
 
   // --- Timer Logic (Background Safe) ---
   const lastTickRef = React.useRef<number | null>(null);

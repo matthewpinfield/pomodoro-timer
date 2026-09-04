@@ -47,7 +47,7 @@ export function TaskReminders({ tasks }: TaskRemindersProps) {
             >
               <div className="flex items-center gap-3.5">
                 <span
-                  className="w-3 h-3 rounded-full flex-shrink-0 ring-4 ring-background shadow-sm transition-transform group-hover:scale-110"
+                  className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"
                   style={{ backgroundColor: taskColor }} 
                 />
                 <span className="font-medium text-sm text-foreground/90 group-hover:text-foreground transition-colors">{task.name}</span>
