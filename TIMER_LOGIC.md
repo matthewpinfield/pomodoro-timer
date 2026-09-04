@@ -4,11 +4,17 @@ This document explains how the circular timer in `components/timer-circle.tsx` d
 
 ## Core Idea
 
-Imagine a clock face. The timer uses arcs (curved lines) on this circle to show time passing.
+Imagine a pie chart, like the one on the Plan page. The timer circle works the
+same way - solid colored wedges radiating from the center, not thin stroked
+rings.
 
-*   **Red Arc:** Shows time left for the **entire task** you are working on.
-*   **Blue Arc:** Shows time left for the **current work session** (like a 25-minute Pomodoro).
-*   **Green Arc:** Shows time left for the **current break session** (short or long break).
+*   **Task wedge:** Shows time left for the **entire task** you are working on.
+*   **Pomodoro wedge:** Shows time left for the **current work session** (a Pomodoro).
+*   **Rest wedge:** Shows time left for the **current break** (short or long).
+
+Only one of Pomodoro/Rest is ever showing at once, since you're either working
+or resting, never both. The task wedge is visible whenever a task is selected,
+regardless of mode.
 
 All time is measured in seconds internally, but displayed in minutes and seconds.
 
@@ -16,154 +22,58 @@ All time is measured in seconds internally, but displayed in minutes and seconds
 
 *   **Canvas:** The digital drawing board where the circle is drawn (`canvasRef`).
 *   **Center:** The middle point of the circle (`centerX`, `centerY`).
-*   **Radius:** How big the circle is (`radius`).
-*   **Track Width:** How thick the colored arcs are (`trackWidth`).
-*   **Inner Radius:** The size of the white circle in the middle (`innerRadius`).
-*   **Start Angle:** The top of the circle (12 o\\'clock position, `startAngle = -Math.PI / 2`).
-*   **Full Circle:** Represents 360 degrees (`fullCircle = Math.PI * 2`).
+*   **Radius:** How big the circle is (`radius`) - matches the pie chart's radius calculation exactly.
+*   **Inner Radius:** The white circle in the middle where the text sits (`innerRadius`, 60% of `radius`).
+*   **Start Angle:** The top of the circle (12 o'clock position, `startAngle = -Math.PI / 2`).
+*   **Full Circle:** Represents 360 degrees (`Math.PI * 2`).
 
-## Drawing the Arcs
+## Drawing the Wedges
 
-The computer draws arcs using `ctx.arc(centerX, centerY, radius, startAngle, endAngle)`.
+Each wedge is a solid pie slice: `moveTo(center)` → `arc(...)` → `lineTo(center)` → `fill()`.
+Both wedges below are drawn at the **same radius** - the second one is drawn
+directly on top of the first, so it visually covers part of it.
 
-*   It starts drawing at `startAngle`.
-*   It draws **clockwise** to `endAngle`.
+### 1. Background
 
-### 1. Background Track
+A full circle in a neutral secondary color is drawn first, as the "empty" backdrop.
 
-*   A simple light gray full circle is drawn first as a background.
-    ```javascript
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius - trackWidth / 2, 0, fullCircle);
-    ctx.lineWidth = trackWidth;
-    ctx.strokeStyle = "#e2e8f0"; // Light gray
-    ctx.stroke();
-    ```
+### 2. Task Wedge (drawn first)
 
-### 2. Red Arc (Total Task Time Remaining)
+*   **Purpose:** How much of the total task duration is left.
+*   **Anchor:** Always starts at 12 o'clock. Fixed.
+*   **Size:** `taskFraction = taskTimeLeftSeconds / (taskGoalMinutes * 60)`, clamped 0-1, mapped to the full circle.
+*   **Color:** the task's own color (`taskColor`).
+*   **Behavior:** As `taskTimeLeftSeconds` counts down, the wedge shrinks back toward 12 o'clock.
 
-*   **Purpose:** Shows how much of the total task duration is left.
-*   **Anchor Point:** Starts firmly at 12 o\\'clock (`startAngle`). **This never moves.**
-*   **Length Calculation:**
-    *   Calculate total seconds and fraction left:
-        ```javascript
-        const totalTaskSeconds = (taskGoalMinutes || 1) * 60;
-        let taskArcFraction = 1; // Default to full circle if no task goal
-        if (totalTaskSeconds > 0) {
-          taskArcFraction = Math.min(taskTimeLeftSeconds / totalTaskSeconds, 1);
-        }
-        ```
-    *   Calculate the arc size (angle in radians):
-        ```javascript
-        const taskArcSize = fullCircle * taskArcFraction;
-        ```
-*   **Drawing:**
-    *   Calculate end angle:
-        ```javascript
-        const redArcEndAngle = startAngle + taskArcSize;
-        ```
-    *   Draw the arc:
-        ```javascript
-        // Draws from 12 o\\'clock (startAngle), clockwise, by the calculated length (taskArcSize)
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius - trackWidth / 2, startAngle, redArcEndAngle);
-        ctx.lineWidth = trackWidth;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = `#ef4444${opacitySuffix}`; // Red
-        ctx.stroke();
-        ```
-*   **Recession (How it gets shorter):** As `taskTimeLeftSeconds` decreases, `taskArcSize` gets smaller. The arc\\'s end point (`redArcEndAngle`) moves **counter-clockwise** back towards the 12 o'clock anchor (`startAngle`).
+### 3. Pomodoro/Rest Wedge (drawn second, on top)
 
-### 3. Blue Arc (Current Work Session Time Remaining)
-
-*   **Purpose:** Shows progress within the current work session (e.g., 25 mins), displayed *relative* to the total task time, but visually anchored like the red arc.
-*   **Anchor Point:** Starts firmly at 12 o\\'clock (`startAngle`), **just like the Red Arc**. **This never moves.**
-*   **Length Calculation (Relative Scaling is KEY):**
-    *   Calculate session progress (0-1):
-        ```javascript
-        const modeProgress = timeLeftInMode / currentModeTotalDuration;
-        ```
-    *   Calculate the maximum *relative* size this session represents:
-        ```javascript
-        const maxWorkSessionArc = (currentModeTotalDuration / totalTaskSeconds) * fullCircle;
-        ```
-    *   Calculate the actual *relative* arc size for drawing:
-        ```javascript
-        let currentModeArcSize = modeProgress * maxWorkSessionArc;
-        ```
-*   **Drawing:**
-    *   Define start and end angles:
-        ```javascript
-        // Draws from 12 o\\'clock (startAngle), clockwise, by its calculated relative length (currentModeArcSize)
-        const blueArcStartAngle = startAngle; // Fixed anchor
-        const blueArcEndAngle = startAngle + currentModeArcSize;
-        ```
-    *   Draw the arc:
-        ```javascript
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius - trackWidth / 2, blueArcStartAngle, blueArcEndAngle);
-        ctx.lineWidth = trackWidth;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = `#3b82f6${opacitySuffix}`; // Blue
-        ctx.stroke();
-        ```
-*   **Recession:** As `timeLeftInMode` decreases, `currentModeArcSize` gets smaller. The arc\\'s end point (`blueArcEndAngle`) moves **counter-clockwise** back towards its *fixed* 12 o\\'clock start point (`startAngle`).
-
-### 4. Green Arc (Break Session Time Remaining)
-
-*   **Purpose:** Shows time left in a short or long break.
-*   **Anchor Point:** Starts firmly at 12 o\\'clock (`startAngle`). **This never moves.**
-*   **Length Calculation:**
-    *   Calculate break progress (0-1):
-        ```javascript
-        // Note: modeProgress calculation is done before the if/else blocks
-        // const modeProgress = timeLeftInMode / currentModeTotalDuration;
-        ```
-    *   Calculate the arc size (absolute, no scaling needed):
-        ```javascript
-        // Note: currentModeArcSize calculation is done before the if/else blocks
-        // let currentModeArcSize = fullCircle * modeProgress;
-        ```
-*   **Drawing:**
-    *   Define start and end angles:
-        ```javascript
-        // Draws from 12 o\\'clock (startAngle), clockwise, by the calculated length (currentModeArcSize)
-        const breakArcStartAngle = startAngle;
-        const breakArcEndAngle = startAngle + currentModeArcSize; // Using the pre-calculated absolute size
-         ```
-    *   Draw the arc:
-        ```javascript
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius - trackWidth / 2, breakArcStartAngle, breakArcEndAngle);
-        ctx.lineWidth = trackWidth;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = `#10b981${opacitySuffix}`; // Green
-        ctx.stroke();
-        ```
-*   **Recession:** As `timeLeftInMode` decreases, `currentModeArcSize` gets smaller. The arc\\'s end point (`breakArcEndAngle`) moves **counter-clockwise** back towards the 12 o'clock anchor (`startAngle`).
+*   **Purpose:** Progress within the current work session or break.
+*   **Anchor:** Same 12 o'clock start as the task wedge - this is what makes it overlap.
+*   **Size while working:** capped relative to the task. A 25-minute pomodoro inside
+    a 2-hour task can only ever cover `25/120 ≈ 21%` of the circle, however much
+    time is left in the session:
+    `maxPomodoroRatio = min(1, currentModeTotalDuration / totalTaskSeconds)`,
+    then `wedgeSize = fullCircle * maxPomodoroRatio * (timeLeftInMode / currentModeTotalDuration)`.
+    This is what makes the pomodoro visually read as "a small bite" of a longer task.
+*   **Size while resting:** not scaled to the task at all - a break isn't part of
+    the task, so it just uses `fullCircle * (timeLeftInMode / currentModeTotalDuration)` directly.
+*   **Color:** `workColor` while working, `restColor` while resting - both derived
+    from the task's own color family (a tinted variant), not a fixed universal color.
+*   **Not drawn while idle** (no session running yet).
 
 ## Center White Circle and Text
 
-*   A white circle is drawn in the middle (`innerRadius`) with a shadow effect.
-*   **Main Time (`timeDisplay`):** Shows `timeLeftInMode` formatted like MM:SS.
-*   **Subtitle (`subtitle`):** Shows the current `taskName` (if working) or \\'Short Break\\'/'Long Break\\'/'Ready\\'.
-*   **Task Time Remaining (`taskTimeDisplay`):** Shows `taskTimeLeftSeconds` formatted like H:MM \\'remaining\\' (only shown during \\'working\\' mode).
-*   **Play/Pause Icon:** Drawn in the very center, changes based on `isRunning` state.
-
-## Static Time Below Timer
-
-*   In `app/timer/page.tsx`, there\\'s a separate piece of text showing the current actual time (like 10:30 AM). This comes from `new Date()` and is stored in `formattedTime`.
+*   A white/card-colored circle sits on top of everything at `innerRadius`, masking the center of both wedges.
+*   **Main time:** shows `taskTimeLeftSeconds` (while idle or working) or the mode countdown `timeDisplay` (while resting).
+*   **Subtitle:** the current task's name, or "Short Break"/"Long Break"/"Ready".
+*   **Play/Pause icon:** visible by default (always shown on touch devices); on
+    devices that support hovering, it's hidden until you hover the circle.
 
 ## How the Numbers Change (State Management)
 
 *   The actual numbers (`timeLeftInMode`, `taskTimeLeftSeconds`, `mode`, `isRunning`, etc.) are managed by React Context (`useTimer`, `useTasks`).
-*   Functions like `startWork`, `pauseTimer`, `skipBreak` in the context update these numbers.
-*   The `TimerCircle` component receives these numbers as `props`.
-*   A `useEffect` hook inside `TimerCircle` watches for changes in these props and redraws the canvas whenever a number changes.
-*   In `app/timer/page.tsx`, `useEffect` hooks handle the countdown logic for `taskTimeLeftSeconds` and save/load it from the browser\\'s Local Storage (`focuspie-taskTimeLeft`) so it doesn\'t reset if you close the page.
-
-## Opacity
-
-*   When the timer is paused (`isRunning` is false), the Red, Blue, and Green arcs are drawn slightly transparent (using `opacitySuffix = "80"`).
-
-This covers the main parts of how the timer circle works visually and functionally. 
+*   `startWork`, `pauseTimer`, `skipBreak` in `TimerContext` update these numbers.
+*   `TimerCircle` receives them as props and redraws (`requestAnimationFrame`) whenever they change while running.
+*   `taskTimeLeftSeconds` and the pomodoro/session duration are tracked as two
+    genuinely separate numbers in `TimerContext` - the task's own remaining time
+    is never conflated with the pomodoro setting.

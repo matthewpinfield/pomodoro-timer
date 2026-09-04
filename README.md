@@ -1,23 +1,29 @@
-# Pomodoro Timer
+# FocusPie
 
-A modern, feature-rich Pomodoro timer application built with Next.js 15.2, React 19, TypeScript 5, and Tailwind CSS 3.4.
+An ADHD-friendly focus timer: plan your day on an interactive pie chart, then
+run Pomodoro sessions against whichever task you select. Built with Next.js
+15, React 19, and TypeScript, deployed as a static site with no backend.
+
+**Live demo:** https://matthewpinfield.github.io/pomodoro-timer/
+
+![Task planning view](docs/screenshots/pie-chart.png)
+![Timer view](docs/screenshots/timer.png)
 
 ## Features
 
-- 🕒 Pomodoro Timer with visual progress tracking
-- 📋 Task Management System
-- 📊 Task Statistics and Visualization
-- 🎨 Beautiful UI with Dark/Light mode
-- 📱 Responsive Design
-- 📝 Note-taking functionality
-- 🔔 Task Reminders
-- 📅 Day Planning
+- 🥧 **Visual day planning** — lay your tasks out on a pie chart against a configurable workday budget
+- 🕒 **Pomodoro timer with task-relative progress** — the session ring is scaled against the task's own duration, so a 25-minute pomodoro visibly reads as a small bite of a 2-hour task rather than an arbitrary fraction of the circle
+- 🔔 **Sound notifications** — a distinct chime for "pomodoro done, time to rest" vs. "break's over, back to it" (synthesized via the Web Audio API, no audio assets)
+- 📋 **Task management** — add, edit, prioritize, and delete tasks; progress is tracked automatically as you work
+- 📝 **Session notes** — jot quick notes against the task you're currently focused on
+- 🎨 **Dark/light mode**, with a monochrome chart option
+- 📱 **Responsive**, tested on real mobile devices
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 22.x or later
+- Node.js 20.x or later
 - pnpm
 
 ### Installation
@@ -42,36 +48,27 @@ pnpm dev
 
 ## Usage
 
-1. **Timer**
-   - Click the timer circle to start/pause
-   - Visual progress tracking for both Pomodoro and task time
-   - Task time remaining display
-
-2. **Tasks**
-   - Add tasks with custom durations
-   - Assign colors to tasks
-   - Track progress
-   - Edit or delete tasks
-
-3. **Statistics**
-   - View task distribution in pie chart
-   - Track daily progress
-   - Monitor time spent on tasks
+1. **Plan your day** — add tasks with a goal duration on the pie chart page; each gets its own colored slice
+2. **Start a session** — tap a task to open the timer and begin a pomodoro against it
+3. **Stay in flow** — the timer shows both the current pomodoro/break countdown and the task's overall remaining time, with a chime marking each transition
+4. **Track progress** — completed time accumulates per task automatically as sessions run
 
 ## Tech Stack
 
-- **Frontend Framework**: [Next.js 15.2.4](https://nextjs.org/)
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router, static export)
 - **UI Library**: [React 19](https://react.dev/)
-- **Type System**: [TypeScript 5](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS 3.4.17](https://tailwindcss.com/)
-- **Component Library**: [Radix UI](https://www.radix-ui.com/) (various components 1.x-2.x)
+- **Language**: [TypeScript 5](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS 3](https://tailwindcss.com/)
+- **Components**: [Radix UI](https://www.radix-ui.com/) primitives
 - **Animation**: [Framer Motion](https://www.framer.com/motion/)
-- **Form Handling**: [React Hook Form 7.54.1](https://react-hook-form.com/) with [Zod 3.24.1](https://zod.dev/) validation
-- **Date Handling**: [date-fns 4.1.0](https://date-fns.org/)
-- **Theming**: [next-themes 0.4.4](https://github.com/pacocoursey/next-themes)
-- **Icons**: [Lucide React 0.454.0](https://lucide.dev/)
-- **Unique IDs**: [UUID](https://github.com/uuidjs/uuid)
-- **Toast Notifications**: [Sonner 1.7.1](https://sonner.emilkowal.ski/)
+- **Forms**: [React Hook Form](https://react-hook-form.com/) with [Zod](https://zod.dev/) validation
+- **Dates**: [date-fns](https://date-fns.org/)
+- **Theming**: [next-themes](https://github.com/pacocoursey/next-themes)
+- **Icons**: [Lucide React](https://lucide.dev/)
+
+No backend — all state (tasks, timer settings, progress) lives in the
+browser's `localStorage`. Deploys as a static site via GitHub Actions to
+GitHub Pages on every push to `main`.
 
 ## Contributing
 
@@ -86,4 +83,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with [Next.js](https://nextjs.org/)
 - Styled with [Tailwind CSS](https://tailwindcss.com/)
 - UI Components from [Radix UI](https://www.radix-ui.com/)
-- Icons from [Lucide](https://lucide.dev/) 
+- Icons from [Lucide](https://lucide.dev/)

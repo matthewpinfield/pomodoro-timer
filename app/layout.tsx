@@ -6,6 +6,7 @@ import { TaskProvider } from "@/context/task-context"
 import { TimerProvider } from "@/context/timer-context"
 import { SettingsProvider } from "@/context/settings-context"
 import { Header } from '@/components/Header' // Assuming Header has sticky/fixed positioning
+import { Toaster } from "@/components/ui/toaster"
 import { cn } from "@/lib/utils"
 
 // --- Font definitions ---
@@ -49,6 +50,7 @@ export default function RootLayout({
                     {children}
                   </main>
                 </div>
+                <Toaster />
               </TimerProvider>
             </TaskProvider>
           </SettingsProvider>

@@ -6,6 +6,7 @@ import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2, Flag } from "lucide-react"
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { TaskForm } from "@/components/task-form"
 import type { Task } from "@/types/task"
 import { useRouter } from "next/navigation"
@@ -30,7 +31,7 @@ export function TaskList({
   showControls = true,
   forceMonochrome = false,
 }: TaskListProps) {
-  const { deleteTask, updateTask, setCurrentTaskId, currentTaskId } = useTasks()
+  const { deleteTask, restoreTask, updateTask, setCurrentTaskId, currentTaskId } = useTasks()
   const { isRunning } = useTimer()
   const router = useRouter()
   const { theme } = useTheme()
@@ -78,6 +79,16 @@ export function TaskList({
   const handleUpdate = (taskId: string, taskData: { name: string; goalTimeMinutes: number }) => {
     updateTask(taskId, taskData)
     setEditingTaskId(null)
+  }
+
+  const handleDelete = (task: Task) => {
+    deleteTask(task.id)
+    toast(`"${task.name}" deleted`, {
+      action: {
+        label: "Undo",
+        onClick: () => restoreTask(task),
+      },
+    })
   }
 
   // Function to handle starting a task timer
@@ -176,7 +187,7 @@ export function TaskList({
                     variant="ghost"
                     size="icon"
                     className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-white/25 text-white"
-                    onClick={(e) => { e.stopPropagation(); deleteTask(task.id); }}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
                     aria-label={`Delete ${task.name}`}
                     title="Delete task"
                   >

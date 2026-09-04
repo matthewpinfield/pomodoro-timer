@@ -447,6 +447,19 @@ body {
     @apply shadow-[0_20px_50px_rgba(0,0,0,0.2)];
   }
 
+  /* Hover-reveal: visible by default (touch has no :hover), hidden-until-hover
+     only on devices that actually support hovering (mouse/trackpad). */
+  @media (hover: hover) {
+    .hover-reveal {
+      opacity: 0;
+      transform: translateY(-1rem);
+    }
+    .group:hover .hover-reveal {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* Custom Scrollbar */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;

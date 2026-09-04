@@ -207,14 +207,14 @@ const TimerCircle = memo(function TimerCircle({
         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
           <div className="absolute inset-0 m-auto w-[60%] h-[60%] rounded-full flex flex-col items-center justify-center transition-all duration-300 pointer-events-auto">
              
-             {/* Play/Pause Hover Indicator */}
-             <div className="absolute top-10 sm:top-12 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-y-4 group-hover:translate-y-0">
+             {/* Play/Pause Indicator - always visible on touch, hover-reveal on mouse/trackpad */}
+             <div className="absolute top-10 sm:top-12 text-primary hover-reveal transition-opacity duration-300 transform">
                {isRunning ? <Pause className="w-6 h-6 fill-current drop-shadow-md" /> : <Play className="w-6 h-6 fill-current drop-shadow-md ml-1" />}
              </div>
 
              {/* Stacked Labels matching Pie Chart */}
              <div className="flex flex-col items-center justify-center transition-transform duration-300 group-hover:translate-y-2">
-                 <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate max-w-[160px] pb-1">
+                 <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate max-w-[185px] sm:max-w-[160px] pb-1">
                     {subtitle}
                  </h2>
                  <p className="font-digital text-2xl sm:text-3xl font-normal tracking-wider text-muted-foreground tabular-nums">

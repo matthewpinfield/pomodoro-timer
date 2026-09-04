@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { TaskForm } from "@/components/task-form"
 import { TaskList } from "@/components/task-list"
@@ -38,10 +39,12 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
   const handleFormSubmit = (taskData: { name: string; goalTimeMinutes: number; isPriority?: boolean }) => {
     if (editingTask) {
       updateTask(editingTask.id, taskData)
+      toast.success(`"${taskData.name}" updated`)
     } else {
       addTask(taskData)
+      toast.success(`"${taskData.name}" added to today's plan`)
     }
-    setEditingTask(null) 
+    setEditingTask(null)
   }
 
   const handleFormCancel = () => {

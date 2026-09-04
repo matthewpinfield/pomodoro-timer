@@ -18,6 +18,7 @@ interface TaskContextType {
   addTask: (task: TaskData) => void // Use TaskData type
   updateTask: (id: string, task: TaskData) => void // Use TaskData type
   deleteTask: (id: string) => void
+  restoreTask: (task: Task) => void // Re-inserts a task as-is (e.g. undoing a delete)
   updateTaskProgress: (id: string, minutesCompleted: number) => void
   addTaskNote: (id: string, note: string) => void
   setCurrentTaskId: (id: string | null) => void
@@ -176,6 +177,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Re-inserts a task exactly as it was (id, progress, notes intact) - for undoing a delete
+  const restoreTask = (task: Task) => {
+    setTasks((prevTasks) => {
+      if (prevTasks.some((t) => t.id === task.id)) return prevTasks; // already present, avoid duplicates
+      return sortTasks([...prevTasks, task]);
+    });
+  }
+
   const updateTaskProgress = (id: string, minutesCompleted: number) => {
     setTasks((prevTasks) =>
       prevTasks.map((t) => (t.id === id ? { ...t, progressMinutes: t.progressMinutes + minutesCompleted } : t)),
@@ -201,6 +210,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         addTask,
         updateTask,
         deleteTask,
+        restoreTask,
         updateTaskProgress,
         addTaskNote,
         setCurrentTaskId,

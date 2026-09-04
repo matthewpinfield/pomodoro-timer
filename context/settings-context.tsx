@@ -8,6 +8,7 @@ const MIN_WORKDAY_HOURS = 1;
 const MAX_WORKDAY_HOURS = 24;
 const MONOCHROME_STORAGE_KEY = "focuspie-settings-monochromeChart";
 const WORKDAY_HOURS_STORAGE_KEY = "focuspie-settings-workdayHours"; // Use a consistent naming scheme
+const SOUND_ENABLED_STORAGE_KEY = "focuspie-settings-soundEnabled";
 
 // --- Types ---
 interface SettingsContextType {
@@ -15,6 +16,8 @@ interface SettingsContextType {
   updateWorkdayHours: (hours: number) => void;
   useMonochromeChart: boolean;
   updateMonochromeChart: (useMonochrome: boolean) => void;
+  soundEnabled: boolean;
+  updateSoundEnabled: (enabled: boolean) => void;
   // Add other settings here later (timer durations, theme)
 }
 
@@ -26,6 +29,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // --- State ---
   const [workdayHours, setWorkdayHours] = useState<number>(DEFAULT_WORKDAY_HOURS);
   const [useMonochromeChart, setUseMonochromeChart] = useState<boolean>(false);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
   // Load settings from localStorage on initial render
   useEffect(() => {
@@ -49,17 +53,30 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setUseMonochromeChart(false);
     } // If item doesn't exist or has other value, default 'false' is used.
 
+    // Load Sound Enabled setting (defaults to true if unset)
+    const savedSoundEnabled = localStorage.getItem(SOUND_ENABLED_STORAGE_KEY);
+    if (savedSoundEnabled === 'true') {
+      setSoundEnabled(true);
+    } else if (savedSoundEnabled === 'false') {
+      setSoundEnabled(false);
+    }
+
   }, []);
 
   // Save workdayHours to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem(WORKDAY_HOURS_STORAGE_KEY, workdayHours.toString());
   }, [workdayHours]);
-  
+
   // Re-add Save useMonochromeChart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem(MONOCHROME_STORAGE_KEY, useMonochromeChart.toString());
   }, [useMonochromeChart]);
+
+  // Save soundEnabled to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(SOUND_ENABLED_STORAGE_KEY, soundEnabled.toString());
+  }, [soundEnabled]);
 
   // --- Actions ---
   const updateWorkdayHours = (hours: number) => {
@@ -76,12 +93,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setUseMonochromeChart(useMonochrome);
   };
 
+  const updateSoundEnabled = (enabled: boolean) => {
+    setSoundEnabled(enabled);
+  };
+
   // --- Context Value ---
   const value = {
     workdayHours,
     updateWorkdayHours,
     useMonochromeChart,
     updateMonochromeChart,
+    soundEnabled,
+    updateSoundEnabled,
     // Add other settings values/updaters here
   };
 

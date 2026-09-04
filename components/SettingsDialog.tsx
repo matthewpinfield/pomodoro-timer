@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input"; // Import Input
 import { Switch } from "@/components/ui/switch"; // Import Switch
 import { Button } from "@/components/ui/button"; // Ensure Button is imported
 import { useTheme } from "next-themes"; // Import the useTheme hook
-import { PauseCircle, Palette, RotateCcw } from "lucide-react"; // Re-import icons
+import { PauseCircle, Palette, RotateCcw, Volume2 } from "lucide-react"; // Re-import icons
+import { toast } from "sonner";
 import * as React from "react"; // Import React itself
 import { useRef, useEffect } from "react"; // Import useRef and useEffect
 
@@ -23,7 +24,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   // Get settings and the new update function from useTimer
   const { settings: timerSettings, toggleAutoPause, updateTimerSetting } = useTimer(); 
   // Re-import and use useMonochromeChart and updateMonochromeChart from useSettings
-  const { workdayHours, updateWorkdayHours, useMonochromeChart, updateMonochromeChart } = useSettings(); 
+  const { workdayHours, updateWorkdayHours, useMonochromeChart, updateMonochromeChart, soundEnabled, updateSoundEnabled } = useSettings();
   const contentRef = useRef<HTMLDivElement>(null); // Ref for DialogContent
 
   // Handler for duration inputs
@@ -47,8 +48,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   const handleResetWelcome = () => {
     localStorage.removeItem("focuspie-welcome-seen");
-    // Optional: Add a notification/toast here to confirm reset
-    alert("Welcome screen has been reset. It will show on the next page load."); 
+    toast.success("Welcome screen reset - it'll show on next page load.");
   };
 
   // Effect to focus the dialog content instead of the first input when opened
@@ -171,6 +171,25 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   toggleAutoPause();
                 }}
                 aria-label="Toggle auto-pause when app is backgrounded"
+              />
+            </div>
+          </div>
+
+          {/* --- Sound Notifications Setting --- */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1 pr-4">
+              <Label htmlFor="sound-enabled-switch" className="text-foreground cursor-pointer">
+                Sound Notifications
+              </Label>
+              <p className="text-xs text-muted-foreground">Plays a chime when a pomodoro or break ends.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Volume2 className="w-icon-sm h-icon-sm text-muted-foreground opacity-75" />
+              <Switch
+                id="sound-enabled-switch"
+                checked={soundEnabled}
+                onCheckedChange={(checked) => updateSoundEnabled(checked)}
+                aria-label="Toggle sound notifications when a timer ends"
               />
             </div>
           </div>

@@ -3,6 +3,8 @@
 import * as React from "react";
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { useTasks } from "./task-context"; // Corrected import path
+import { useSettings } from "./settings-context";
+import { playTransitionChime } from "@/lib/sound";
 
 // --- Constants (Defaults only) ---
 const DEFAULT_POMODORO_MINUTES = 25;
@@ -74,6 +76,7 @@ const getInitialSettings = (): TimerSettings => {
 export function TimerProvider({ children }: { children: ReactNode }) {
   // Get Task Context functions/state
   const { tasks, updateTaskProgress, currentTaskId } = useTasks();
+  const { soundEnabled } = useSettings();
 
   const currentTask = React.useMemo(() => {
     return currentTaskId ? tasks.find(t => t.id === currentTaskId) : undefined;
@@ -239,9 +242,10 @@ export function TimerProvider({ children }: { children: ReactNode }) {
        lastTickRef.current = null; // Reset tick ref
 
        if (mode === "working") {
+         if (soundEnabled) playTransitionChime("workComplete");
          const completed = pomodorosCompletedCycle + 1;
          setPomodorosCompletedCycle(completed);
-         
+
          // Determine next break
          if (completed % settings.pomodorosUntilLongBreak === 0) {
            setMode("longBreak");
@@ -256,6 +260,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
          setIsRunning(true);
 
        } else if (mode === "shortBreak" || mode === "longBreak") {
+         if (soundEnabled) playTransitionChime("breakComplete");
          // Break finished, go idle, ready for next work session
          setMode("idle");
          const idleDur = calculateIdleDuration();
@@ -275,7 +280,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     return () => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
-  }, [isRunning, timeLeftInMode, mode, pomodorosCompletedCycle, settings, calculateIdleDuration, calculateSessionTotalDuration]);
+  }, [isRunning, timeLeftInMode, mode, pomodorosCompletedCycle, settings, calculateIdleDuration, calculateSessionTotalDuration, soundEnabled]);
 
   // --- Effect for Per-Minute Progress Update ---
   useEffect(() => {
