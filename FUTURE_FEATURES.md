@@ -42,6 +42,20 @@ just "more customization."
   No new infrastructure needed, just aggregating data already tracked
   (`progressMinutes` per task, session history).
 
+## Calendar integration
+
+Auto-populate the day's task list from a connected calendar (Google Calendar
+being the obvious first target) instead of relying on the user to remember to
+add everything manually. Directly targets the same "forgetting things" gap as
+the notification tiers above — a meeting or commitment already on the
+calendar shows up as a task automatically, rather than depending on the user
+to notice it and enter it themselves. Needs real scoping (which calendar
+providers, one-way import vs. two-way sync, how auto-imported events map to
+task duration/priority) before estimating effort - likely needs a backend
+for OAuth + calendar API access, so probably bundles naturally with the
+Tier 3 push notification work rather than being a separate infrastructure
+lift.
+
 ## Mobile experience
 
 Current mobile layout is responsive (stacks correctly, no broken layouts) but
