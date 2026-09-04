@@ -26,12 +26,12 @@ export function TaskLegend({ tasks, workdayHours = 8, onTaskClick = () => {} }: 
   const remainingMinutes = Math.max(0, workdayMinutes - totalTaskMinutes)
 
   // State to store computed colors
-  const [computedColors, setComputedColors] = useState<{ [key: number]: string }>({});
+  const [computedColors, setComputedColors] = useState<{ [key: string]: string }>({});
   const [secondaryColor, setSecondaryColor] = useState('#f1f5f9'); // Default fallback
 
   // Effect to compute colors
   useEffect(() => {
-    const newComputedColors: { [key: number]: string } = {};
+    const newComputedColors: { [key: string]: string } = {};
     tasks.forEach(task => {
       if (task.chartIndex) {
         newComputedColors[task.chartIndex] = getCssVariable(`--chart-${task.chartIndex}`);

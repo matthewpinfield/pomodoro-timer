@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Menu, Settings, PieChart, Clock, AlertCircle, XCircle, Palette, Info } from "lucide-react";
+import { Menu, Settings, PieChart, Clock, AlertCircle, XCircle, Palette, Info, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from './SettingsDialog';
@@ -108,30 +108,37 @@ export function Header() {
       icon: <Info className="w-icon-base h-icon-base" />,
       onClick: () => { setIsFeaturesOpen(true); setIsMenuOpen(false); },
     },
+    {
+      name: "Buy Me a Coffee",
+      icon: <Coffee className="w-icon-base h-icon-base text-[#FFDD00]" />, // Buy Me A Coffee brand coloring
+      onClick: () => { window.open("https://buymeacoffee.com/YOUR_USERNAME_HERE", "_blank"); setIsMenuOpen(false); },
+    },
   ];
 
   return (
     <header className={cn(
-      "py-2 pt-8 px-4 bg-background border-b flex justify-between items-center sticky top-0 z-50 safe-top",
-      "transition-transform duration-300 ease-in-out",
-      !isHeaderVisible ? "-translate-y-full" : "translate-y-0",
-      "md:translate-y-0"
+      "py-3 px-4 sm:px-6 md:px-8 bg-background/70 backdrop-blur-xl border-b border-white/10 dark:border-white/5 shadow-sm flex justify-between items-center sticky top-0 z-50 safe-top",
+      "transition-all duration-500 ease-in-out",
+      !isHeaderVisible ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100",
+      "md:translate-y-0 md:opacity-100"
     )}>
       {/* --- Header content (Logo, Title, Menu Button) --- */}
-      <div className="flex items-center space-x-3">
-        <Link href={basePath + "/"} className="relative z-0">
-           <Image
-            src={basePath + "/icon-192x192.png"}
-            alt="FocusPie Logo"
-            width={47} height={47}
-            className="w-logo-mobile h-logo-mobile sm:w-logo-desktop sm:h-logo-desktop mr-w-xs pointer-events-none"
-            priority loading="eager" fetchPriority="high"
-          />
+      <div className="flex items-center space-x-4">
+        <Link href={basePath + "/"} className="relative z-0 group flex items-center gap-2 sm:gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98]">
+           <div className="relative overflow-hidden rounded-xl bg-gradient-to-tr from-primary/30 to-primary/10 p-1 shadow-inner ring-1 ring-white/10 group-hover:ring-primary/50 transition-all duration-300">
+             <Image
+              src={basePath + "/icon-192x192.png"}
+              alt="FocusPie Logo"
+              width={40} height={40}
+              className="w-8 h-8 sm:w-10 sm:h-10 object-contain drop-shadow-md group-hover:rotate-12 transition-transform duration-300 pointer-events-none"
+              priority loading="eager" fetchPriority="high"
+             />
+           </div>
+           <div>
+             <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent tracking-tight leading-none">FocusPie</h1>
+             <p className="hidden sm:block text-[10px] md:text-xs font-medium text-primary/80 uppercase tracking-widest mt-0.5">Your Daily Focus Plan</p>
+           </div>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">FocusPie</h1>
-          <p className="text-xs text-muted-foreground -mt-1">Your Daily Focus Plan</p>
-        </div>
       </div>
 
       {/* --- Hamburger menu container --- */}
@@ -142,51 +149,46 @@ export function Header() {
         {/* Hamburger Button */}
         <button
           onClick={toggleMenu}
-          className="group flex flex-col justify-center items-center gap-1 p-2 rounded-md transition-colors"
+          className="group flex flex-col justify-center items-center gap-1.5 p-2.5 rounded-full hover:bg-white/5 active:bg-white/10 transition-all duration-300"
           aria-label="Menu"
         >
-          <span className="block w-5 h-0.5 bg-foreground group-hover:bg-muted-foreground transition-colors"></span>
-          <span className="block w-4 h-0.5 bg-foreground group-hover:bg-muted-foreground transition-colors"></span>
-          <span className="block w-5 h-0.5 bg-foreground group-hover:bg-muted-foreground transition-colors"></span>
+          <span className={cn("block w-5 h-[2px] rounded-full bg-foreground transition-all duration-300", isMenuOpen ? "translate-y-2 rotate-45" : "")}></span>
+          <span className={cn("block w-4 h-[2px] rounded-full bg-foreground transition-all duration-300", isMenuOpen ? "opacity-0 translate-x-3" : "")}></span>
+          <span className={cn("block w-5 h-[2px] rounded-full bg-foreground transition-all duration-300", isMenuOpen ? "-translate-y-2 -rotate-45" : "")}></span>
         </button>
 
         {/* Dropdown Menu Panel */}
         {isMenuOpen && (
           <div
             className={cn(
-              "fixed top-[4.5rem] right-0 h-[calc(100vh-4.5rem)] w-64 bg-background text-popover-foreground border-l border-border overflow-y-auto z-40 shadow-md pt-3"
+              "absolute top-[calc(100%+1rem)] right-0 w-64 rounded-2xl bg-card/95 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden z-40 origin-top-right animate-in fade-in zoom-in-95 duration-200"
             )}
             role="menu"
           >
-             <div className="flex flex-col h-full">
+             <div className="flex flex-col py-2">
                {menuItems.map((item, index) => (
                  <div
                    key={index}
                    className={cn(
-                     "group flex items-center gap-3 px-4 py-2 active:bg-accent/80 cursor-pointer relative",
-                     item.disabled && "opacity-50 cursor-not-allowed hover:bg-background"
+                     "group flex items-center gap-4 px-5 py-3.5 mx-2 my-0.5 rounded-xl cursor-pointer relative transition-all duration-200",
+                     item.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/10 hover:text-primary"
                    )}
                    onClick={item.disabled ? undefined : item.onClick}
                    onMouseEnter={() => item.disabled && item.tooltip ? setShowTooltip(true) : null}
                    onMouseLeave={() => item.disabled && item.tooltip ? setShowTooltip(false) : null}
                  >
-                   {/* *** Icon Rendering Logic: Wrap in Span and Apply Colors Here *** */}
                    <span className={cn(
-                      // Apply the base text color here
-                      "text-popover-foreground",
-                      // Add transition for smoother color change
-                      "transition-colors duration-150 ease-in-out",
-                      // Apply hover color only if NOT disabled
-                      !item.disabled && 'group-hover:text-primary'
+                      "transition-colors duration-200 flex items-center justify-center text-muted-foreground",
+                      !item.disabled && 'group-hover:text-primary group-hover:scale-110'
                     )}>
-                       {item.icon} {/* Render the original icon directly */}
+                       {item.icon}
                    </span>
-                   {/* *** End Icon Rendering Change *** */}
-
-                   <span className="font-medium">{item.name}</span>
-                   {item.disabled && ( <AlertCircle className="w-icon-sm h-icon-sm text-amber-500 ml-auto" /> )}
+                   
+                   <span className="font-medium text-sm tracking-wide text-foreground group-hover:text-primary transition-colors">{item.name}</span>
+                   
+                   {item.disabled && ( <AlertCircle className="w-4 h-4 text-destructive ml-auto opacity-80" /> )}
                    {item.disabled && item.tooltip && showTooltip && (
-                        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded shadow-md z-50 whitespace-nowrap">
+                        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-4 bg-popover/95 backdrop-blur-md text-popover-foreground text-xs font-medium px-3 py-2 rounded-lg shadow-xl border border-white/10 z-50 whitespace-nowrap animate-in fade-in slide-in-from-right-2">
                           {item.tooltip}
                         </div>
                     )}

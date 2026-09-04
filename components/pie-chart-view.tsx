@@ -105,78 +105,90 @@ export default function PieChartView() {
   };
 
   return (
-    // Simple wrapper for max-width and centering
-    <div className="w-full max-w-7xl mx-auto">
+    <div className="w-full max-w-7xl mx-auto px-0 sm:px-4 flex flex-col h-full">
 
       {/* Responsive Container: flex-col default, md:flex-row */}
-      <div className="flex flex-col md:flex-row md:items-start gap-6 relative">
+      <div className="flex flex-col md:flex-row md:items-start gap-6 sm:gap-8 md:gap-12 relative flex-1">
 
          {/* --- Left Column (Hero - Sticky) --- */}
-         {/* Width uses calc to account for gap. self-start prevents stretching. */}
          <div
-           ref={pieChartContainerRef} // Ref for height measurement
-           className={`w-full md:w-[calc(55%-0.75rem)] py-4 md:sticky self-start z-20`} // Adjust 0.75rem if gap-lg changes
-           style={{ top: chartStickyTop }} // Apply calculated top offset
+           ref={pieChartContainerRef}
+           className="w-full md:w-5/12 lg:w-[45%] py-4 md:sticky self-start z-20 flex flex-col items-center group" 
+           style={{ top: 0 }}
          >
-            {/* Pie Chart Container - Controls aspect ratio and width */}
-            <div className="aspect-square w-[90%] mx-auto md:w-full max-w-md mb-4"> {/* Adjust max-width */}
+            {/* Pie Chart Ambient Glow */}
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 bg-primary/10 rounded-full blur-[80px] sm:blur-[100px] h-[250px] sm:h-[300px] w-full -z-10 opacity-60 group-hover:opacity-80 transition-opacity duration-700" />
+
+            {/* Pie Chart Container */}
+            <div className="relative aspect-square w-[90%] sm:w-[75%] md:w-[90%] lg:w-[85%] xl:w-[80%] max-w-[400px] mx-auto mb-4 sm:mb-6 transform transition-transform duration-500 hover:scale-[1.02]"> 
                <PieChart
                  tasks={tasks}
                  onTaskSelect={handleTaskSelect}
                  onCenterClick={handlePlanDay}
                  workdayHours={workdayHours}
-                 className="w-full h-full max-w-full max-h-full"
+                 className="w-full h-full drop-shadow-2xl"
                  forceMonochrome={effectiveMonochrome}
                />
             </div>
-            {/* Task summary text below chart */}
+            
+            {/* Task summary text */}
             {tasks.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-center text-sm text-muted-foreground mt-4 mb-1" // Added justify-center and mt-4
+                className="flex items-center justify-center text-xs sm:text-sm font-medium text-foreground/80 bg-card/40 backdrop-blur-md px-4 sm:px-5 py-2 sm:py-2.5 rounded-full border border-white/10 shadow-sm mt-2 sm:mt-4 tracking-wide" 
               >
-                <Clock className="w-4 h-4 mr-1 flex-shrink-0" />
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
                 <span>
-                  {tasks.length} task{tasks.length !== 1 ? "s" : ""} • {Math.floor(totalGoalMinutes / 60)}h{totalGoalMinutes % 60}m of {workdayHours}h day
+                  {tasks.length} {tasks.length === 1 ? "task" : "tasks"} • {Math.floor(totalGoalMinutes / 60)}h{totalGoalMinutes % 60}m / {workdayHours}h
                 </span>
               </motion.div>
             )}
          </div>
 
-         {/* --- Right Column (Content + Button) --- */}
-         {/* Added calculated height for md+ screens */}
-         <div className="w-full md:w-[calc(45%-0.75rem)] flex flex-col relative md:h-[calc(100vh_-_11rem)] bg-card border rounded-lg shadow-md p-4"> 
-            {/* --- Button Section (Adjust top positioning if needed due to padding) --- */}
+         {/* --- Right Column (Content) --- */}
+         <div className="w-full md:w-7/12 lg:w-[55%] flex flex-col relative glass-card rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 xl:p-10 mb-4 flex-1"> 
+            
+            <div className="absolute top-0 right-0 -mr-10 -mt-10 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+
+            {/* --- Button Section --- */}
             <div
               ref={buttonContainerRef}
-              className="w-full sticky top-0 bg-card z-10 pt-2 pb-4 mb-4 border-b" /* Use bg-card, add padding/border */
-              style={{ top: `calc(${HEADER_HEIGHT_ESTIMATE} + ${MAIN_PADDING_TOP})` }} /* Simplified top */
+              className="w-full sticky top-0 z-10 pb-4 sm:pb-6 mb-2 flex flex-col bg-transparent"
             >
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Today's Focus</h2>
+                {tasks.length > 0 && (
+                  <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                    {Math.round((totalGoalMinutes / (workdayHours * 60)) * 100)}% Full
+                  </span>
+                )}
+              </div>
+              
               <Button
                 onClick={handlePlanDay}
-                className="w-full flex items-center justify-center gap-2 py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-all text-sm sm:text-base"
+                className="w-full h-12 sm:h-14 flex items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 shadow-xl shadow-primary/20 border border-primary-foreground/10 font-bold text-sm sm:text-base"
                 size="lg"
               >
-                <PlusCircle className="w-icon-base h-icon-base" />
-                <span>Plan My Day</span>
+                <PlusCircle className="w-5 h-5" />
+                <span>Plan New Task</span>
               </Button>
             </div>
 
-            {/* --- Content Section (Scrollable) --- */}
-            <div className="flex-1 overflow-y-auto" > 
+            {/* --- List Section --- */}
+            <div className="flex-1 overflow-visible" > 
               <TaskList 
                 tasks={tasks} 
                 onEditTask={handleTaskClick} 
                 forceMonochrome={effectiveMonochrome}
               />
             </div>
-         </div> {/* End Right Column */}
-      </div> {/* End Responsive Container */}
+         </div>
+      </div>
 
       <PlanDayDialog open={planDayOpen} onOpenChange={setPlanDayOpen} editTaskId={editTaskId} />
       <WelcomeDialog open={welcomeOpen} onDismiss={handleWelcomeDismiss} />
 
-    </div> // End Component Root
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 // page.tsx (Rollback State - WITH Debugging Logs Added)
 "use client";
 
+import * as React from "react";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { TimerCircle } from "@/components/timer-circle";
@@ -18,10 +19,9 @@ import { PlusCircle } from "lucide-react";
 export default function TimerPage() {
     const router = useRouter();
     const { tasks, currentTaskId } = useTasks();
-    const { mode, timeLeftInMode, isRunning, settings, startWork, pauseTimer, skipBreak } = useTimer();
+    const { mode, timeLeftInMode, taskTimeLeft, isRunning, settings, sessionTotalDuration, startWork, pauseTimer, skipBreak } = useTimer();
     const { useMonochromeChart } = useSettings();
     const [noteDialogOpen, setNoteDialogOpen] = useState(false);
-    const [taskTimeLeftSeconds, setTaskTimeLeftSeconds] = useState<number>(NaN); // Initialize as NaN
 
     const [clientTaskColor, setClientTaskColor] = useState<string>('transparent');
     const [clientWorkColor, setClientWorkColor] = useState<string>('transparent');
@@ -29,23 +29,20 @@ export default function TimerPage() {
     const [isClient, setIsClient] = useState(false);
     const [finalTaskArcColor, setFinalTaskArcColor] = useState<string>('transparent');
 
+    // --- Layout Constants ---
+    const HEADER_HEIGHT_ESTIMATE = '3.5rem';
+    const MAIN_PADDING_TOP = '1.5rem';
+    const chartStickyTop = `calc(${HEADER_HEIGHT_ESTIMATE} + ${MAIN_PADDING_TOP})`;
+
     // --- Memos and Callbacks ---
     const currentTask = useMemo(() => currentTaskId ? tasks.find((task) => task.id === currentTaskId) : undefined, [tasks, currentTaskId]);
-    const taskGoalSeconds = useMemo(() => (currentTask?.goalTimeMinutes ?? 0) * 60, [currentTask]);
     const timeDisplay = useMemo(() => formatTime(timeLeftInMode), [timeLeftInMode]);
-    const currentModeTotalDuration = useMemo(() => {
-         switch (mode) {
-            case 'working': return settings.pomodoro;
-            case 'shortBreak': return settings.shortBreak;
-            case 'longBreak': return settings.longBreak;
-            default: return settings.pomodoro;
-        }
-     }, [mode, settings]);
+    const currentModeTotalDuration = sessionTotalDuration;
     const filteredTasks = useMemo(() => currentTaskId ? tasks.filter((task) => task.id !== currentTaskId) : tasks, [tasks, currentTaskId]);
     const handleTimerClick = useCallback(() => { if (mode === 'idle') { startWork() } else { pauseTimer() } }, [mode, startWork, pauseTimer]);
 
     // *** ADDED LOGS: Log Core State on Render ***
-    console.log(`[Page Render] Mode: ${mode}, TaskID: ${currentTaskId}, Task Found: ${!!currentTask}, TaskTimeLeft State: ${taskTimeLeftSeconds}`);
+    console.log(`[Page Render] Mode: ${mode}, TaskID: ${currentTaskId}, Task Found: ${!!currentTask}, TaskTimeLeft Context: ${taskTimeLeft}`);
     console.log(`[Page Render] TaskColor State: ${finalTaskArcColor}`);
     // *** END LOGS ***
 
@@ -80,96 +77,14 @@ export default function TimerPage() {
     
     }, [isClient, currentTask, useMonochromeChart]);
 
-    // Effect for loading/saving task time & redirection
+    // Effect for redirection
      useEffect(() => {
-         // *** ADDED LOG ***
-         console.log(`[Task Load Effect] Running. TaskId: ${currentTaskId}, Task Found: ${!!currentTask}, Mode: ${mode}`);
-        if (currentTaskId && currentTask) {
-            // *** ADDED LOGS ***
-            console.log(`[Task Load Effect] Task Goal Minutes: ${currentTask.goalTimeMinutes}, Goal Seconds: ${taskGoalSeconds}`);
-            let initialTaskTimeLeft = taskGoalSeconds > 0 ? taskGoalSeconds : settings.pomodoro * 60;
-            console.log(`[Task Load Effect] Calculated Initial Time (before localStorage): ${initialTaskTimeLeft}`);
-            // *** END LOGS ***
-
-            if (typeof window !== 'undefined') {
-                const savedTaskTime = localStorage.getItem(`focuspie-taskTimeLeft-${currentTaskId}`);
-                 // *** ADDED LOG ***
-                console.log(`[Task Load Effect] localStorage value for ${currentTaskId}: ${savedTaskTime}`);
-                if (savedTaskTime !== null) {
-                    const parsedSavedTime = parseInt(savedTaskTime, 10);
-                    const maxTime = taskGoalSeconds > 0 ? taskGoalSeconds : Infinity;
-                     // *** ADDED LOG ***
-                    console.log(`[Task Load Effect] Parsed saved: ${parsedSavedTime}, Max time: ${maxTime}`);
-                    if (!isNaN(parsedSavedTime) && parsedSavedTime >= 0 && parsedSavedTime <= maxTime) {
-                        initialTaskTimeLeft = parsedSavedTime;
-                         // *** ADDED LOG ***
-                        console.log(`[Task Load Effect] Using valid saved time: ${initialTaskTimeLeft}`);
-                    } else {
-                         // *** ADDED LOG ***
-                        console.log(`[Task Load Effect] Invalid saved time found: ${parsedSavedTime}. Removing from localStorage.`);
-                        localStorage.removeItem(`focuspie-taskTimeLeft-${currentTaskId}`);
-                    }
-                } else {
-                     // *** ADDED LOG ***
-                    console.log(`[Task Load Effect] No saved time found in localStorage.`);
-                }
-            }
-             // *** ADDED LOG ***
-            console.log(`[Task Load Effect] ---> Calling setTaskTimeLeftSeconds with: ${initialTaskTimeLeft}`);
-            setTaskTimeLeftSeconds(initialTaskTimeLeft); // Set the state
-
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem("focuspie-selecting-task");
-                  // *** ADDED LOG ***
-                console.log("[Task Load Effect] Removed selecting flag.");
-            }
-
-        } else if (!currentTaskId && mode !== 'idle') {
-             // *** ADDED LOG ***
-            console.log("[Task Load Effect] Condition: No Task ID and not Idle.");
+        if (!currentTaskId && mode !== 'idle') {
             if (typeof window !== 'undefined' && !localStorage.getItem("focuspie-selecting-task")) {
-                 // *** ADDED LOG ***
-                console.log("[Task Load Effect] Redirecting to /pie-chart");
-                setTaskTimeLeftSeconds(NaN);
                 router.push("/pie-chart");
-            } else {
-                 // *** ADDED LOG ***
-                console.log("[Task Load Effect] Redirect prevented by flag.");
-                if (isNaN(taskTimeLeftSeconds)) setTaskTimeLeftSeconds(NaN);
             }
-        } else {
-             // *** ADDED LOG ***
-            console.log(`[Task Load Effect] Conditions not met for loading time (Task ID: ${currentTaskId}, Task Found: ${!!currentTask}, Mode: ${mode}). Setting time to NaN.`);
-            setTaskTimeLeftSeconds(NaN);
-            if (typeof window !== 'undefined') localStorage.removeItem("focuspie-selecting-task");
         }
-     }, [currentTaskId, currentTask, taskGoalSeconds, settings.pomodoro, mode, router]);
-
-     // Effect for task countdown interval
-     useEffect(() => {
-        let taskInterval: NodeJS.Timeout | undefined = undefined;
-        if (mode === 'working' && isRunning && !isNaN(taskTimeLeftSeconds) && taskTimeLeftSeconds > 0) {
-             // *** ADDED LOG ***
-            console.log(`[Interval Effect] Starting interval. Current task time: ${taskTimeLeftSeconds}`);
-            taskInterval = setInterval(() => {
-                setTaskTimeLeftSeconds((prev) => {
-                    if (isNaN(prev)) return 0;
-                    const nextVal = Math.max(0, prev - 1);
-                    return nextVal;
-                });
-            }, 1000);
-        }
-        return () => {
-            if (taskInterval) { clearInterval(taskInterval); }
-        };
-     }, [mode, isRunning, taskTimeLeftSeconds]);
-
-     // Effect for saving task time to localStorage
-     useEffect(() => {
-        if (typeof window !== 'undefined' && currentTaskId && !isNaN(taskTimeLeftSeconds)) {
-            localStorage.setItem(`focuspie-taskTimeLeft-${currentTaskId}`, taskTimeLeftSeconds.toString());
-        }
-     }, [taskTimeLeftSeconds, currentTaskId]);
+     }, [currentTaskId, mode, router]);
 
     // --- Conditional Rendering Logic ---
     const isLoading = isClient && currentTaskId && !currentTask;
@@ -177,94 +92,160 @@ export default function TimerPage() {
 
     // --- Props for TimerCircle ---
     const goalMinutesForProp = currentTask?.goalTimeMinutes || (settings.pomodoro / 60);
-    const timeLeftForProp = isNaN(taskTimeLeftSeconds) ? 0 : taskTimeLeftSeconds; // Pass 0 if NaN
+    const timeLeftForProp = isNaN(taskTimeLeft) ? 0 : taskTimeLeft; // Use unified context time
      // *** ADDED LOG ***
     console.log(`[Page Render] Props -> taskGoalMinutes: ${goalMinutesForProp}, taskTimeLeftSeconds: ${timeLeftForProp}, taskColor: ${finalTaskArcColor}`);
     // *** END LOG ***
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col w-full h-full">
             <motion.main
-                 className="flex-1 w-full px-4 sm:px-4 py-4 flex flex-col items-center md:flex-row md:justify-center md:items-start md:gap-8 md:max-w-4xl lg:max-w-5xl mx-auto"
-                 initial={{ opacity: 1 }}
-                 animate={{ opacity: 1 }}
+                 className="w-full max-w-7xl mx-auto px-0 sm:px-4 flex-1 flex flex-col"
+                 initial={{ opacity: 0, y: 10 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ duration: 0.6, ease: "easeOut" }}
             >
-                <div className="flex flex-col md:flex-row w-full items-start gap-xl">
-                    {/* Left Column */}
-                    <div className="flex flex-col items-center md:w-1/2 mb-xl md:mb-0 flex-shrink-0">
-                        {isLoading ? (
-                           <div>Loading Timer...</div>
-                        ) : canRenderTimer ? (
+             <div className="flex flex-col md:flex-row md:items-start gap-6 sm:gap-8 md:gap-12 flex-1">
+                {/* Left Column - Timer Area */}
+                <div className="flex flex-col items-center w-full md:w-5/12 lg:w-[45%] py-4 md:sticky self-start z-20 group" style={{ top: 0 }}>
+                    
+                    {/* Ambient Glow */}
+                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 bg-primary/10 rounded-full blur-[80px] sm:blur-[100px] h-[250px] sm:h-[300px] w-full -z-10 opacity-60 group-hover:opacity-80 transition-opacity duration-700" />
+                    
+                    {isLoading ? (
+                       <div className="flex items-center justify-center h-[300px] sm:h-[400px] text-muted-foreground animate-pulse font-medium">Loading Focus...</div>
+                    ) : canRenderTimer ? (
+                        <div className="relative w-[90%] sm:w-[75%] md:w-[90%] lg:w-[85%] xl:w-[80%] max-w-[400px] mx-auto mb-6 sm:mb-8 transform transition-transform duration-500 hover:scale-[1.02]">
                             <TimerCircle
                                 mode={mode}
                                 currentModeTotalDuration={currentModeTotalDuration}
                                 timeLeftInMode={timeLeftInMode}
                                 timeDisplay={timeDisplay}
-                                // taskProgress prop removed
                                 taskName={currentTask?.name || "Ready"}
-                                taskTimeLeftSeconds={timeLeftForProp} // Use calculated prop value
-                                taskGoalMinutes={goalMinutesForProp} // Use calculated prop value
+                                taskTimeLeftSeconds={timeLeftForProp}
+                                taskGoalMinutes={goalMinutesForProp}
                                 isRunning={isRunning}
                                 onTimerClick={handleTimerClick}
-                                taskColor={finalTaskArcColor} // Use state value
-                                // NO modeColor prop passed
+                                taskColor={finalTaskArcColor}
                             />
-                        ) : (
-                            <div>Select a task to begin</div> // Fallback
-                        )}
-
-                            {/* Legends - Using STATIC work/rest colors */}
-                            <div className="mt-2 sm:mt-4 flex justify-center items-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: clientTaskColor }}></div>
-                                <span>Current Task</span>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-[300px] sm:h-[400px] text-center space-y-4 px-6">
+                            <div className="p-4 rounded-full bg-secondary/50 text-primary">
+                                <PlusCircle className="w-8 h-8" />
                             </div>
-                            <span>|</span>
+                            <p className="text-xl font-bold tracking-tight text-foreground">No Task Selected</p>
+                            <p className="text-sm text-muted-foreground max-w-[240px]">Select a task from your plan to begin your focus session.</p>
+                            <Button onClick={() => router.push("/pie-chart")} variant="outline" className="rounded-full px-8">Go to Plan</Button>
+                        </div>
+                    )}
+
+                    {/* Legends - Premium pill design */}
+                    <div className="mt-2 flex flex-wrap justify-center items-center gap-3 sm:gap-6 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-card/40 backdrop-blur-md border border-white/10 shadow-sm text-[10px] sm:text-xs font-bold text-foreground/80 tracking-widest uppercase">
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full ring-2 ring-background shadow-sm" style={{ backgroundColor: clientTaskColor }}></div>
+                            <span>Task</span>
+                        </div>
+                        <div className="hidden sm:block w-[1px] h-3 bg-border/50"></div>
+                        <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: clientWorkColor }}></div>
+                                <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full ring-2 ring-background shadow-sm" style={{ backgroundColor: clientWorkColor }}></div>
                                 <span>Work</span>
-                                <span>/</span>
-                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: clientRestColor }}></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full ring-2 ring-background shadow-sm" style={{ backgroundColor: clientRestColor }}></div>
                                 <span>Rest</span>
                             </div>
                         </div>
-                         {/* Skip Button */}
-                         {(mode === 'shortBreak' || mode === 'longBreak') && ( <Button onClick={skipBreak} variant="secondary" size="sm" className="mt-sm sm:mt-md"> Skip Break </Button> )}
                     </div>
+                    
+                    {/* Skip Button */}
+                    {(mode === 'shortBreak' || mode === 'longBreak') && ( 
+                        <Button 
+                            onClick={skipBreak} 
+                            variant="secondary" 
+                            className="mt-6 w-[85%] sm:w-[80%] rounded-xl sm:rounded-2xl h-12 sm:h-14 bg-secondary/80 hover:bg-secondary backdrop-blur-sm transition-all shadow-lg font-bold text-sm sm:text-base border border-white/5 uppercase tracking-widest"
+                        > 
+                            Skip Break 
+                        </Button> 
+                    )}
+                </div>
 
-                    {/* Right Column */}
-                    <div className="flex flex-col items-center w-full md:w-1/2">
-                       {/* Add Note Button */}
-                       <div className="flex justify-center mt-4 md:mt-0 mb-4 w-full">
-                            <Button
-                                onClick={() => setNoteDialogOpen(true)}
-                                className="w-full max-w-md flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
-                                size="lg"
-                                disabled={!currentTask}
-                            >
-                                <PlusCircle className="w-icon-base h-icon-base" />
-                                <span>Add Note</span>
-                            </Button>
-                        </div>
-                       {/* Task List Container */}
+                {/* Right Column - Tasks & Actions */}
+                <div className="w-full md:w-7/12 lg:w-[55%] flex flex-col relative glass-card rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 xl:p-10 mb-4">
+                   
+                   <div className="absolute top-0 right-0 -mr-10 -mt-10 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+                   
+                   {/* Content Section */}
+                   <div className="flex-1">
                        <motion.div
-                            className="w-full max-w-md bg-card border rounded-xl shadow-md p-4 sm:p-6"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
+                            className="w-full space-y-10"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.5, delay: 0.2, type: "spring", stiffness: 100 }}
                         >
-                            <div className="mb-md sm:mb-xl">
-                                {filteredTasks && filteredTasks.length > 0 ? (
-                                     <TaskReminders tasks={filteredTasks} />
+                            {/* --- Up Next Section (Highest Priority) --- */}
+                            <div>
+                                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                                    <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Up Next</h3>
+                                    {filteredTasks?.length > 0 && (
+                                        <span className="text-xs font-bold px-3 py-1 rounded-full bg-primary/10 text-primary uppercase tracking-widest">
+                                            {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    {filteredTasks && filteredTasks.length > 0 ? (
+                                         <TaskReminders tasks={filteredTasks} />
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-10 px-6 text-center rounded-[1.5rem] border border-dashed border-border/40 bg-secondary/10 backdrop-blur-sm">
+                                             <p className="text-sm font-bold text-foreground/60 uppercase tracking-widest">You're focused!</p>
+                                             <p className="text-xs text-muted-foreground mt-2">No other tasks scheduled for now.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* --- Actions & Notes Section --- */}
+                            <div className="space-y-6 pt-4 border-t border-border/40">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold tracking-tight text-foreground/80">Session Notes</h3>
+                                    <Button
+                                        onClick={() => setNoteDialogOpen(true)}
+                                        size="sm"
+                                        className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md font-bold text-xs flex items-center gap-2 px-4"
+                                        disabled={!currentTask}
+                                    >
+                                        <PlusCircle className="w-3.5 h-3.5" />
+                                        <span>Quick Note</span>
+                                    </Button>
+                                </div>
+
+                                {/* --- Current Task Notes List --- */}
+                                {currentTask && currentTask.notes && currentTask.notes.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {currentTask.notes.map((note) => (
+                                            <div key={note.id} className="p-4 rounded-2xl bg-secondary/30 border border-white/5 backdrop-blur-sm group/note relative overflow-hidden">
+                                                <div className="absolute top-0 left-0 w-1 h-full bg-primary/40" />
+                                                <p className="text-sm sm:text-base text-foreground/90 leading-relaxed font-medium">{note.text}</p>
+                                                <p className="text-[10px] text-muted-foreground mt-2 font-bold uppercase tracking-tight">
+                                                    {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
                                 ) : (
-                                     <p className="text-sm text-center text-muted-foreground">No other tasks for today</p>
+                                    <div className="flex flex-col items-center justify-center py-8 px-6 text-center rounded-[1.5rem] border border-dashed border-border/30 bg-secondary/5">
+                                         <p className="text-xs font-bold text-foreground/40 uppercase tracking-widest">No notes yet</p>
+                                    </div>
                                 )}
                             </div>
                         </motion.div>
                     </div>
                 </div>
+             </div>
             </motion.main>
-            {/* Add Note Dialog */}
             {currentTaskId && (<AddNoteDialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen} taskId={currentTaskId} />)}
         </div>
     );

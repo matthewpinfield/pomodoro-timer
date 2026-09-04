@@ -2,8 +2,9 @@
 
 import type { Task } from "@/types/task";
 import { motion } from "framer-motion";
-import { useSettings } from "@/context/settings-context"; // Import useSettings
-import { getTaskDisplayColor } from "@/lib/utils"; // Import color utility
+import { useSettings } from "@/context/settings-context";
+import { useTasks } from "@/context/task-context";
+import { getTaskDisplayColor } from "@/lib/utils";
 import { List } from "lucide-react"; // Optional: Import icon for header
 
 interface TaskRemindersProps {
@@ -11,8 +12,8 @@ interface TaskRemindersProps {
 }
 
 export function TaskReminders({ tasks }: TaskRemindersProps) {
-  // Get the monochrome setting
   const { useMonochromeChart } = useSettings();
+  const { setCurrentTaskId } = useTasks();
 
   if (!tasks || tasks.length === 0) {
     // Use theme color for consistency
@@ -22,18 +23,15 @@ export function TaskReminders({ tasks }: TaskRemindersProps) {
   return (
     // Use theme colors
     <div className="text-sm text-foreground w-full">
-      {/* Optional: Add a header like before */}
-      <h3 className="text-sm font-medium mb-3 text-muted-foreground flex items-center gap-2">
-        <List className="w-4 h-4" /> {/* Example icon */}
-        Today's other tasks:
-      </h3>
       <ul className="space-y-2"> {/* Adjusted spacing */}
         {tasks.map((task, index) => {
-          // Calculate display time (your existing logic is fine)
-          const timeLeft = Math.max(0, task.goalTimeMinutes - task.progressMinutes);
-          const hours = Math.floor(timeLeft / 60);
-          const minutes = timeLeft % 60;
-          const timeDisplay = `${hours > 0 ? `${hours}h ` : ""}${minutes}m`;
+          // Calculate display time to show [Worked] / [Goal]
+          const formatMins = (m: number) => {
+             const hrs = Math.floor(m / 60);
+             const mins = Math.floor(m % 60);
+             return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+          };
+          const timeDisplay = `${formatMins(task.progressMinutes)} / ${formatMins(task.goalTimeMinutes)}`;
 
           // *** Calculate the display color for this task ***
           const taskColor = getTaskDisplayColor(task, useMonochromeChart);
@@ -41,22 +39,21 @@ export function TaskReminders({ tasks }: TaskRemindersProps) {
           return (
             <motion.li
               key={task.id}
-              className="flex items-center justify-between"
+              onClick={() => setCurrentTaskId(task.id)}
+              className="group flex items-center justify-between p-3.5 rounded-2xl bg-background/50 border border-transparent hover:border-border/50 hover:bg-muted/30 hover:shadow-sm cursor-pointer transition-all duration-300"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <div className="flex items-center gap-2"> {/* Added gap */}
-                {/* Use a span for the dot and apply calculated color */}
+              <div className="flex items-center gap-3.5">
                 <span
-                  className="w-2 h-2 rounded-full flex-shrink-0" // Adjusted size, added flex-shrink-0
-                  style={{ backgroundColor: taskColor }} // Use calculated color
+                  className="w-3 h-3 rounded-full flex-shrink-0 ring-4 ring-background shadow-sm transition-transform group-hover:scale-110"
+                  style={{ backgroundColor: taskColor }} 
                 />
-                {/* REMOVED task.color reference */}
-                <span>{task.name}</span>
+                <span className="font-medium text-sm text-foreground/90 group-hover:text-foreground transition-colors">{task.name}</span>
               </div>
-              {/* Use theme colors for time badge */}
-              <span className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-sm">
+              
+              <span className="text-xs font-semibold bg-secondary/80 text-secondary-foreground/90 px-2.5 py-1 rounded-full shadow-sm">
                 {timeDisplay}
               </span>
             </motion.li>

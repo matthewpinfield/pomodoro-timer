@@ -33,11 +33,11 @@ export function TaskList({
   const router = useRouter()
   const { theme } = useTheme()
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
-  const [computedColors, setComputedColors] = useState<{[key: number]: string}>({});
+  const [computedColors, setComputedColors] = useState<{[key: string]: string}>({});
 
   // Effect to compute colors based on theme AND forceMonochrome prop
   useEffect(() => {
-    const newComputedColors: {[key: number]: string} = {};
+    const newComputedColors: {[key: string]: string} = {};
     const primaryColor = getCssVariable('--primary');
 
     if (forceMonochrome) {
@@ -48,16 +48,16 @@ export function TaskList({
             const lightness = Math.max(30, Math.min(90, baseLightness - (index * lightnessStep)));
             const parts = primaryColor.match(/oklch\(([^ ]+) ([^ ]+) ([^)]+)\)/);
             if (parts && task.chartIndex) { // Also check if chartIndex exists
-                 newComputedColors[task.chartIndex] = `oklch(${lightness / 100} ${parts[2]} ${parts[3]})`;
+                 newComputedColors[task.chartIndex.toString()] = `oklch(${lightness / 100} ${parts[2]} ${parts[3]})`;
             } else if (task.chartIndex) {
-                 newComputedColors[task.chartIndex] = primaryColor; // Fallback
+                 newComputedColors[task.chartIndex.toString()] = primaryColor; // Fallback
             }
         });
     } else {
         // --- Standard Theme Color Logic --- 
         tasks.forEach(task => {
             if (task.chartIndex) { // Check if chartIndex exists
-                newComputedColors[task.chartIndex] = getCssVariable(`--chart-${task.chartIndex}`);
+                newComputedColors[task.chartIndex.toString()] = getCssVariable(`--chart-${task.chartIndex}`);
             }
         });
     }
@@ -91,10 +91,10 @@ export function TaskList({
   return (
     <div className="space-y-md">
       {tasks.map((task) => (
-        <div key={task.id}>
+        <div key={task.id} className="group transition-all duration-300">
           {editingTaskId === task.id ? (
-            <div className="p-4 border rounded-md bg-card shadow-md">
-              <h3 className="font-medium mb-md">Edit Task</h3>
+            <div className="p-6 rounded-[1.5rem] bg-card/80 backdrop-blur-md border border-white/10 shadow-xl">
+              <h3 className="font-semibold text-lg text-foreground mb-4">Edit Task</h3>
               <TaskForm
                 initialValues={{
                   id: task.id,
@@ -110,53 +110,60 @@ export function TaskList({
             </div>
           ) : (
             <div 
-              className="flex items-center justify-between p-4 rounded-md border shadow-md text-primary-foreground"
-              style={{ backgroundColor: computedColors[task.chartIndex] || 'var(--card)' }}
+              className="flex items-center justify-between p-4 sm:p-5 rounded-[1.25rem] border border-white/5 shadow-premium hover:-translate-y-1 transition-all duration-300 text-primary-foreground backdrop-blur-md relative overflow-hidden group/item"
+              style={{ backgroundColor: computedColors[task.chartIndex?.toString()] ? `${computedColors[task.chartIndex?.toString()]}` : 'var(--card)' }}
             >
-              <div className="flex flex-col gap-xs ml-4">
-                <div className="font-medium px-2 flex items-center">
+              {/* Subtle overlay for depth */}
+              <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none" />
+              
+              <div className="flex flex-col gap-0.5 sm:gap-1 ml-1 sm:ml-4 relative z-10">
+                <div className="font-semibold text-base sm:text-lg tracking-tight flex items-center drop-shadow-sm">
                   {task.isPriority && (
-                    <Flag className="w-4 h-4 mr-2 fill-current" />
+                    <Flag className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 fill-white/90 text-white" />
                   )}
                   {task.name}
                 </div>
-                <div className="text-task-time px-2 opacity-80">
-                  {Math.floor(task.goalTimeMinutes / 60) > 0 && `${Math.floor(task.goalTimeMinutes / 60)}h `}
-                  {task.goalTimeMinutes % 60}m
+                <div className="text-xs sm:text-sm font-medium opacity-90 flex items-center gap-2">
+                  <span className="bg-black/20 px-2 py-0.5 rounded-md backdrop-blur-sm">
+                    {Math.floor(task.goalTimeMinutes / 60) > 0 && `${Math.floor(task.goalTimeMinutes / 60)}h `}
+                    {task.goalTimeMinutes % 60}m
+                  </span>
                   {task.progressMinutes > 0 && (
-                    <span className="ml-2 text-xs">
-                      • {task.progressMinutes}m worked
+                    <span className="bg-white/20 px-2 py-0.5 rounded-md backdrop-blur-sm">
+                      {task.progressMinutes}m done
                     </span>
                   )}
                 </div>
               </div>
+
               {showControls && (
-                <div className="flex gap-1 sm:gap-2">
+                <div className="flex gap-1 sm:gap-2 relative z-10">
+                  <div className="flex sm:opacity-0 group-hover/item:opacity-100 transition-all duration-300 translate-x-4 group-hover/item:translate-x-0">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-white/25 text-white"
+                      onClick={() => handleEdit(task.id)}
+                    >
+                      <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-white/25 text-white"
+                      onClick={() => deleteTask(task.id)}
+                    >
+                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </Button>
+                  </div>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-xl w-xl sm:h-lg sm:w-lg hover:bg-white/20 text-primary-foreground"
-                    onClick={() => handleEdit(task.id)}
-                  >
-                    <Edit className="w-icon-base h-icon-base" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-xl w-xl sm:h-lg sm:w-lg hover:bg-white/20 text-primary-foreground"
-                    onClick={() => deleteTask(task.id)}
-                  >
-                    <Trash2 className="w-icon-base h-icon-base" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-xl w-xl sm:h-lg sm:w-lg hover:bg-white/20 text-primary-foreground"
+                    className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-white/20 hover:bg-white/30 active:scale-95 text-white shadow-lg ring-1 ring-white/20 transition-all"
                     onClick={() => handleStartTask(task.id)}
                     disabled={task.id.startsWith("demo-")}
-                    aria-label="Start Task"
                   >
-                    <Play className="w-icon-base h-icon-base" />
+                    <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
                   </Button>
                 </div>
               )}
