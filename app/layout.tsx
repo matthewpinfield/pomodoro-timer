@@ -33,7 +33,7 @@ export default function RootLayout({
           <SettingsProvider>
             <TaskProvider>
               <TimerProvider>
-                <div className="flex flex-col h-full relative overflow-hidden">
+                <div id="app-root" className="flex flex-col h-full relative overflow-hidden">
                   {/* Background Ambient Glow */}
                   <div className="fixed inset-0 -z-50 overflow-hidden pointer-events-none">
                     <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />

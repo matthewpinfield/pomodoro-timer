@@ -396,7 +396,12 @@ body {
   touch-action: pan-x pan-y;
 }
 
-#__next, body > div:first-child {
+/* Targets the app's actual root element by id, not DOM position - Next.js's
+   App Router can insert its own hidden internal marker elements before this
+   div (e.g. Suspense boundary markers), so a positional selector like
+   "body > div:first-child" can end up matching the wrong element and
+   overriding the browser's native [hidden] styling on it. */
+#app-root {
   height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -470,4 +475,4 @@ body {
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-muted-foreground bg-opacity-20 rounded-full hover:bg-opacity-40 transition-colors;
   }
-}
+}/* MARKER-TEST-12345 */
