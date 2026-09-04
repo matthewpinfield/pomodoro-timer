@@ -47,24 +47,36 @@ the remainder, instead of a flat +1 with a full reset.
 Dependabot flagged ~105 alerts on the dependency tree (mostly duplicated
 across historical versions in the raw listing). Upgrading `next` to `15.5.25`
 and everything else within reach fixed all of them except `next` itself -
-confirmed via `pnpm audit`. But `next@15.5.25` broke the app's core timer:
-the `requestAnimationFrame` tick loop in `context/timer-context.tsx` simply
-stops advancing (countdown freezes) with the newer version, in both dev and
-a production build. Bisected properly - reverting React alone didn't fix it,
-reverting Next alone did, confirmed in both directions. Root cause is inside
-Next.js's own behavior, not this app's code.
+confirmed via `pnpm audit`.
 
-Given the choice between a broken core feature and unpatched CVEs in a
-package that isn't even running as a server in production (this deploys as
-a static export - no Next.js server process, so most of the flagged
-Server Actions/middleware/SSRF issues don't apply to the live site), kept
-`next@15.2.4` and took every other fix (React, uuid, postcss, yaml, sharp,
-and more - `pnpm audit` is clean except for `next` itself).
+But upgrading `next` past `15.3.0` breaks the app outright. Root-caused, not
+just observed: an extra empty `<div>` (`display:flex`, no class, sized to
+exactly the viewport) gets injected as the very first child of `<body>`,
+*before* the real app root. That pushes the entire real app down by one full
+viewport height - so on any normal-sized screen it renders completely
+off-screen, and the page looks blank even though React state/props are
+computing correctly underneath (confirmed via console logging - task data,
+mode, timers all correct; nothing is visibly on screen or clickable). This is
+a duplicate-DOM/hydration artifact in Next.js's App Router in that version
+range, not a bug in this app's code.
 
-**Status:** deliberate, documented tradeoff, not an oversight. Revisit by
-bisecting which specific `next` release between 15.2.4 and 15.5.25
-introduced the regression, so a version with both the security fixes and a
-working timer can be found - or report it upstream.
+Bisected precisely: `15.2.4` and `15.3.0` are clean: `15.3.5`, `15.4.0`, and
+`15.5.25` all show the extra div. Reverting React alone (while keeping a
+broken `next` version) did not fix it; reverting only `next` did - confirmed
+in both directions, so the regression is inside Next.js itself.
+
+Given the choice between this and unpatched CVEs in a package that isn't
+even running as a server in production (this deploys as a static export -
+no Next.js server process, so most of the flagged Server Actions/middleware/
+SSRF issues don't apply to the live site), kept `next@15.2.4` and took every
+other fix (React, uuid, postcss, yaml, sharp, and more - `pnpm audit` is
+clean except for `next` itself).
+
+**Status:** deliberate, documented tradeoff, not an oversight. Next step to
+actually resolve it: bisect the exact `next` release between `15.3.0` and
+`15.3.5` that introduces the extra div (narrower range now than "somewhere
+in 15.x"), then either use that as the ceiling or file it upstream with the
+reproduction above.
 
 ## Scope decisions worth confirming intentional
 
