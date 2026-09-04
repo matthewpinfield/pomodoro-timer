@@ -41,6 +41,31 @@ to set aside rather than fix immediately.
 the remainder, instead of a flat +1 with a full reset.
 **Status:** open, not yet fixed.
 
+## Accepted risk
+
+### Next.js pinned at 15.2.4, not the latest patched 15.5.25
+Dependabot flagged ~105 alerts on the dependency tree (mostly duplicated
+across historical versions in the raw listing). Upgrading `next` to `15.5.25`
+and everything else within reach fixed all of them except `next` itself -
+confirmed via `pnpm audit`. But `next@15.5.25` broke the app's core timer:
+the `requestAnimationFrame` tick loop in `context/timer-context.tsx` simply
+stops advancing (countdown freezes) with the newer version, in both dev and
+a production build. Bisected properly - reverting React alone didn't fix it,
+reverting Next alone did, confirmed in both directions. Root cause is inside
+Next.js's own behavior, not this app's code.
+
+Given the choice between a broken core feature and unpatched CVEs in a
+package that isn't even running as a server in production (this deploys as
+a static export - no Next.js server process, so most of the flagged
+Server Actions/middleware/SSRF issues don't apply to the live site), kept
+`next@15.2.4` and took every other fix (React, uuid, postcss, yaml, sharp,
+and more - `pnpm audit` is clean except for `next` itself).
+
+**Status:** deliberate, documented tradeoff, not an oversight. Revisit by
+bisecting which specific `next` release between 15.2.4 and 15.5.25
+introduced the regression, so a version with both the security fixes and a
+working timer can be found - or report it upstream.
+
 ## Scope decisions worth confirming intentional
 
 ### No accounts / no sync
