@@ -203,6 +203,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         if (mode === 'working') {
           // Add actual seconds passed to the bucket for progress updates
           setSecondsThisTick(prev => prev + secondsPassed);
+          // Task time only depletes during work sessions, not breaks
+          setTaskTimeLeft(prev => Math.max(0, prev - secondsPassed));
         }
       }
 
