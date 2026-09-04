@@ -10,7 +10,6 @@ import {
   DialogClose, // Import DialogClose for convenience
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react"; // Example icon
 
 interface WelcomeDialogProps {
   open: boolean;
@@ -85,7 +84,7 @@ export function WelcomeDialog({ open, onDismiss }: WelcomeDialogProps) {
         <DialogFooter className="sm:justify-center pt-4 md:pt-8">
           <DialogClose asChild>
             <Button type="button" size="lg">
-              Let's Plan!
+              Let&apos;s Plan!
             </Button>
           </DialogClose>
         </DialogFooter>

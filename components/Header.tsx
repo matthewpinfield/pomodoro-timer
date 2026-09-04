@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Menu, Settings, PieChart, Clock, AlertCircle, XCircle, Palette, Info, Coffee } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Settings, PieChart, Clock, AlertCircle, Info, Coffee } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from './SettingsDialog';
 import { FeaturesDialog } from './features-dialog';
@@ -19,8 +18,7 @@ export function Header() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isFeaturesOpen, setIsFeaturesOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { tasks, currentTaskId, hasRealTasks } = useTasks();
-  const hasTasks = tasks && tasks.length > 0;
+  const { currentTaskId, hasRealTasks } = useTasks();
   const [showTooltip, setShowTooltip] = useState(false);
   const router = useRouter();
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';

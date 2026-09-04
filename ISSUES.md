@@ -13,33 +13,44 @@ pushed to `origin`. The config *should* work based on local verification, but
 that's not the same as a confirmed live deployment.
 **Status:** open.
 
-### No test suite
-`jest.config.mjs` references the `ts-jest` preset, which isn't installed in
-`devDependencies` — `pnpm test` fails immediately. Moot today since there are
-zero test files, but it means nothing will catch a regression automatically
-once this is being iterated on post-launch.
-**Status:** open.
+### No test suite — fixed
+`jest.config.mjs` referenced the `ts-jest` preset, which was never installed —
+`pnpm test` failed immediately. Root cause: `next/jest` already provides its
+own SWC-based TS/JSX transform, so the `ts-jest` preset was redundant as well
+as broken; removed it rather than installing `ts-jest`. Also needed a
+`moduleNameMapper` stub for `uuid` (ESM-only, unreachable by next/jest's
+transform pipeline) — see `__mocks__/uuid.js`. 19 tests added covering the
+areas with the most real bugs found this session: `lib/utils.ts` (pure color
+helpers, `formatTime`), `context/task-context.tsx` (demo-list replacement,
+progress accumulation, delete+restore/Undo), and `context/timer-context.tsx`
+(pomodoro/task duration independence, the per-minute progress regression
+below, task-time depletion only during work sessions).
+**Status:** fixed.
 
-### No ESLint config
-`next lint` prompts to bootstrap a config interactively rather than running.
-No lint gate in CI.
-**Status:** open.
+### No ESLint config — fixed
+Added `eslint.config.mjs` (flat config via `FlatCompat`, bridging
+`eslint-config-next`'s legacy-style shareable configs since it doesn't ship a
+flat config yet) plus `eslint`, `eslint-config-next`, `@eslint/eslintrc` as
+devDependencies. `pnpm lint` now runs clean with zero warnings or errors.
+**Status:** fixed.
 
-## Known bugs, deferred
+## Known bugs, fixed this session
 
-### Progress minutes under-count after a backgrounded tab
-In `context/timer-context.tsx`, the tick loop correctly subtracts however much
+### Progress minutes under-count after a backgrounded tab — fixed
+In `context/timer-context.tsx`, the tick loop correctly subtracted however much
 time actually passed (`secondsPassed`), however large the gap - but the
-per-minute progress-crediting effect always adds exactly 1 minute per firing,
-then resets its counter to 0, discarding anything over 60 seconds. If
-`requestAnimationFrame` gets throttled while a tab is backgrounded/minimized
-and the next tick jumps by, say, 90+ seconds, `taskTimeLeft` correctly reflects
-the full elapsed time but `progressMinutes` only gets credited 1 minute -
-the two drift apart. Confirmed via code trace during this session; user asked
-to set aside rather than fix immediately.
-**Fix direction:** credit `Math.floor(secondsThisTick / 60)` minutes and keep
-the remainder, instead of a flat +1 with a full reset.
-**Status:** open, not yet fixed.
+per-minute progress-crediting effect always added exactly 1 minute per firing,
+then reset its counter to 0, discarding anything over 60 seconds. If
+`requestAnimationFrame` got throttled while a tab was backgrounded/minimized
+and the next tick jumped by, say, 90+ seconds, `taskTimeLeft` correctly
+reflected the full elapsed time but `progressMinutes` only got credited 1
+minute - the two drifted apart.
+**Fix:** credit `Math.floor(secondsThisTick / 60)` minutes and keep the
+remainder, instead of a flat +1 with a full reset. Covered by a regression
+test in `context/timer-context.test.tsx` that injects a simulated ~150-second
+timestamp jump and asserts 2 minutes are credited (not 1), and that the 30s
+remainder correctly completes the next minute rather than being dropped.
+**Status:** fixed.
 
 ## Scope decisions worth confirming intentional
 
@@ -73,6 +84,20 @@ conflated, a race that permanently corrupted saved task time, goal edits not
 syncing), single-task interaction model, accessibility labels, stale About
 copy, mobile touch fixes, sound notifications (Tier 1), stale timer-circle
 documentation (both docs rewritten to match the filled-wedge rendering).
+
+### Intermittent production build crash on /timer (found and fixed while verifying items 2-4)
+`pnpm build` occasionally (not every run) failed prerendering `/timer` with
+`TypeError: a[d] is not a function` inside the minified webpack runtime.
+Root-caused by bisecting every file change against a known-good baseline
+rather than assuming it was one of the day's edits: with all other changes
+applied, the crash still occurred, and stopped only once
+`experimental.optimizePackageImports: ['@/components']` was removed from
+`next.config.mjs`. That option is meant for real npm packages with a
+resolvable `package.json`/barrel exports (e.g. `lucide-react`) - pointing it
+at a local path alias isn't a supported use case, and the resulting transform
+race explains why the failure was non-deterministic. Confirmed stable across
+4 consecutive clean rebuilds after removal.
+**Status:** fixed.
 
 ### Dependency vulnerabilities (was going to be an accepted risk, now fully fixed)
 Upgrading `next` past `15.3.0` broke the app: an extra empty `<div>`

@@ -30,10 +30,6 @@ export default function TimerPage() {
     const [finalTaskArcColor, setFinalTaskArcColor] = useState<string>('transparent');
 
     // --- Layout Constants ---
-    const HEADER_HEIGHT_ESTIMATE = '3.5rem';
-    const MAIN_PADDING_TOP = '1.5rem';
-    const chartStickyTop = `calc(${HEADER_HEIGHT_ESTIMATE} + ${MAIN_PADDING_TOP})`;
-
     // --- Memos and Callbacks ---
     const currentTask = useMemo(() => currentTaskId ? tasks.find((task) => task.id === currentTaskId) : undefined, [tasks, currentTaskId]);
     const timeDisplay = useMemo(() => formatTime(timeLeftInMode), [timeLeftInMode]);
@@ -235,7 +231,7 @@ export default function TimerPage() {
                                          <TaskReminders tasks={filteredTasks} />
                                     ) : (
                                         <div className="flex flex-col items-center justify-center py-10 px-6 text-center rounded-[1.5rem] border border-dashed border-border/40 bg-secondary/10 backdrop-blur-sm">
-                                             <p className="text-sm font-bold text-foreground/60 uppercase tracking-widest">You're focused!</p>
+                                             <p className="text-sm font-bold text-foreground/60 uppercase tracking-widest">You&apos;re focused!</p>
                                              <p className="text-xs text-muted-foreground mt-2">No other tasks scheduled for now.</p>
                                         </div>
                                     )}

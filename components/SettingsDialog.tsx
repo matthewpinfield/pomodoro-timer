@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input"; // Import Input
 import { Switch } from "@/components/ui/switch"; // Import Switch
 import { Button } from "@/components/ui/button"; // Ensure Button is imported
-import { useTheme } from "next-themes"; // Import the useTheme hook
 import { PauseCircle, Palette, RotateCcw, Volume2 } from "lucide-react"; // Re-import icons
 import { toast } from "sonner";
 import * as React from "react"; // Import React itself

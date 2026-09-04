@@ -108,4 +108,5 @@ export function getFontVariable(fontName: FontName): string {
 }
 
 // Export default for convenience
-export default { registerFonts, getRegisteredFonts, isFontLoaded, getFontVariable }; 
+const fontRegistry = { registerFonts, getRegisteredFonts, isFontLoaded, getFontVariable };
+export default fontRegistry;

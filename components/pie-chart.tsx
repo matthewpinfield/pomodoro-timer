@@ -3,9 +3,7 @@
 // Use 'import type' if using TypeScript
 import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
-import { motion } from "framer-motion"
 import type { Task } from "@/types/task"; // Import Task type
-import { Clock, Plus, Play } from "lucide-react"
 import { useTheme } from "next-themes"; // Import useTheme
 import { getTaskDisplayColor } from '@/lib/utils'; // Adjust path if needed
 
@@ -38,7 +36,6 @@ export function PieChart({
   const [selectedSlice, setSelectedSlice] = useState<number | null>(null)
   const [isHoveringCenter, setIsHoveringCenter] = useState(false)
   const [chartSize, setChartSize] = useState({ width: 300, height: 300 }) // Start size
-  const [isAnimating, setIsAnimating] = useState(false)
   const { theme } = useTheme(); // Get the current theme
   // State to store computed colors, now might include monochrome shades
   const [computedSliceColors, setComputedSliceColors] = useState<{ [key: string]: string }>({});
@@ -85,8 +82,7 @@ export function PieChart({
   // Effect to compute colors based on theme AND forceMonochrome prop
   useEffect(() => {
     const newSliceColors: { [key: string]: string } = {};
-    const primaryColor = getCssVariable('--primary');
-    
+
     tasks.forEach(task => {
       // *** Use the shared utility function ***
       const color = getTaskDisplayColor(task, forceMonochrome);
@@ -133,8 +129,6 @@ export function PieChart({
     }
 
     // Get theme colors ONCE per redraw
-    const bgColor = getCssVariable('--background');
-    const fgColor = getCssVariable('--foreground');
     const cardColor = getCssVariable('--card');
     const primaryColor = getCssVariable('--primary');
     const mutedFgColor = getCssVariable('--muted-foreground');
@@ -219,7 +213,7 @@ export function PieChart({
 
         // Set font for measurement
         ctx.font = `bold ${titleFontSize}px Inter, system-ui, sans-serif`;
-        let measuredWidth = ctx.measureText(fullTaskName).width;
+        const measuredWidth = ctx.measureText(fullTaskName).width;
 
         // Truncate if necessary
         if (measuredWidth <= maxWidth) {
@@ -295,9 +289,8 @@ export function PieChart({
 
       // Original logic to select the task (only runs if not demo)
       setSelectedSlice(clickedSliceIndex);
-      setIsAnimating(true);
       const taskId = task.id;
-      setTimeout(() => { setIsAnimating(false); setSelectedSlice(null); onTaskSelect(taskId); }, 150); 
+      setTimeout(() => { setSelectedSlice(null); onTaskSelect(taskId); }, 150);
     }
   };
   // --- END INTERACTION LOGIC ---

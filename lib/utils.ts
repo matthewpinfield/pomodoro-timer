@@ -29,8 +29,7 @@ export const getCssVariable = (variableName: string, fallbackColor: string): str
       .getPropertyValue(variableName)
       .trim();
     return value || fallbackColor;
-  } catch (e) {
-    // console.error(`Error getting CSS variable ${variableName}:`, e); // Optional log
+  } catch {
     return fallbackColor;
   }
 };
@@ -101,8 +100,6 @@ export function getTaskModeColor(
   mode: 'base' | 'work' | 'rest' // Add mode parameter
 ): string {
   const standardChartFallbackColor = "oklch(0.8 0.01 90)"; // Neutral gray fallback
-  const monoFallbackVariableName = "--mono-1";
-  const standardFallbackVariableName = "--chart-1";
   const absoluteFallback = standardChartFallbackColor;
 
   if (!task || typeof task.chartIndex !== 'number' || task.chartIndex < 1) {

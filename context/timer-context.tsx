@@ -285,13 +285,14 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   // --- Effect for Per-Minute Progress Update ---
   useEffect(() => {
     if (mode === 'working' && secondsThisTick >= 60) {
+      // Credit every whole minute banked up, not just one - a backgrounded/
+      // throttled tab can deliver a single large jump in secondsThisTick,
+      // and a flat "+1 then reset to 0" would silently drop the rest.
+      const minutesToCredit = Math.floor(secondsThisTick / 60);
       if (currentTaskId) {
-        updateTaskProgress(currentTaskId, 1); // Update progress by 1 minute
-        console.log(`TIMER CONTEXT (Effect): Updated progress for task ${currentTaskId} by 1 minute.`); // Debug log
-      } else {
-         console.warn("TIMER CONTEXT (Effect): Minute finished, but no currentTaskId found to update progress.");
+        updateTaskProgress(currentTaskId, minutesToCredit);
       }
-      setSecondsThisTick(0); // Reset counter after update
+      setSecondsThisTick(secondsThisTick - minutesToCredit * 60); // keep the remainder
     }
   // Depend on secondsThisTick to trigger check, mode/context vars for conditions
   }, [secondsThisTick, mode, currentTaskId, updateTaskProgress]);

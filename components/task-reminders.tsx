@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useSettings } from "@/context/settings-context";
 import { useTasks } from "@/context/task-context";
 import { getTaskDisplayColor } from "@/lib/utils";
-import { List } from "lucide-react"; // Optional: Import icon for header
 
 interface TaskRemindersProps {
   tasks: Task[];

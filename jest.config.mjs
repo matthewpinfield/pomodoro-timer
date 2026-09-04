@@ -11,7 +11,11 @@ const config = {
   // Add more setup options before each test is run
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
-  preset: 'ts-jest',
+  // uuid ships ESM-only; next/jest's transformIgnorePatterns can't reach it, so
+  // it's swapped for a trivial CJS stub in tests instead of trying to transform it.
+  moduleNameMapper: {
+    '^uuid$': '<rootDir>/__mocks__/uuid.js',
+  },
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

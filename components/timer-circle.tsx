@@ -6,7 +6,7 @@ import { Clock, Play, Pause } from "lucide-react"
 import type { TimerMode } from "@/context/timer-context"
 import { useTimer } from "@/context/timer-context"
 // Import needed helpers from single utility file
-import { getCssVariable, parseOklch } from '@/lib/utils'; // Assuming unsplit state
+import { getCssVariable } from '@/lib/utils'; // Assuming unsplit state
 
 interface TimerCircleProps {
   mode: TimerMode
@@ -174,9 +174,9 @@ const TimerCircle = memo(function TimerCircle({
     else { if (animationFrameRef.current) { cancelAnimationFrame(animationFrameRef.current); animationFrameRef.current = undefined; } }
 
   }, [ // Dependencies
-      mode, timeLeftInMode, isRunning, taskTimeLeftSeconds, timeDisplay,
-      taskName, currentModeTotalDuration, taskGoalMinutes,
-      taskColor, workColor, restColor, settings?.autoPauseEnabled
+      mode, timeLeftInMode, isRunning, taskTimeLeftSeconds,
+      currentModeTotalDuration, taskGoalMinutes,
+      taskColor, workColor, restColor
   ]);
 
   // --- Effects (layout, resize, visibility) ---
@@ -190,10 +190,6 @@ const TimerCircle = memo(function TimerCircle({
   if (mode === 'longBreak') subtitle = 'Long Break'; 
   if (mode === 'idle' && !taskName) subtitle = 'Ready';
   
-  const safeTaskTimeLeft = isNaN(taskTimeLeftSeconds) ? 0 : taskTimeLeftSeconds;
-  const hoursLeft = Math.floor(safeTaskTimeLeft / 3600);
-  const minutesLeft = Math.floor((safeTaskTimeLeft % 3600) / 60);
-
   return (
     <div className="flex flex-col items-center">
       <div 
