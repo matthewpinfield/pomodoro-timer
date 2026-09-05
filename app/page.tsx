@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation"
 
 export default function Home() {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-  redirect(basePath + "/pie-chart")
+  // redirect() already applies next.config.mjs's basePath automatically -
+  // prefixing it here too doubled it up in production (e.g. /pomodoro-timer/pomodoro-timer/pie-chart).
+  redirect("/pie-chart")
 }
 

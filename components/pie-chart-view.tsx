@@ -21,7 +21,6 @@ export default function PieChartView() {
   const [planDayOpen, setPlanDayOpen] = useState(false)
   const [editTaskId, setEditTaskId] = useState<string | null>(null)
   const [welcomeOpen, setWelcomeOpen] = useState(false); // State for welcome dialog
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
 
   // Calculate total task time for summary text
   const totalGoalMinutes = tasks.reduce((sum, task) => sum + task.goalTimeMinutes, 0);
@@ -41,7 +40,7 @@ export default function PieChartView() {
 
   // --- Handlers ---
   const handleTaskSelect = async (taskId: string) => {
-    try { if (typeof window !== 'undefined') { localStorage.setItem("focuspie-selecting-task", "true"); } await setCurrentTaskId(taskId); router.push(basePath + "/timer"); } catch (error) { console.error("Error selecting task:", error); router.push(basePath + "/timer"); }
+    try { if (typeof window !== 'undefined') { localStorage.setItem("focuspie-selecting-task", "true"); } await setCurrentTaskId(taskId); router.push("/timer"); } catch (error) { console.error("Error selecting task:", error); router.push("/timer"); }
   };
   const handlePlanDay = () => { setEditTaskId(null); setPlanDayOpen(true); };
   const handleTaskClick = (taskId: string) => { setEditTaskId(taskId); setPlanDayOpen(true); };

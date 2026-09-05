@@ -84,13 +84,13 @@ export function Header() {
       name: "Task Planning",
       // REMOVED text-popover-foreground from here
       icon: <PieChart className="w-icon-base h-icon-base" />,
-      onClick: () => { router.push(basePath + "/pie-chart"); setIsMenuOpen(false); },
+      onClick: () => { router.push("/pie-chart"); setIsMenuOpen(false); },
     },
     {
       name: "Timer",
       // REMOVED text-popover-foreground from here
       icon: <Clock className="w-icon-base h-icon-base" />,
-      onClick: () => { if (hasRealTasks && currentTaskId) { router.push(basePath + "/timer"); setIsMenuOpen(false); } },
+      onClick: () => { if (hasRealTasks && currentTaskId) { router.push("/timer"); setIsMenuOpen(false); } },
       disabled: !hasRealTasks,
       tooltip: "You need to create tasks first"
     },
@@ -122,7 +122,7 @@ export function Header() {
     )}>
       {/* --- Header content (Logo, Title, Menu Button) --- */}
       <div className="flex items-center space-x-4">
-        <Link href={basePath + "/"} className="relative z-0 group flex items-center gap-2 sm:gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98]">
+        <Link href="/" className="relative z-0 group flex items-center gap-2 sm:gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98]">
            <div className="relative overflow-hidden rounded-xl bg-gradient-to-tr from-primary/30 to-primary/10 p-1 shadow-inner ring-1 ring-white/10 group-hover:ring-primary/50 transition-all duration-300">
              <Image
               src={basePath + "/icon-192x192.png"}
