@@ -153,6 +153,102 @@ describe("TimerProvider - per-minute progress crediting", () => {
   });
 });
 
+describe("TimerProvider - unused pomodoro time carries over between tasks", () => {
+  function seedTwoTasks() {
+    localStorage.setItem(
+      "focuspie-tasks",
+      JSON.stringify([
+        { id: "task-1", name: "Short Task", goalTimeMinutes: 10, progressMinutes: 0, chartIndex: 1, isPriority: true, notes: [] },
+        { id: "task-2", name: "Next Task", goalTimeMinutes: 480, progressMinutes: 0, chartIndex: 2, isPriority: false, notes: [] },
+      ]),
+    );
+    localStorage.setItem("focuspie-current-task", "task-1");
+  }
+
+  it("stops the pomodoro the moment the task finishes early, and the next task starts with the banked remainder instead of a fresh pomodoro", () => {
+    // Regression test for: a 10-minute task inside a 25-minute pomodoro used to
+    // leave the pomodoro silently running for its full remaining duration, and
+    // switching tasks afterward discarded whatever time was left unused.
+    seedTwoTasks();
+    const { result } = renderTimerAndTasks();
+
+    act(() => {
+      result.current.timer.startWork();
+    });
+    expect(result.current.timer.timeLeftInMode).toBe(25 * 60); // full pomodoro to start
+
+    fireFrame(BASE_TS);
+    // The 10-minute task finishes; the 25-minute pomodoro still has 15 minutes left.
+    fireFrame(BASE_TS + 10 * 60 * 1000);
+
+    expect(result.current.timer.mode).toBe("idle");
+    expect(result.current.timer.isRunning).toBe(false);
+    expect(result.current.timer.timeLeftInMode).toBe(15 * 60); // banked remainder, previewed while idle
+
+    act(() => {
+      result.current.tasks.setCurrentTaskId("task-2");
+    });
+    // Switching tasks must not discard the banked remainder.
+    expect(result.current.timer.timeLeftInMode).toBe(15 * 60);
+
+    act(() => {
+      result.current.timer.startWork();
+    });
+    expect(result.current.timer.timeLeftInMode).toBe(15 * 60);
+    expect(result.current.timer.sessionTotalDuration).toBe(15 * 60);
+
+    // 16 minutes is more than the carried-over 15, but less than a fresh 25 -
+    // only reaches a break at all if the shorter, banked duration was used.
+    fireFrame(BASE_TS + 10 * 60 * 1000 + 1);
+    fireFrame(BASE_TS + 10 * 60 * 1000 + 1 + 16 * 60 * 1000);
+
+    expect(result.current.timer.mode).toBe("shortBreak");
+  });
+
+  it("does not double-credit progress when the task finishes on the same tick a whole minute completes", () => {
+    // Guards against a real bug caught while writing this test: the early-stop
+    // effect and the per-minute crediting effect both react to secondsThisTick.
+    // If the early-stop effect also credited whole minutes itself (it briefly
+    // did, during development), a task finishing exactly on a 60s boundary got
+    // counted twice - once by each effect - in the same commit.
+    seedTwoTasks();
+    const { result } = renderTimerAndTasks();
+
+    act(() => {
+      result.current.timer.startWork();
+    });
+    fireFrame(BASE_TS);
+    // The full 10-minute goal (600s) elapses in one jump - secondsThisTick
+    // reaches exactly 600 (a clean multiple of 60) in the same tick taskTimeLeft
+    // reaches exactly 0.
+    fireFrame(BASE_TS + 10 * 60 * 1000);
+
+    const task = result.current.tasks.tasks.find((t) => t.id === "task-1");
+    expect(task?.progressMinutes).toBe(10); // exactly the goal, not 11
+  });
+
+  it("does not carry anything over when a full pomodoro completes normally", () => {
+    seedSingleTask(480);
+    const { result } = renderTimerAndTasks();
+
+    act(() => {
+      result.current.timer.startWork();
+    });
+    fireFrame(BASE_TS);
+    fireFrame(BASE_TS + 25 * 60 * 1000); // full pomodoro completes normally, no early finish involved
+
+    expect(result.current.timer.mode).toBe("shortBreak");
+
+    act(() => {
+      result.current.timer.skipBreak();
+    });
+    act(() => {
+      result.current.timer.startWork();
+    });
+    expect(result.current.timer.timeLeftInMode).toBe(25 * 60); // fresh full pomodoro, nothing stray carried over
+  });
+});
+
 describe("TimerProvider - taskTimeLeft", () => {
   it("depletes only during work sessions, tracking the task's own remaining time", () => {
     seedSingleTask(10); // 10-minute task, well under the 25-minute pomodoro

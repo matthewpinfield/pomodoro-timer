@@ -5,6 +5,8 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { useTasks } from "./task-context"; // Corrected import path
 import { useSettings } from "./settings-context";
 import { playTransitionChime } from "@/lib/sound";
+import { formatTime } from "@/lib/utils";
+import { toast } from "sonner";
 
 // --- Constants (Defaults only) ---
 const DEFAULT_POMODORO_MINUTES = 25;
@@ -85,16 +87,22 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   // --- State ---
   const [settings, setSettings] = useState<TimerSettings>(getInitialSettings); // Load initial settings
   const [mode, setMode] = useState<TimerMode>("idle");
-  
-  // The upcoming/current work session is always the user's pomodoro setting —
-  // independent of the selected task's own duration.
+
+  // Set when a task finishes before its pomodoro does - the unused remainder
+  // of that pomodoro, to be picked up by whichever task starts next instead
+  // of being silently discarded in favor of a fresh full-length pomodoro.
+  const [carriedOverSeconds, setCarriedOverSeconds] = useState<number | null>(null);
+
+  // The upcoming/current work session is the user's pomodoro setting, unless
+  // a previous task finished early and left time to carry over — independent
+  // of the selected task's own duration either way.
   const calculateIdleDuration = useCallback(() => {
-    return settings.pomodoro;
-  }, [settings.pomodoro]);
+    return carriedOverSeconds ?? settings.pomodoro;
+  }, [carriedOverSeconds, settings.pomodoro]);
 
   const calculateSessionTotalDuration = useCallback(() => {
-    return settings.pomodoro;
-  }, [settings.pomodoro]);
+    return carriedOverSeconds ?? settings.pomodoro;
+  }, [carriedOverSeconds, settings.pomodoro]);
 
   // The task's own remaining time, entirely separate from the session/pomodoro duration.
   // Returns 0 (not settings.pomodoro) when currentTask isn't resolved yet — that field
@@ -282,6 +290,32 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     };
   }, [isRunning, timeLeftInMode, mode, pomodorosCompletedCycle, settings, calculateIdleDuration, calculateSessionTotalDuration, soundEnabled]);
 
+  // --- Effect: stop the pomodoro early if the task finishes before it does ---
+  // Task time and pomodoro time are separate countdowns that happen to run
+  // together during 'working' mode - without this, a task finishing first
+  // (e.g. a 10-minute task inside a 25-minute pomodoro) left the pomodoro
+  // silently running in the background for its full remaining duration, and
+  // switching tasks afterward discarded whatever was left. Instead: stop
+  // immediately, bank the remainder, and let it carry into the next task.
+  useEffect(() => {
+    if (mode === 'working' && isRunning && taskTimeLeft <= 0) {
+      setIsRunning(false);
+      setMode('idle');
+      // Any not-yet-credited sub-minute remainder in secondsThisTick is
+      // dropped here, same as it already is on every other mode transition -
+      // the per-minute effect below independently credits whichever whole
+      // minutes secondsThisTick already qualified for in this same tick, so
+      // this must NOT also credit them, or that minute gets double-counted.
+      setSecondsThisTick(0);
+      setCarriedOverSeconds(timeLeftInMode);
+      if (timeLeftInMode > 0) {
+        toast.success(`Task complete! ${formatTime(timeLeftInMode)} carries over to your next task.`);
+      } else {
+        toast.success("Task complete!");
+      }
+    }
+  }, [taskTimeLeft, mode, isRunning, timeLeftInMode]);
+
   // --- Effect for Per-Minute Progress Update ---
   useEffect(() => {
     if (mode === 'working' && secondsThisTick >= 60) {
@@ -327,6 +361,9 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         setSessionTotalDuration(totalDur);
         setMode("working");
         setIsRunning(true);
+        // Consumed - future completions go back to the full pomodoro setting
+        // until another task finishes early and banks a new remainder.
+        setCarriedOverSeconds(null);
     }
   }, [mode, calculateIdleDuration, calculateSessionTotalDuration]);
 

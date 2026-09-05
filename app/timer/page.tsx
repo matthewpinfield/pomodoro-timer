@@ -206,9 +206,13 @@ export default function TimerPage() {
                                                 <span className="text-base font-semibold text-foreground truncate">{currentTask.name}</span>
                                             </div>
                                             <span className="text-xs font-semibold bg-secondary/80 text-secondary-foreground/90 px-2.5 py-1 rounded-full shadow-sm flex-shrink-0">
-                                                {currentTask.progressMinutes >= 60 ? `${Math.floor(currentTask.progressMinutes / 60)}h ${currentTask.progressMinutes % 60}m` : `${currentTask.progressMinutes}m`}
-                                                {' / '}
-                                                {currentTask.goalTimeMinutes >= 60 ? `${Math.floor(currentTask.goalTimeMinutes / 60)}h ${currentTask.goalTimeMinutes % 60}m` : `${currentTask.goalTimeMinutes}m`}
+                                                {taskTimeLeft <= 0 ? "Completed" : (
+                                                    <>
+                                                        {currentTask.progressMinutes >= 60 ? `${Math.floor(currentTask.progressMinutes / 60)}h ${currentTask.progressMinutes % 60}m` : `${currentTask.progressMinutes}m`}
+                                                        {' / '}
+                                                        {currentTask.goalTimeMinutes >= 60 ? `${Math.floor(currentTask.goalTimeMinutes / 60)}h ${currentTask.goalTimeMinutes % 60}m` : `${currentTask.goalTimeMinutes}m`}
+                                                    </>
+                                                )}
                                             </span>
                                         </div>
                                     </div>
