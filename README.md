@@ -4,7 +4,7 @@ An ADHD-friendly focus timer: plan your day on an interactive pie chart, then
 run Pomodoro sessions against whichever task you select. Built with Next.js
 15, React 19, and TypeScript, deployed as a static site with no backend.
 
-**Live demo:** https://matthewpinfield.github.io/pomodoro-timer/
+**Live demo:** https://focuspie.app
 
 ![Task planning view](docs/screenshots/pie-chart.png)
 ![Timer view](docs/screenshots/timer.png)

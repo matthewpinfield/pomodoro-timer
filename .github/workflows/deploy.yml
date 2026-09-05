@@ -55,8 +55,11 @@ jobs:
 
       - name: Build
         run: pnpm build
+        # No NEXT_PUBLIC_BASE_PATH - the custom domain (public/CNAME) serves
+        # from the root, not from /pomodoro-timer/ like the old github.io URL did.
         env:
-          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

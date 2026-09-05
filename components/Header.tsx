@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Settings, PieChart, Clock, AlertCircle, Info, Coffee, AlarmClock } from "lucide-react";
+import { Settings, PieChart, Clock, AlertCircle, Info, Coffee, AlarmClock, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from './SettingsDialog';
 import { FeaturesDialog } from './features-dialog';
@@ -98,6 +98,11 @@ export function Header() {
       name: "Alarms",
       icon: <AlarmClock className="w-icon-base h-icon-base" />,
       onClick: () => { router.push("/alarms"); setIsMenuOpen(false); },
+    },
+    {
+      name: "Account",
+      icon: <User className="w-icon-base h-icon-base" />,
+      onClick: () => { router.push("/account"); setIsMenuOpen(false); },
     },
     {
       name: "Settings",

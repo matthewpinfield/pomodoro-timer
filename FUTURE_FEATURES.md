@@ -2,6 +2,48 @@
 
 Ideas discussed but not yet built, kept here so the reasoning survives between sessions.
 
+## Tier 3 build plan (settled, in progress)
+
+Everything below in this file that needs a backend - sync, push notifications,
+calendar import - is one connected piece of work, not three separate ones.
+Settled shape, to build in this order:
+
+1. **Backend: Supabase.** Client-callable directly (auth + database +
+   realtime, protected by row-level security, no server code of our own to
+   write or host) - the static export + GitHub Pages deploy does not need to
+   change. Considered Firebase (already have an account) - its one real edge
+   is FCM for push delivery, but that's not enough to outweigh Supabase's
+   fit here (Postgres suits this data well, more community troubleshooting,
+   genuine self-host escape hatch). Blocked on a Supabase project existing -
+   can't create third-party accounts on the user's behalf.
+2. **Auth + Account page.** One new "Account" entry in the existing hamburger
+   menu (same pattern as Alarms/Settings) - its own page, not folded into the
+   Settings dialog, since it has more surface area (sign in, subscription
+   status, upgrade button) than a quick toggle. Nothing changes on
+   `/pie-chart` or `/timer` for anyone who never opens it.
+3. **Sync - free once signed in.** Migrates what's in `localStorage` today
+   (tasks, timer settings, alarms, progress) to also read/write via Supabase
+   for a signed-in user. This is the one piece of Tier 3 that's free -
+   competitors treat basic cross-device sync as table-stakes now, not a
+   premium feature (see competitive gap check below).
+4. **Billing: Stripe, ~£3/$3 per month.** User already has a Stripe account
+   (via Buy Me a Coffee), so this is real billing from the start, not a
+   placeholder. Subscription, not one-time payment - deliberate: the paid
+   features (calendar polling, scheduled push delivery) cost money to keep
+   running for as long as the user has them, so revenue needs to track that
+   ongoing cost the way it does for every direct competitor's equivalent
+   feature (Todoist Pro, TickTick Premium). One sign-in gates everything;
+   payment is the additional gate on top, checked against that same account,
+   only for Calendar + Push.
+5. **Calendar import** (paid) - see "Calendar integration" below for the
+   iCal/ICS approach. Technically doesn't need accounts to function as data,
+   but is gated behind the paid check per the business model above, so it
+   can't ship before step 4 either way.
+6. **Push notifications** (paid) - see "Notifications & Alerts" below.
+   Hardest remaining sub-problem (server-timed delivery); also where
+   vibration finally gets bundled in for Android, and where iPhone
+   notifications become possible at all (via Web Push, PWA install required).
+
 ## Notifications & Alerts
 
 Currently there's no audio or notification of any kind when a pomodoro/break/task
