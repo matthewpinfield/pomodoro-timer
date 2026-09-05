@@ -23,6 +23,16 @@ in order of effort:
    stops being a static, no-backend site and needs accounts + a server. Don't
    back into this accidentally; it's a deliberate architecture decision.
 
+**Vibration, deliberately not added as a quick win:** considered calling
+`navigator.vibrate()` alongside the chime/alarm - cheap, no new
+infrastructure. Rejected: the Vibration API has never been implemented in
+Safari/WebKit and Apple has given no indication it will be, so it would only
+ever work on Android, never iPhone - one of the biggest-selling phones.
+The only way to make an iPhone vibrate from a web app is a real native push
+notification (iOS Safari supports Web Push from 16.4+, but only for a site
+installed via "Add to Home Screen"), which is exactly Tier 3 above. Bundle
+vibration with that work rather than shipping an Android-only version now.
+
 ## Paid-tier ideas (ADHD-focused)
 
 FocusPie is positioned as an ADHD-friendly timer, so premium features should
@@ -44,17 +54,11 @@ just "more customization."
 
 ## Calendar integration
 
-Auto-populate the day's task list from a connected calendar (Google Calendar
-being the obvious first target) instead of relying on the user to remember to
-add everything manually. Directly targets the same "forgetting things" gap as
-the notification tiers above — a meeting or commitment already on the
-calendar shows up as a task automatically, rather than depending on the user
-to notice it and enter it themselves. Needs real scoping (which calendar
-providers, one-way import vs. two-way sync, how auto-imported events map to
-task duration/priority) before estimating effort - likely needs a backend
-for OAuth + calendar API access, so probably bundles naturally with the
-Tier 3 push notification work rather than being a separate infrastructure
-lift.
+Auto-populate the day's task list from a connected calendar instead of
+relying on the user to remember to add everything manually. Directly targets
+the same "forgetting things" gap as the notification tiers above — a meeting
+or commitment already on the calendar shows up as a task automatically,
+rather than depending on the user to notice it and enter it themselves.
 
 **Calendar, not Tasks:** considered pulling in Google Tasks (todos) alongside
 Calendar, but they're separate Google APIs with separate OAuth scopes despite
@@ -62,6 +66,31 @@ sharing a UI panel in Gmail/Calendar. Decided against it — for this user,
 client meetings land on the calendar, not a todo list, so Calendar events are
 the actual source of "things I'll forget," and Tasks would just double the
 integration surface for a case that doesn't come up.
+
+**Approach: iCal/ICS feed subscription, not Google OAuth.** Originally
+planned as Google Calendar API access via OAuth, but that only ever sees
+*Google* Calendar - useless for an Apple Calendar (iCloud) user, regardless
+of which account they use to log into FocusPie itself (auth method and
+calendar provider are unrelated decisions). Almost every calendar provider
+(Google, iCloud, Outlook) exposes the same thing instead: a private iCal/ICS
+feed URL, subscribed to rather than authenticated against. One "paste your
+calendar's secret iCal link" field covers all three providers identically,
+with no OAuth consent screen, no scopes, no per-provider integration code,
+and no dependency on which account a user signs into FocusPie with.
+
+Confirmed acceptable tradeoffs for this user's actual need:
+- **Read-only, one-way import only** - no writing FocusPie tasks back to the
+  calendar. Not needed.
+- **Polling, not real-time** - fetched periodically rather than pushed
+  instantly; some providers only regenerate their own feed every so often
+  regardless. Not needed to update "by the second."
+
+Still needs a small backend proxy to fetch the ICS file server-side (calendar
+providers generally don't send CORS headers that would let a browser fetch
+it directly) - but that's a much smaller lift than full OAuth + token-refresh
+handling would have been, and doesn't require accounts/sign-in to exist
+first the way the original Google OAuth plan did. Worth sequencing before
+full account sync for that reason, not after.
 
 ## Mid-session reminder timer
 
@@ -104,3 +133,37 @@ tight text truncation). Explicitly deferred rather than rejected:
   screen before reaching anything actionable.
 
 Revisit if further real-device testing turns up more than "okay-ish."
+
+## Competitive gap check (against Tiimo, Sunsama, Forest, Focus To-Do, Focusmate)
+
+Reviewed what other Pomodoro/ADHD apps offer that FocusPie doesn't, to sanity
+-check the roadmap rather than build in a vacuum. Verdict per idea:
+
+- **Ambient/focus sounds during the session** (Forest, Tide, Focus To-Do all
+  play rain/white-noise while you work, not just a chime at the end) -
+  **rejected**. User plays their own music while working and finds a
+  constant background sound impractical in an office environment. Not a
+  gap worth closing for this user.
+- **Body doubling** (Focusmate: a live partner watching you work) -
+  **rejected outright** ("nahh"). Also would have required the same
+  accounts+backend jump as push notifications/calendar for no clear payoff
+  here.
+- **Gamification** (Forest's tree-growing, streaks) - **interesting but
+  parked**, not rejected. Concern: FocusPie's whole pitch is a clean, simple
+  UI for a distractible audience - a streak counter or growing-tree widget
+  risks becoming visual clutter/another thing to track rather than reducing
+  cognitive load. If revisited, needs to earn its place without adding a
+  permanent new UI element to the core `/pie-chart` or `/timer` screens.
+- **Cross-device sync** - **confirmed as a real, known gap**, not new news.
+  Everything is `localStorage` today (see "No accounts / no sync" in
+  `ISSUES.md`), so nothing carries over between devices/browsers. This is
+  also the one piece of infrastructure that would unlock Calendar
+  integration, push notifications (Tier 3 above), and sync all at once -
+  worth treating as the actual next architecture decision rather than three
+  separate backend lifts, when it's time to scope it.
+- **Where FocusPie already leads:** the pie-chart day-budget visualization
+  (seeing the whole day as a proportional donut before starting) isn't
+  something any of these competitors do - most are a list + a timer.
+  Sunsama's daily-hour-limit is the closest equivalent and it's just a
+  number, not a visual. Worth keeping in mind as the thing *not* to dilute
+  while adding anything else.

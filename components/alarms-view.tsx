@@ -14,16 +14,17 @@ export function AlarmsView() {
   const [customMinutes, setCustomMinutes] = useState("")
   const [label, setLabel] = useState("")
 
-  const handleAdd = (minutes: number) => {
-    if (minutes <= 0) return
+  const handleStart = () => {
+    const minutes = parseFloat(customMinutes)
+    if (!minutes || minutes <= 0) return
     addAlarm(minutes * 60, label)
     setLabel("")
     setCustomMinutes("")
   }
 
-  const handleCustomSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    handleAdd(parseFloat(customMinutes))
+    handleStart()
   }
 
   return (
@@ -38,19 +39,25 @@ export function AlarmsView() {
       <div className="glass-card rounded-[1.5rem] p-5 sm:p-6 flex flex-col gap-4">
         <div className="flex flex-wrap gap-2 justify-center">
           {PRESET_MINUTES.map((minutes) => (
-            <Button key={minutes} variant="secondary" onClick={() => handleAdd(minutes)}>
+            <Button
+              key={minutes}
+              variant={customMinutes === String(minutes) ? "default" : "secondary"}
+              onClick={() => setCustomMinutes(String(minutes))}
+            >
               {minutes}m
             </Button>
           ))}
         </div>
 
-        <form onSubmit={handleCustomSubmit} className="flex flex-col sm:flex-row gap-2">
+        {/* Presets only fill in the duration below - nothing starts until Start
+            is pressed, so there's always a chance to add a label first. */}
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
           <Input
             type="number"
             min="0"
             step="any"
             inputMode="decimal"
-            placeholder="Custom minutes"
+            placeholder="Minutes"
             value={customMinutes}
             onChange={(e) => setCustomMinutes(e.target.value)}
             className="flex-1"

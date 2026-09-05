@@ -41,6 +41,11 @@ function playTone(ctx: AudioContext, frequency: number, startTime: number, durat
 // tells you which transition just happened, not just that one did. The alarm
 // is a repeated triple-beep instead - deliberately more insistent, since it
 // needs to interrupt someone mid-focus rather than just mark a clean transition.
+//
+// Every kind repeats a few times rather than playing once - a single ~0.6s
+// chime is easy to miss entirely if you're not looking at the screen at that
+// exact moment (stepped away, headphones on, mid-conversation), which was
+// the whole point of adding sound in the first place.
 export function playTransitionChime(kind: ChimeKind) {
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -48,8 +53,11 @@ export function playTransitionChime(kind: ChimeKind) {
   const now = ctx.currentTime;
 
   if (kind === "alarm") {
-    for (let i = 0; i < 3; i++) {
-      playTone(ctx, 880.0, now + i * 0.25, 0.15, 0.2);
+    for (let rep = 0; rep < 3; rep++) {
+      const repStart = now + rep * 0.9;
+      for (let i = 0; i < 3; i++) {
+        playTone(ctx, 880.0, repStart + i * 0.25, 0.15, 0.2);
+      }
     }
     return;
   }
@@ -59,6 +67,11 @@ export function playTransitionChime(kind: ChimeKind) {
       ? [784.0, 523.25] // G5 -> C5, descending
       : [523.25, 784.0]; // C5 -> G5, ascending
 
-  playTone(ctx, notes[0], now, 0.35);
-  playTone(ctx, notes[1], now + 0.18, 0.4);
+  const repeatCount = 3;
+  const repeatSpacing = 0.9; // seconds between the start of each repetition
+  for (let rep = 0; rep < repeatCount; rep++) {
+    const repStart = now + rep * repeatSpacing;
+    playTone(ctx, notes[0], repStart, 0.35);
+    playTone(ctx, notes[1], repStart + 0.18, 0.4);
+  }
 }
