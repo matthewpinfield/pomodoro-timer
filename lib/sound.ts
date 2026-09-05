@@ -1,6 +1,6 @@
 // Synthesized transition chimes via the Web Audio API - no audio assets needed.
 
-export type ChimeKind = "workComplete" | "breakComplete";
+export type ChimeKind = "workComplete" | "breakComplete" | "alarm";
 
 let sharedContext: AudioContext | null = null;
 
@@ -38,12 +38,22 @@ function playTone(ctx: AudioContext, frequency: number, startTime: number, durat
 
 // Two distinguishable two-note chimes: a calming descending tone for "time to
 // rest" and a brighter ascending tone for "back to work" - so the sound alone
-// tells you which transition just happened, not just that one did.
+// tells you which transition just happened, not just that one did. The alarm
+// is a repeated triple-beep instead - deliberately more insistent, since it
+// needs to interrupt someone mid-focus rather than just mark a clean transition.
 export function playTransitionChime(kind: ChimeKind) {
   const ctx = getAudioContext();
   if (!ctx) return;
 
   const now = ctx.currentTime;
+
+  if (kind === "alarm") {
+    for (let i = 0; i < 3; i++) {
+      playTone(ctx, 880.0, now + i * 0.25, 0.15, 0.2);
+    }
+    return;
+  }
+
   const notes: [number, number] =
     kind === "workComplete"
       ? [784.0, 523.25] // G5 -> C5, descending

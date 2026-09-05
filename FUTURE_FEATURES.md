@@ -56,6 +56,38 @@ for OAuth + calendar API access, so probably bundles naturally with the
 Tier 3 push notification work rather than being a separate infrastructure
 lift.
 
+**Calendar, not Tasks:** considered pulling in Google Tasks (todos) alongside
+Calendar, but they're separate Google APIs with separate OAuth scopes despite
+sharing a UI panel in Gmail/Calendar. Decided against it — for this user,
+client meetings land on the calendar, not a todo list, so Calendar events are
+the actual source of "things I'll forget," and Tasks would just double the
+integration surface for a case that doesn't come up.
+
+## Mid-session reminder timer
+
+Raised as "need a timer in case you have to remember something while
+working" - not yet scoped to a specific mechanism. Two different features
+this could mean, worth resolving before building either:
+
+- **Quick capture** (already exists) - the Quick Note button on a running
+  session lets you jot a stray thought without leaving the timer or losing
+  focus, reviewed later. No new work needed if this is the actual need.
+- **A real secondary countdown** - e.g. "ping me in 10 minutes about X" running
+  alongside the main pomodoro/task timer. This is new state and UI (a second
+  independent timer, its own notification, needs to coexist with the existing
+  tick loop in `context/timer-context.tsx` without interfering with it) -
+  a real feature, not a tweak.
+
+## Architecture decision: Calendar and Alarms/Reminders get their own pages
+
+Both of the above (Calendar integration, a real secondary countdown/alarm)
+should live on their own routes (e.g. `/calendar`, `/alarms`) rather than
+being folded into `/pie-chart` or `/timer`. Deliberate choice: those two
+screens are the core, high-frequency loop (plan the day, run a session) and
+should stay uncluttered - anything additive belongs behind its own nav entry,
+the same way `/settings` already does, not competing for space on the pie
+chart or timer circle.
+
 ## Mobile experience
 
 Current mobile layout is responsive (stacks correctly, no broken layouts) but
