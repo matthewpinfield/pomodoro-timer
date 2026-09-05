@@ -109,7 +109,7 @@ export function Header() {
     {
       name: "Buy Me a Coffee",
       icon: <Coffee className="w-icon-base h-icon-base text-[#FFDD00]" />, // Buy Me A Coffee brand coloring
-      onClick: () => { window.open("https://buymeacoffee.com/YOUR_USERNAME_HERE", "_blank"); setIsMenuOpen(false); },
+      onClick: () => { window.open("https://buymeacoffee.com/matthewpink", "_blank"); setIsMenuOpen(false); },
     },
   ];
 
