@@ -1,8 +1,84 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { AuthProvider } from "./auth-context";
 import { SettingsProvider } from "./settings-context";
 import { TaskProvider, useTasks } from "./task-context";
 import { TimerProvider, useTimer } from "./timer-context";
+
+// Minimal in-memory Supabase stand-in covering both tables this provider
+// tree can touch (tasks via TaskProvider, user_settings via TimerProvider's
+// own settings-sync effect) - same shape as the mocks in task-context.test.tsx
+// and settings-context.test.tsx.
+jest.mock("../lib/supabase", () => {
+  const store: {
+    tasks: Array<Record<string, unknown>>;
+    user_settings: Array<Record<string, unknown>>;
+  } = { tasks: [], user_settings: [] };
+  let authCallback: ((event: string, session: unknown) => void) | null = null;
+
+  function tableFor(name: "tasks" | "user_settings") {
+    return {
+      select: () => ({
+        eq: (col: string, val: string) => ({
+          // Tasks reads a list via .eq() directly (no .single()); user_settings
+          // reads one row via .maybeSingle(). Support both on the same chain.
+          then: (resolve: (v: { data: unknown; error: null }) => void) =>
+            resolve({ data: store[name].filter((r) => r[col] === val), error: null }),
+          maybeSingle: async () => ({
+            data: store[name].find((r) => r[col] === val) ?? null,
+            error: null,
+          }),
+        }),
+      }),
+      upsert: async (rows: Record<string, unknown> | Array<Record<string, unknown>>) => {
+        const list = Array.isArray(rows) ? rows : [rows];
+        list.forEach((row) => {
+          const key = name === "tasks" ? "id" : "user_id";
+          const idx = store[name].findIndex((r) => r[key] === row[key]);
+          if (idx >= 0) store[name][idx] = { ...store[name][idx], ...row };
+          else store[name].push(row);
+        });
+        return { error: null };
+      },
+      delete: () => ({
+        in: async (col: string, ids: string[]) => {
+          store[name] = store[name].filter((r) => !ids.includes(r[col] as string));
+          return { error: null };
+        },
+      }),
+    };
+  }
+
+  const supabase = {
+    auth: {
+      onAuthStateChange: (cb: (event: string, session: unknown) => void) => {
+        authCallback = cb;
+        Promise.resolve().then(() => cb("INITIAL_SESSION", null));
+        return { data: { subscription: { unsubscribe: () => {} } } };
+      },
+    },
+    from: (name: "tasks" | "user_settings") => tableFor(name),
+  };
+
+  return {
+    supabase,
+    __mockSignIn: (userId: string) => {
+      authCallback?.("SIGNED_IN", { user: { id: userId, email: "test@example.com" } });
+    },
+    __mockStore: store,
+  };
+});
+
+const { __mockSignIn, __mockStore } = jest.requireMock("../lib/supabase") as {
+  __mockSignIn: (userId: string) => void;
+  __mockStore: { tasks: Array<Record<string, unknown>>; user_settings: Array<Record<string, unknown>> };
+};
+
+async function settleInitialAuth() {
+  await act(async () => {
+    await Promise.resolve();
+  });
+}
 
 // The tick loop drives itself via requestAnimationFrame, passing a timestamp on
 // each call. Rather than relying on real timers, we take over rAF entirely so
@@ -30,6 +106,8 @@ let cafSpy: jest.SpyInstance;
 
 beforeEach(() => {
   localStorage.clear();
+  __mockStore.tasks = [];
+  __mockStore.user_settings = [];
   rafCallback = null;
   rafSpy = jest.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
     rafCallback = cb as (ts: number) => void;
@@ -46,11 +124,13 @@ afterEach(() => {
 });
 
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <SettingsProvider>
-    <TaskProvider>
-      <TimerProvider>{children}</TimerProvider>
-    </TaskProvider>
-  </SettingsProvider>
+  <AuthProvider>
+    <SettingsProvider>
+      <TaskProvider>
+        <TimerProvider>{children}</TimerProvider>
+      </TaskProvider>
+    </SettingsProvider>
+  </AuthProvider>
 );
 
 function renderTimerAndTasks() {
@@ -264,5 +344,69 @@ describe("TimerProvider - taskTimeLeft", () => {
     fireFrame(BASE_TS + 20_000); // 20 seconds pass
 
     expect(result.current.timer.taskTimeLeft).toBe(10 * 60 - 20);
+  });
+});
+
+describe("TimerProvider - Supabase settings sync", () => {
+  it("pushes current pomodoro/break settings up on first sign-in", async () => {
+    const { result } = renderTimerAndTasks();
+    await settleInitialAuth();
+    act(() => {
+      result.current.timer.updateTimerSetting("pomodoro", 50);
+    });
+
+    act(() => {
+      __mockSignIn("user-1");
+    });
+
+    await waitFor(() => expect(__mockStore.user_settings).toHaveLength(1));
+    expect(__mockStore.user_settings[0].pomodoro_seconds).toBe(50 * 60);
+    expect(__mockStore.user_settings[0].user_id).toBe("user-1");
+  });
+
+  it("replaces local settings with the account's already-synced settings on sign-in", async () => {
+    // Full row shape, matching what Postgres would actually have (every
+    // column is `not null default ...`, so a real row can never be missing
+    // the columns another context owns the way an incomplete test fixture
+    // could be).
+    __mockStore.user_settings = [
+      {
+        user_id: "user-1",
+        workday_hours: 8,
+        use_monochrome_chart: false,
+        sound_enabled: true,
+        pomodoro_seconds: 40 * 60,
+        short_break_seconds: 8 * 60,
+        long_break_seconds: 20 * 60,
+        pomodoros_until_long_break: 3,
+        auto_pause_enabled: true,
+      },
+    ];
+    const { result } = renderTimerAndTasks();
+    await settleInitialAuth();
+
+    act(() => {
+      __mockSignIn("user-1");
+    });
+
+    await waitFor(() => expect(result.current.timer.settings.pomodoro).toBe(40 * 60));
+    expect(result.current.timer.settings.shortBreak).toBe(8 * 60);
+    expect(result.current.timer.settings.pomodorosUntilLongBreak).toBe(3);
+    expect(result.current.timer.settings.autoPauseEnabled).toBe(true);
+  });
+
+  it("writes through to Supabase when a timer setting changes while already signed in", async () => {
+    const { result } = renderTimerAndTasks();
+    await settleInitialAuth();
+    act(() => {
+      __mockSignIn("user-1");
+    });
+    await waitFor(() => expect(__mockStore.user_settings).toHaveLength(1)); // initial push on sign-in
+
+    act(() => {
+      result.current.timer.toggleAutoPause();
+    });
+
+    await waitFor(() => expect(__mockStore.user_settings[0].auto_pause_enabled).toBe(true));
   });
 });

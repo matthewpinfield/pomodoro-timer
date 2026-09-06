@@ -1,9 +1,11 @@
 "use client"; // Mark this context as a Client Component
 
 import * as React from "react";
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { useTasks } from "./task-context"; // Corrected import path
 import { useSettings } from "./settings-context";
+import { useAuth } from "./auth-context";
+import { supabase } from "@/lib/supabase";
 import { playTransitionChime } from "@/lib/sound";
 import { formatTime } from "@/lib/utils";
 import { toast } from "sonner";
@@ -79,6 +81,9 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   // Get Task Context functions/state
   const { tasks, updateTaskProgress, currentTaskId } = useTasks();
   const { soundEnabled } = useSettings();
+  const { user } = useAuth();
+  const settingsMigrationStartedForUserIdRef = useRef<string | null>(null);
+  const [settingsMigrationDoneForUserId, setSettingsMigrationDoneForUserId] = useState<string | null>(null);
 
   const currentTask = React.useMemo(() => {
     return currentTaskId ? tasks.find(t => t.id === currentTaskId) : undefined;
@@ -144,6 +149,81 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       console.error("Error saving timer settings to localStorage:", error);
     }
   }, [settings]);
+
+  // --- Sync timer settings with Supabase when a user signs in ---
+  // Shares the user_settings table/row with settings-context.tsx, but only
+  // ever touches the pomodoro/break/auto-pause columns it owns - see that
+  // file's matching effect for why upsert-with-only-owned-columns is safe.
+  useEffect(() => {
+    if (!supabase || !user || settingsMigrationStartedForUserIdRef.current === user.id) return
+    settingsMigrationStartedForUserIdRef.current = user.id
+
+    let cancelled = false
+    ;(async () => {
+      const { data, error } = await supabase!
+        .from("user_settings")
+        .select("pomodoro_seconds, short_break_seconds, long_break_seconds, pomodoros_until_long_break, auto_pause_enabled")
+        .eq("user_id", user.id)
+        .maybeSingle()
+      if (cancelled) return
+      if (error) {
+        console.error("TIMER_CONTEXT: Failed to load synced settings:", error)
+        setSettingsMigrationDoneForUserId(user.id)
+        return
+      }
+
+      if (data) {
+        setSettings({
+          pomodoro: data.pomodoro_seconds,
+          shortBreak: data.short_break_seconds,
+          longBreak: data.long_break_seconds,
+          pomodorosUntilLongBreak: data.pomodoros_until_long_break,
+          autoPauseEnabled: data.auto_pause_enabled,
+        })
+      } else {
+        const { error: upsertError } = await supabase!.from("user_settings").upsert(
+          {
+            user_id: user.id,
+            pomodoro_seconds: settings.pomodoro,
+            short_break_seconds: settings.shortBreak,
+            long_break_seconds: settings.longBreak,
+            pomodoros_until_long_break: settings.pomodorosUntilLongBreak,
+            auto_pause_enabled: settings.autoPauseEnabled,
+          },
+          { onConflict: "user_id" },
+        )
+        if (upsertError) console.error("TIMER_CONTEXT: Failed to push initial settings on sign-in:", upsertError)
+      }
+      if (cancelled) return
+      setSettingsMigrationDoneForUserId(user.id)
+    })()
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  // --- Write-through: mirror any timer settings change to Supabase while signed in ---
+  useEffect(() => {
+    if (!supabase || !user || settingsMigrationDoneForUserId !== user.id) return
+    supabase
+      .from("user_settings")
+      .upsert(
+        {
+          user_id: user.id,
+          pomodoro_seconds: settings.pomodoro,
+          short_break_seconds: settings.shortBreak,
+          long_break_seconds: settings.longBreak,
+          pomodoros_until_long_break: settings.pomodorosUntilLongBreak,
+          auto_pause_enabled: settings.autoPauseEnabled,
+        },
+        { onConflict: "user_id" },
+      )
+      .then(({ error }) => {
+        if (error) console.error("TIMER_CONTEXT: Failed to sync settings to Supabase:", error)
+      })
+  }, [settings, user, settingsMigrationDoneForUserId])
 
   // --- Effect to update timeLeftInMode if settings change AND timer is idle ---
   useEffect(() => {

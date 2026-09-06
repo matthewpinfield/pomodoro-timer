@@ -25,13 +25,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
+    // Deliberately not also calling getSession() here: it resolves on its
+    // own async timeline separate from onAuthStateChange, and if a sign-in
+    // event arrives first, getSession()'s later resolution (checking
+    // whatever session existed *before* that sign-in) can overwrite the
+    // fresh user with stale null - a real race, not just a theoretical one.
+    // onAuthStateChange alone is sufficient: Supabase fires an INITIAL_SESSION
+    // event immediately on subscription with the current state, so this one
+    // listener covers both the initial load and every subsequent change.
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      setLoading(false)
     })
 
     return () => {

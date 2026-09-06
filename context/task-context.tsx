@@ -1,8 +1,47 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import type { Task } from "@/types/task"
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react"
+import type { Task, TaskNote } from "@/types/task"
 import { v4 as uuidv4 } from "uuid"
+import { supabase } from "@/lib/supabase"
+import { useAuth } from "./auth-context"
+
+// --- Supabase row <-> Task shape conversion (DB columns are snake_case) ---
+interface TaskRow {
+  id: string
+  user_id: string
+  name: string
+  goal_time_minutes: number
+  progress_minutes: number
+  chart_index: number
+  is_priority: boolean
+  notes: TaskNote[]
+}
+
+function taskToRow(task: Task, userId: string): Omit<TaskRow, "user_id"> & { user_id: string } {
+  return {
+    id: task.id,
+    user_id: userId,
+    name: task.name,
+    goal_time_minutes: task.goalTimeMinutes,
+    progress_minutes: task.progressMinutes,
+    chart_index: typeof task.chartIndex === "number" ? task.chartIndex : parseInt(String(task.chartIndex), 10) || 1,
+    is_priority: task.isPriority,
+    notes: task.notes,
+  }
+}
+
+function rowToTask(row: TaskRow): Task {
+  return {
+    id: row.id,
+    name: row.name,
+    goalTimeMinutes: row.goal_time_minutes,
+    progressMinutes: row.progress_minutes,
+    chartIndex: row.chart_index,
+    isPriority: row.is_priority,
+    notes: row.notes ?? [],
+  }
+}
 
 // Type for data passed to add/update functions
 interface TaskData {
@@ -44,10 +83,22 @@ const isDemoList = (currentTasks: Task[]): boolean => {
 };
 
 export function TaskProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([]) // Start empty before useEffect
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [nextChartIndex, setNextChartIndex] = useState(1);
   const [hasRealTasks, setHasRealTasks] = useState(false);
+  // Set once the initial localStorage load has run, so the sign-in sync
+  // effect below never races it and pushes up an empty/default task list.
+  const localLoadDoneRef = useRef(false);
+  // A ref for "started" (guards against re-entering the migration effect
+  // twice for the same user - doesn't need to trigger a re-render) and state
+  // for "done" (must be state, not a ref: it's only set after the async
+  // pull-or-push resolves, and the write-through effect below depends on it -
+  // a ref mutation doesn't retrigger effects, so if write-through ran and
+  // bailed out *before* migration finished, nothing would ever make it retry).
+  const migrationStartedForUserIdRef = useRef<string | null>(null);
+  const [migrationDoneForUserId, setMigrationDoneForUserId] = useState<string | null>(null);
 
   // Helper function to sort tasks (priority first, then maybe by creation order/name?)
   // For now, just priority first.
@@ -104,7 +155,95 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     if (savedCurrentTaskId) {
       setCurrentTaskId(savedCurrentTaskId)
     }
+
+    localLoadDoneRef.current = true
   }, []) // Run only once on mount
+
+  // --- Sync with Supabase when a user signs in ---
+  // Runs once per sign-in (tracked via the refs above, not on every render).
+  // Two cases: this account already has tasks synced from another device (the
+  // server is authoritative - replace local state with it, no merge attempted)
+  // or this is the first time this account has ever synced (push whatever
+  // real, non-demo tasks already exist locally up as the starting point).
+  useEffect(() => {
+    if (!supabase || !user || !localLoadDoneRef.current || migrationStartedForUserIdRef.current === user.id) return
+    migrationStartedForUserIdRef.current = user.id
+
+    let cancelled = false
+    ;(async () => {
+      const { data, error } = await supabase!.from("tasks").select("*").eq("user_id", user.id)
+      if (cancelled) return
+      if (error) {
+        console.error("TASK_CONTEXT: Failed to load synced tasks:", error)
+        // Still mark this user as "done" so write-through isn't permanently
+        // blocked for the rest of the session by one failed read.
+        setMigrationDoneForUserId(user.id)
+        return
+      }
+
+      if (data && data.length > 0) {
+        const serverTasks = sortTasks((data as TaskRow[]).map(rowToTask))
+        setTasks(serverTasks)
+        const highestIndex = serverTasks.reduce(
+          (max, t) => (typeof t.chartIndex === "number" && t.chartIndex > max ? t.chartIndex : max),
+          0,
+        )
+        setNextChartIndex((highestIndex % TOTAL_CHART_COLORS) + 1)
+      } else {
+        const realTasks = tasks.filter((t) => !t.id.startsWith("demo-"))
+        if (realTasks.length > 0) {
+          const { error: upsertError } = await supabase!
+            .from("tasks")
+            .upsert(realTasks.map((t) => taskToRow(t, user.id)))
+          if (upsertError) console.error("TASK_CONTEXT: Failed to push initial tasks on sign-in:", upsertError)
+        }
+      }
+      if (cancelled) return
+      // Only now - after the pull-or-push has actually resolved - is it safe
+      // for the write-through effect below to start acting on `tasks`. Setting
+      // this any earlier let write-through fire mid-migration, using stale
+      // pre-sync local state and racing the pull-down.
+      setMigrationDoneForUserId(user.id)
+    })()
+
+    return () => {
+      cancelled = true
+    }
+    // Only re-run when the signed-in user identity actually changes -
+    // `tasks` is read inside but must not itself retrigger this migration.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  // --- Write-through: mirror every task-list change to Supabase while signed in ---
+  // Deliberately not one Supabase call per mutation (addTask/updateTask/etc.) -
+  // that would mean duplicating "what changed" logic at six call sites, each a
+  // chance to drift from the local reducer or read a stale value. Instead this
+  // watches the same `tasks` state the localStorage-persist effect already
+  // does, and diffs it against what was last synced to find removals -
+  // one place, always reading the current, authoritative local state.
+  const lastSyncedIdsRef = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    if (!supabase || !user || migrationDoneForUserId !== user.id) return
+
+    const realTasks = tasks.filter((t) => !t.id.startsWith("demo-"))
+    const currentIds = new Set(realTasks.map((t) => t.id))
+    const previousIds = lastSyncedIdsRef.current
+
+    ;(async () => {
+      if (realTasks.length > 0) {
+        const { error } = await supabase!.from("tasks").upsert(realTasks.map((t) => taskToRow(t, user.id)))
+        if (error) console.error("TASK_CONTEXT: Failed to sync tasks to Supabase:", error)
+      }
+      if (previousIds) {
+        const removedIds = [...previousIds].filter((id) => !currentIds.has(id))
+        if (removedIds.length > 0) {
+          const { error } = await supabase!.from("tasks").delete().in("id", removedIds)
+          if (error) console.error("TASK_CONTEXT: Failed to delete synced tasks from Supabase:", error)
+        }
+      }
+      lastSyncedIdsRef.current = currentIds
+    })()
+  }, [tasks, user, migrationDoneForUserId])
 
   // Save tasks to localStorage whenever they change (unconditionally)
   useEffect(() => {

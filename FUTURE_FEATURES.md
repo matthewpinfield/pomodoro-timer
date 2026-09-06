@@ -8,19 +8,26 @@ Everything below in this file that needs a backend - sync, push notifications,
 calendar import - is one connected piece of work, not three separate ones.
 Settled shape, to build in this order:
 
-1. **Backend: Supabase.** Client-callable directly (auth + database +
+1. **Backend: Supabase.** ✅ Done. Client-callable directly (auth + database +
    realtime, protected by row-level security, no server code of our own to
-   write or host) - the static export + GitHub Pages deploy does not need to
+   write or host) - the static export + GitHub Pages deploy did not need to
    change. Considered Firebase (already have an account) - its one real edge
    is FCM for push delivery, but that's not enough to outweigh Supabase's
    fit here (Postgres suits this data well, more community troubleshooting,
-   genuine self-host escape hatch). Blocked on a Supabase project existing -
-   can't create third-party accounts on the user's behalf.
-2. **Auth + Account page.** One new "Account" entry in the existing hamburger
-   menu (same pattern as Alarms/Settings) - its own page, not folded into the
-   Settings dialog, since it has more surface area (sign in, subscription
-   status, upgrade button) than a quick toggle. Nothing changes on
-   `/pie-chart` or `/timer` for anyone who never opens it.
+   genuine self-host escape hatch).
+2. **Auth + Account page.** ✅ Done. One new "Account" entry in the existing
+   hamburger menu (same pattern as Alarms/Settings) - its own page, not
+   folded into the Settings dialog, since it has more surface area (sign in,
+   subscription status, upgrade button) than a quick toggle. Nothing changes
+   on `/pie-chart` or `/timer` for anyone who never opens it. Passwordless
+   (magic-link) sign-in via Supabase Auth. Custom domain (`focuspie.app`,
+   replacing the github.io URL) wired up alongside this, including DNS and
+   an auto-provisioned HTTPS certificate. Custom SMTP (Resend, domain
+   verified via DKIM/SPF) and branded email templates also done - the
+   default Supabase mailer is testing-only (2 emails/hour project-wide,
+   sender shows as generic "Supabase Auth", and template editing is gated
+   behind custom SMTP entirely), none of which is fit to put in front of a
+   real user.
 3. **Sync - free once signed in.** Migrates what's in `localStorage` today
    (tasks, timer settings, alarms, progress) to also read/write via Supabase
    for a signed-in user. This is the one piece of Tier 3 that's free -
