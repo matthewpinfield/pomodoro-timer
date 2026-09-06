@@ -92,7 +92,7 @@ export default function PieChartView() {
          </div>
 
          {/* --- Right Column (Content) --- */}
-         <div className="w-full md:w-7/12 lg:w-[55%] flex flex-col relative glass-card rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 xl:p-10 mb-4 flex-1 md:sticky md:self-start md:top-0 md:max-h-[calc(100vh-8rem)]">
+         <div className="w-full md:w-7/12 lg:w-[55%] flex flex-col relative overflow-hidden glass-card rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 xl:p-10 mb-4 flex-1 md:sticky md:self-start md:top-0 md:max-h-[calc(100vh-8rem)]">
             
             <div className="absolute top-0 right-0 -mr-10 -mt-10 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
