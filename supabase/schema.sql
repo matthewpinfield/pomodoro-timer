@@ -76,3 +76,18 @@ create policy "Users can insert their own settings"
 create policy "Users can update their own settings"
   on public.user_settings for update
   using (auth.uid() = user_id);
+
+-- === Calendar import ========================================================
+-- source_uid ties a task back to the ICS event it was imported from (the
+-- ICS format's own UID field), so re-syncing updates that same task instead
+-- of creating a duplicate every time. NULL for ordinary, manually-created
+-- tasks - this column means nothing to them.
+alter table public.tasks add column if not exists source_uid text;
+create unique index if not exists tasks_user_source_uid_idx
+  on public.tasks(user_id, source_uid)
+  where source_uid is not null;
+
+-- Where a signed-in user's saved calendar feed URL lives - added to
+-- user_settings rather than a new table since it's a single value per user,
+-- same shape as everything else already in that row.
+alter table public.user_settings add column if not exists calendar_ics_url text;

@@ -12,4 +12,8 @@ export interface Task {
   chartIndex: number | string;
   isPriority: boolean;
   notes: TaskNote[];
+  // Set only for tasks created from a calendar import - the ICS event's own
+  // UID, so re-syncing updates this same task instead of duplicating it.
+  // Absent for ordinary, manually-created tasks.
+  sourceUid?: string;
 }

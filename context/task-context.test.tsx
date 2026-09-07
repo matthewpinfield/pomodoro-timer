@@ -296,3 +296,71 @@ describe("TaskProvider - Supabase sync", () => {
     await waitFor(() => expect(__mockStore.tasks).toHaveLength(0));
   });
 });
+
+describe("TaskProvider - importCalendarTasks", () => {
+  it("creates a task per calendar event, replacing the demo list like addTask does", () => {
+    const { result } = renderTasks();
+    expect(result.current.tasks.every((t) => t.id.startsWith("demo-"))).toBe(true);
+
+    act(() => {
+      result.current.importCalendarTasks([
+        { uid: "event-1", summary: "Team standup", durationMinutes: 15 },
+        { uid: "event-2", summary: "1:1 with manager", durationMinutes: 30 },
+      ]);
+    });
+
+    expect(result.current.tasks).toHaveLength(2);
+    expect(result.current.tasks.map((t) => t.name).sort()).toEqual(["1:1 with manager", "Team standup"]);
+    expect(result.current.tasks.every((t) => t.sourceUid)).toBe(true);
+  });
+
+  it("updates the matching task on re-sync instead of creating a duplicate", () => {
+    const { result } = renderTasks();
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15 }]);
+    });
+    const firstId = result.current.tasks[0].id;
+
+    // The same event, but the meeting got extended and renamed - a real
+    // re-sync scenario (the organizer edited the event before it started).
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup (extended)", durationMinutes: 30 }]);
+    });
+
+    expect(result.current.tasks).toHaveLength(1);
+    expect(result.current.tasks[0].id).toBe(firstId); // same task, not a new one
+    expect(result.current.tasks[0].name).toBe("Team standup (extended)");
+    expect(result.current.tasks[0].goalTimeMinutes).toBe(30);
+  });
+
+  it("preserves progress and notes on a task that gets re-synced from the calendar", () => {
+    const { result } = renderTasks();
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15 }]);
+    });
+    const id = result.current.tasks[0].id;
+    act(() => {
+      result.current.updateTaskProgress(id, 5);
+    });
+
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15 }]);
+    });
+
+    expect(result.current.tasks[0].progressMinutes).toBe(5);
+  });
+
+  it("leaves existing manually-created tasks alone when importing calendar events", () => {
+    const { result } = renderTasks();
+    act(() => {
+      result.current.addTask({ name: "Manual task", goalTimeMinutes: 20 });
+    });
+
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15 }]);
+    });
+
+    expect(result.current.tasks).toHaveLength(2);
+    expect(result.current.tasks.some((t) => t.name === "Manual task" && !t.sourceUid)).toBe(true);
+  });
+});

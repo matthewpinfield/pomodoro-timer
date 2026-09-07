@@ -16,6 +16,7 @@ interface TaskRow {
   chart_index: number
   is_priority: boolean
   notes: TaskNote[]
+  source_uid: string | null
 }
 
 function taskToRow(task: Task, userId: string): Omit<TaskRow, "user_id"> & { user_id: string } {
@@ -28,6 +29,7 @@ function taskToRow(task: Task, userId: string): Omit<TaskRow, "user_id"> & { use
     chart_index: typeof task.chartIndex === "number" ? task.chartIndex : parseInt(String(task.chartIndex), 10) || 1,
     is_priority: task.isPriority,
     notes: task.notes,
+    source_uid: task.sourceUid ?? null,
   }
 }
 
@@ -40,6 +42,7 @@ function rowToTask(row: TaskRow): Task {
     chartIndex: row.chart_index,
     isPriority: row.is_priority,
     notes: row.notes ?? [],
+    sourceUid: row.source_uid ?? undefined,
   }
 }
 
@@ -61,6 +64,10 @@ interface TaskContextType {
   updateTaskProgress: (id: string, minutesCompleted: number) => void
   addTaskNote: (id: string, note: string) => void
   setCurrentTaskId: (id: string | null) => void
+  // Creates/updates tasks from imported calendar events, matched by sourceUid
+  // (the ICS event's own UID) so re-syncing the same calendar updates these
+  // same tasks instead of duplicating them on every sync.
+  importCalendarTasks: (events: { uid: string; summary: string; durationMinutes: number }[]) => void
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
@@ -340,6 +347,39 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const importCalendarTasks = (events: { uid: string; summary: string; durationMinutes: number }[]) => {
+    setTasks((prevTasks) => {
+      const base = isDemoList(prevTasks) ? [] : prevTasks
+      let next = [...base]
+      let chartIndexCursor = nextChartIndex
+      for (const event of events) {
+        const existingIdx = next.findIndex((t) => t.sourceUid === event.uid)
+        if (existingIdx >= 0) {
+          // Keep id/progress/notes intact - only the calendar-sourced fields refresh.
+          next[existingIdx] = {
+            ...next[existingIdx],
+            name: event.summary,
+            goalTimeMinutes: event.durationMinutes,
+          }
+        } else {
+          next.push({
+            id: uuidv4(),
+            name: event.summary,
+            goalTimeMinutes: event.durationMinutes,
+            progressMinutes: 0,
+            chartIndex: chartIndexCursor,
+            isPriority: false,
+            notes: [],
+            sourceUid: event.uid,
+          })
+          chartIndexCursor = (chartIndexCursor % TOTAL_CHART_COLORS) + 1
+        }
+      }
+      setNextChartIndex(chartIndexCursor)
+      return sortTasks(next)
+    })
+  }
+
   return (
     <TaskContext.Provider
       value={{
@@ -353,6 +393,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         updateTaskProgress,
         addTaskNote,
         setCurrentTaskId,
+        importCalendarTasks,
       }}
     >
       {children}

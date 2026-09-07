@@ -20,6 +20,11 @@ interface SettingsContextType {
   updateMonochromeChart: (useMonochrome: boolean) => void;
   soundEnabled: boolean;
   updateSoundEnabled: (enabled: boolean) => void;
+  // Only ever loaded/saved via Supabase (no localStorage) - the calendar
+  // import feature this backs requires being signed in anyway, since the
+  // Edge Function that does the actual fetch requires an auth token.
+  calendarIcsUrl: string | null;
+  updateCalendarIcsUrl: (url: string | null) => void;
   // Add other settings here later (timer durations, theme)
 }
 
@@ -33,6 +38,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [workdayHours, setWorkdayHours] = useState<number>(DEFAULT_WORKDAY_HOURS);
   const [useMonochromeChart, setUseMonochromeChart] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [calendarIcsUrl, setCalendarIcsUrl] = useState<string | null>(null);
   const localLoadDoneRef = useRef(false);
   const migrationStartedForUserIdRef = useRef<string | null>(null);
   const [migrationDoneForUserId, setMigrationDoneForUserId] = useState<string | null>(null);
@@ -84,7 +90,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (async () => {
       const { data, error } = await supabase!
         .from("user_settings")
-        .select("workday_hours, use_monochrome_chart, sound_enabled")
+        .select("workday_hours, use_monochrome_chart, sound_enabled, calendar_ics_url")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -98,6 +104,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setWorkdayHours(data.workday_hours);
         setUseMonochromeChart(data.use_monochrome_chart);
         setSoundEnabled(data.sound_enabled);
+        setCalendarIcsUrl(data.calendar_ics_url ?? null);
       } else {
         const { error: upsertError } = await supabase!.from("user_settings").upsert(
           {
@@ -105,6 +112,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             workday_hours: workdayHours,
             use_monochrome_chart: useMonochromeChart,
             sound_enabled: soundEnabled,
+            calendar_ics_url: calendarIcsUrl,
           },
           { onConflict: "user_id" },
         );
@@ -131,13 +139,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           workday_hours: workdayHours,
           use_monochrome_chart: useMonochromeChart,
           sound_enabled: soundEnabled,
+          calendar_ics_url: calendarIcsUrl,
         },
         { onConflict: "user_id" },
       )
       .then(({ error }) => {
         if (error) console.error("SETTINGS_CONTEXT: Failed to sync settings to Supabase:", error);
       });
-  }, [workdayHours, useMonochromeChart, soundEnabled, user, migrationDoneForUserId]);
+  }, [workdayHours, useMonochromeChart, soundEnabled, calendarIcsUrl, user, migrationDoneForUserId]);
 
   // Save workdayHours to localStorage whenever it changes
   useEffect(() => {
@@ -173,6 +182,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSoundEnabled(enabled);
   };
 
+  const updateCalendarIcsUrl = (url: string | null) => {
+    setCalendarIcsUrl(url);
+  };
+
   // --- Context Value ---
   const value = {
     workdayHours,
@@ -181,6 +194,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     updateMonochromeChart,
     soundEnabled,
     updateSoundEnabled,
+    calendarIcsUrl,
+    updateCalendarIcsUrl,
     // Add other settings values/updaters here
   };
 
