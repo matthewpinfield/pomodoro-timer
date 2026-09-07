@@ -27,6 +27,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     chartIndex: 3,
     isPriority: false,
     notes: [],
+    date: "2026-01-01",
     ...overrides,
   };
 }

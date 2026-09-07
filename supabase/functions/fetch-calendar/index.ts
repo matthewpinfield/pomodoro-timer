@@ -1,10 +1,11 @@
-// Fetches a user's ICS calendar feed and returns just today's events.
-// Runs server-side (not in the browser) because calendar providers
-// generally don't send CORS headers that would let a browser fetch an ICS
-// URL directly. Parsing logic lives in ics-parser.ts, kept Deno-free so it
-// can be unit tested under Jest - this file is just the HTTP glue.
+// Fetches a user's ICS calendar feed and returns events in an upcoming
+// window (today through WINDOW_DAYS_AHEAD days). Runs server-side (not in
+// the browser) because calendar providers generally don't send CORS headers
+// that would let a browser fetch an ICS URL directly. Parsing logic lives in
+// ics-parser.ts, kept Deno-free so it can be unit tested under Jest - this
+// file is just the HTTP glue.
 
-import { parseIcs } from "./ics-parser.ts";
+import { parseIcs, windowEndDigits, dateDigitsToIso } from "./ics-parser.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,9 +54,17 @@ Deno.serve(async (req: Request) => {
 
     const icsText = await icsResponse.text();
     const allEvents = parseIcs(icsText);
-    const todaysEvents = allEvents.filter((e) => e.dateDigits === todayDigits);
+    const endDigits = windowEndDigits(todayDigits);
+    const windowEvents = allEvents
+      .filter((e) => e.dateDigits >= todayDigits && e.dateDigits <= endDigits)
+      .map((e) => ({
+        uid: e.uid,
+        summary: e.summary,
+        durationMinutes: e.durationMinutes,
+        date: dateDigitsToIso(e.dateDigits),
+      }));
 
-    return json({ events: todaysEvents });
+    return json({ events: windowEvents });
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }

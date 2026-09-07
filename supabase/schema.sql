@@ -91,3 +91,12 @@ create unique index if not exists tasks_user_source_uid_idx
 -- user_settings rather than a new table since it's a single value per user,
 -- same shape as everything else already in that row.
 alter table public.user_settings add column if not exists calendar_ics_url text;
+
+-- Which day a task belongs to. Manually-created tasks always get today
+-- (the app has no UI for planning a future day directly); calendar imports
+-- get the event's own date, which is the whole point of this column - it's
+-- what lets an imported event silently wait until its real day arrives
+-- instead of cluttering today's plan the moment it's synced. Defaults to
+-- today for safety (e.g. a future direct-insert missing the column), though
+-- the app itself always sets it explicitly.
+alter table public.tasks add column if not exists date date not null default current_date;

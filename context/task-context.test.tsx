@@ -1,7 +1,9 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { AuthProvider } from "./auth-context";
-import { TaskProvider, useTasks } from "./task-context";
+import { TaskProvider, useTasks, todayDateString } from "./task-context";
 import type { ReactNode } from "react";
+
+const TODAY = todayDateString();
 
 // Minimal in-memory stand-in for the Supabase client, covering only what
 // task-context.tsx actually calls (auth session/state-change, and
@@ -304,8 +306,8 @@ describe("TaskProvider - importCalendarTasks", () => {
 
     act(() => {
       result.current.importCalendarTasks([
-        { uid: "event-1", summary: "Team standup", durationMinutes: 15 },
-        { uid: "event-2", summary: "1:1 with manager", durationMinutes: 30 },
+        { uid: "event-1", summary: "Team standup", durationMinutes: 15, date: TODAY },
+        { uid: "event-2", summary: "1:1 with manager", durationMinutes: 30, date: TODAY },
       ]);
     });
 
@@ -317,14 +319,14 @@ describe("TaskProvider - importCalendarTasks", () => {
   it("updates the matching task on re-sync instead of creating a duplicate", () => {
     const { result } = renderTasks();
     act(() => {
-      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15 }]);
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15, date: TODAY }]);
     });
     const firstId = result.current.tasks[0].id;
 
     // The same event, but the meeting got extended and renamed - a real
     // re-sync scenario (the organizer edited the event before it started).
     act(() => {
-      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup (extended)", durationMinutes: 30 }]);
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup (extended)", durationMinutes: 30, date: TODAY }]);
     });
 
     expect(result.current.tasks).toHaveLength(1);
@@ -336,7 +338,7 @@ describe("TaskProvider - importCalendarTasks", () => {
   it("preserves progress and notes on a task that gets re-synced from the calendar", () => {
     const { result } = renderTasks();
     act(() => {
-      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15 }]);
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15, date: TODAY }]);
     });
     const id = result.current.tasks[0].id;
     act(() => {
@@ -344,7 +346,7 @@ describe("TaskProvider - importCalendarTasks", () => {
     });
 
     act(() => {
-      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15 }]);
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15, date: TODAY }]);
     });
 
     expect(result.current.tasks[0].progressMinutes).toBe(5);
@@ -357,10 +359,30 @@ describe("TaskProvider - importCalendarTasks", () => {
     });
 
     act(() => {
-      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15 }]);
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15, date: TODAY }]);
     });
 
     expect(result.current.tasks).toHaveLength(2);
     expect(result.current.tasks.some((t) => t.name === "Manual task" && !t.sourceUid)).toBe(true);
+  });
+
+  it("does not show a future-dated imported event in today's tasks, but does keep it persisted", () => {
+    const { result } = renderTasks();
+    const nextWeek = "2099-01-08"; // far enough out to never collide with "today" in any real run
+
+    act(() => {
+      result.current.importCalendarTasks([
+        { uid: "event-1", summary: "Next week's meeting", durationMinutes: 30, date: nextWeek },
+      ]);
+    });
+
+    // Invisible today - the whole point of giving tasks a date.
+    expect(result.current.tasks.some((t) => t.sourceUid === "event-1")).toBe(false);
+
+    // But not lost - still persisted, waiting for its actual day.
+    const stored = JSON.parse(localStorage.getItem("focuspie-tasks") ?? "[]");
+    const storedEvent = stored.find((t: { sourceUid?: string }) => t.sourceUid === "event-1");
+    expect(storedEvent).toBeDefined();
+    expect(storedEvent.date).toBe(nextWeek);
   });
 });

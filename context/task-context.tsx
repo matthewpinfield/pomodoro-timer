@@ -1,10 +1,20 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useRef, useMemo, type ReactNode } from "react"
 import type { Task, TaskNote } from "@/types/task"
 import { v4 as uuidv4 } from "uuid"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "./auth-context"
+
+// Local YYYY-MM-DD - deliberately not UTC (a `new Date().toISOString()` slice
+// would read as tomorrow for part of the evening in timezones ahead of UTC).
+export function todayDateString(): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, "0")
+  const d = String(now.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
 
 // --- Supabase row <-> Task shape conversion (DB columns are snake_case) ---
 interface TaskRow {
@@ -17,6 +27,7 @@ interface TaskRow {
   is_priority: boolean
   notes: TaskNote[]
   source_uid: string | null
+  date: string | null
 }
 
 function taskToRow(task: Task, userId: string): Omit<TaskRow, "user_id"> & { user_id: string } {
@@ -30,6 +41,7 @@ function taskToRow(task: Task, userId: string): Omit<TaskRow, "user_id"> & { use
     is_priority: task.isPriority,
     notes: task.notes,
     source_uid: task.sourceUid ?? null,
+    date: task.date,
   }
 }
 
@@ -43,6 +55,9 @@ function rowToTask(row: TaskRow): Task {
     isPriority: row.is_priority,
     notes: row.notes ?? [],
     sourceUid: row.source_uid ?? undefined,
+    // Rows saved before this column existed have no date - treat as today
+    // rather than leaving them permanently invisible from every pie-chart view.
+    date: row.date ?? todayDateString(),
   }
 }
 
@@ -67,7 +82,7 @@ interface TaskContextType {
   // Creates/updates tasks from imported calendar events, matched by sourceUid
   // (the ICS event's own UID) so re-syncing the same calendar updates these
   // same tasks instead of duplicating them on every sync.
-  importCalendarTasks: (events: { uid: string; summary: string; durationMinutes: number }[]) => void
+  importCalendarTasks: (events: { uid: string; summary: string; durationMinutes: number; date: string }[]) => void
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
@@ -75,26 +90,34 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined)
 // Define the total number of chart colors available
 const TOTAL_CHART_COLORS = 20;
 
-// Function to create demo tasks - stable IDs are helpful for comparison
+// Function to create demo tasks - stable IDs are helpful for comparison.
+// No `date` baked in here deliberately - this is a module-level constant
+// evaluated once, so a hardcoded date would freeze at whichever day the JS
+// first loaded. Today's date is stamped on when these actually get used.
 const DEMO_TASK_1 = { id: "demo-1", name: "Project Design", goalTimeMinutes: 90, progressMinutes: 0, chartIndex: 1, isPriority: true, notes: [] };
 const DEMO_TASK_2 = { id: "demo-2", name: "Client Meeting Prep", goalTimeMinutes: 45, progressMinutes: 0, chartIndex: 2, isPriority: false, notes: [] };
-const DEMO_TASKS = [DEMO_TASK_1, DEMO_TASK_2];
+const DEMO_TASKS_BASE = [DEMO_TASK_1, DEMO_TASK_2];
 
 // Helper to check if the current task list IS the demo list
 const isDemoList = (currentTasks: Task[]): boolean => {
-  if (currentTasks.length !== DEMO_TASKS.length) return false;
+  if (currentTasks.length !== DEMO_TASKS_BASE.length) return false;
   // Check if all IDs match the demo IDs
   const currentIds = currentTasks.map(t => t.id).sort();
-  const demoIds = DEMO_TASKS.map(t => t.id).sort();
+  const demoIds = DEMO_TASKS_BASE.map(t => t.id).sort();
   return currentIds.every((id, index) => id === demoIds[index]);
 };
 
 export function TaskProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const [tasks, setTasks] = useState<Task[]>([]) // Start empty before useEffect
+  // Holds every task regardless of date - the pie chart/timer only ever
+  // want today's, so the *publicly exposed* `tasks` below is a same-shaped,
+  // filtered view of this. Calendar imports are the only thing that ever
+  // populates a task with a future date; nothing in the UI browses by date,
+  // so a future-dated task simply has no visible effect until its own day
+  // arrives and this filter naturally includes it.
+  const [allTasks, setAllTasks] = useState<Task[]>([]) // Start empty before useEffect
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [nextChartIndex, setNextChartIndex] = useState(1);
-  const [hasRealTasks, setHasRealTasks] = useState(false);
   // Set once the initial localStorage load has run, so the sign-in sync
   // effect below never races it and pushes up an empty/default task list.
   const localLoadDoneRef = useRef(false);
@@ -106,6 +129,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   // bailed out *before* migration finished, nothing would ever make it retry).
   const migrationStartedForUserIdRef = useRef<string | null>(null);
   const [migrationDoneForUserId, setMigrationDoneForUserId] = useState<string | null>(null);
+
+  // Public, today-only view - everything outside this file (pie chart, timer,
+  // Header's hasRealTasks gating) keeps behaving exactly as it did before
+  // tasks had a date at all, since "all tasks" and "today's tasks" used to
+  // be the same thing by definition.
+  const tasks = useMemo(() => allTasks.filter((t) => t.date === todayDateString()), [allTasks]);
+  const hasRealTasks = useMemo(() => tasks.some((t) => !t.id.startsWith("demo-")), [tasks]);
 
   // Helper function to sort tasks (priority first, then maybe by creation order/name?)
   // For now, just priority first.
@@ -125,8 +155,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const savedTasks = localStorage.getItem("focuspie-tasks")
     if (savedTasks) {
       try {
-        initialTasks = JSON.parse(savedTasks).map((task: any) => ({ ...task, isPriority: task.isPriority || false }));
-      } catch (e) { 
+        // Tasks saved before the date field existed have none - backfill as
+        // today's rather than leaving them permanently excluded from view.
+        initialTasks = JSON.parse(savedTasks).map((task: any) => ({
+          ...task,
+          isPriority: task.isPriority || false,
+          date: task.date || todayDateString(),
+        }));
+      } catch (e) {
         console.error("Error parsing saved tasks:", e);
         localStorage.removeItem("focuspie-tasks"); // Clear invalid data
       }
@@ -135,16 +171,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // If loading failed or resulted in an empty list, use demo tasks
     if (initialTasks.length === 0) {
       console.log("TASK_CONTEXT: No valid saved tasks found, using demo tasks.");
-      initialTasks = [...DEMO_TASKS]; // Use a copy of the demo tasks
+      const today = todayDateString();
+      initialTasks = DEMO_TASKS_BASE.map((t) => ({ ...t, date: today }));
     } else {
       console.log("TASK_CONTEXT: Loaded tasks from localStorage.");
     }
 
-    // --- Calculate initial hasRealTasks --- 
-    const initialHasReal = initialTasks.some(task => !task.id.startsWith("demo-"));
-    setHasRealTasks(initialHasReal);
-
-    setTasks(sortTasks(initialTasks));
+    setAllTasks(sortTasks(initialTasks));
 
     // --- Determine next chart index based on the loaded/demo tasks ---
     if (initialTasks.length > 0) {
@@ -190,14 +223,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
       if (data && data.length > 0) {
         const serverTasks = sortTasks((data as TaskRow[]).map(rowToTask))
-        setTasks(serverTasks)
+        setAllTasks(serverTasks)
         const highestIndex = serverTasks.reduce(
           (max, t) => (typeof t.chartIndex === "number" && t.chartIndex > max ? t.chartIndex : max),
           0,
         )
         setNextChartIndex((highestIndex % TOTAL_CHART_COLORS) + 1)
       } else {
-        const realTasks = tasks.filter((t) => !t.id.startsWith("demo-"))
+        const realTasks = allTasks.filter((t) => !t.id.startsWith("demo-"))
         if (realTasks.length > 0) {
           const { error: upsertError } = await supabase!
             .from("tasks")
@@ -207,9 +240,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
       if (cancelled) return
       // Only now - after the pull-or-push has actually resolved - is it safe
-      // for the write-through effect below to start acting on `tasks`. Setting
-      // this any earlier let write-through fire mid-migration, using stale
-      // pre-sync local state and racing the pull-down.
+      // for the write-through effect below to start acting on `allTasks`.
+      // Setting this any earlier let write-through fire mid-migration, using
+      // stale pre-sync local state and racing the pull-down.
       setMigrationDoneForUserId(user.id)
     })()
 
@@ -217,7 +250,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       cancelled = true
     }
     // Only re-run when the signed-in user identity actually changes -
-    // `tasks` is read inside but must not itself retrigger this migration.
+    // `allTasks` is read inside but must not itself retrigger this migration.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
@@ -225,14 +258,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   // Deliberately not one Supabase call per mutation (addTask/updateTask/etc.) -
   // that would mean duplicating "what changed" logic at six call sites, each a
   // chance to drift from the local reducer or read a stale value. Instead this
-  // watches the same `tasks` state the localStorage-persist effect already
+  // watches the same `allTasks` state the localStorage-persist effect already
   // does, and diffs it against what was last synced to find removals -
-  // one place, always reading the current, authoritative local state.
+  // one place, always reading the current, authoritative local state. Uses
+  // allTasks (every date), not just today - a calendar-imported task for
+  // next week still needs to sync even though it's invisible in the UI today.
   const lastSyncedIdsRef = useRef<Set<string> | null>(null)
   useEffect(() => {
     if (!supabase || !user || migrationDoneForUserId !== user.id) return
 
-    const realTasks = tasks.filter((t) => !t.id.startsWith("demo-"))
+    const realTasks = allTasks.filter((t) => !t.id.startsWith("demo-"))
     const currentIds = new Set(realTasks.map((t) => t.id))
     const previousIds = lastSyncedIdsRef.current
 
@@ -250,15 +285,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
       lastSyncedIdsRef.current = currentIds
     })()
-  }, [tasks, user, migrationDoneForUserId])
+  }, [allTasks, user, migrationDoneForUserId])
 
-  // Save tasks to localStorage whenever they change (unconditionally)
+  // Save every task (all dates) to localStorage whenever they change
   useEffect(() => {
-    console.log("TASK_CONTEXT: Saving tasks to localStorage:", tasks);
-    localStorage.setItem("focuspie-tasks", JSON.stringify(tasks))
-    // Recalculate hasRealTasks whenever tasks change
-    setHasRealTasks(tasks.some(task => !task.id.startsWith("demo-")));
-  }, [tasks])
+    console.log("TASK_CONTEXT: Saving tasks to localStorage:", allTasks);
+    localStorage.setItem("focuspie-tasks", JSON.stringify(allTasks))
+  }, [allTasks])
 
   // Save current task to localStorage whenever it changes
   useEffect(() => {
@@ -277,11 +310,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       goalTimeMinutes: taskData.goalTimeMinutes,
       progressMinutes: 0,
       chartIndex: nextChartIndex,
-      isPriority: taskData.isPriority || false, 
+      isPriority: taskData.isPriority || false,
       notes: [],
+      date: todayDateString(), // Manually-added tasks always mean "today"
     }
 
-    setTasks((prevTasks) => {
+    setAllTasks((prevTasks) => {
       // Check if the current state IS the demo list (now expects 4)
       if (isDemoList(prevTasks)) {
         console.log("TASK_CONTEXT: First user task added, replacing demo list.");
@@ -307,8 +341,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   // They operate on the current state, which is either demo or user data.
   // If user updates/deletes a demo task, the isDemoList check in addTask will handle it.
   const updateTask = (id: string, taskData: TaskData) => {
-    setTasks((prevTasks) =>
-      sortTasks( 
+    setAllTasks((prevTasks) =>
+      sortTasks(
         prevTasks.map((t) =>
           t.id === id ? { ...t, ...taskData, isPriority: taskData.isPriority || false } : t
         )
@@ -317,7 +351,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }
 
   const deleteTask = (id: string) => {
-    setTasks((prevTasks) => sortTasks(prevTasks.filter((t) => t.id !== id)))
+    setAllTasks((prevTasks) => sortTasks(prevTasks.filter((t) => t.id !== id)))
     if (currentTaskId === id) {
       setCurrentTaskId(null)
     }
@@ -325,20 +359,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Re-inserts a task exactly as it was (id, progress, notes intact) - for undoing a delete
   const restoreTask = (task: Task) => {
-    setTasks((prevTasks) => {
+    setAllTasks((prevTasks) => {
       if (prevTasks.some((t) => t.id === task.id)) return prevTasks; // already present, avoid duplicates
       return sortTasks([...prevTasks, task]);
     });
   }
 
   const updateTaskProgress = (id: string, minutesCompleted: number) => {
-    setTasks((prevTasks) =>
+    setAllTasks((prevTasks) =>
       prevTasks.map((t) => (t.id === id ? { ...t, progressMinutes: t.progressMinutes + minutesCompleted } : t)),
     )
   }
 
   const addTaskNote = (id: string, note: string) => {
-    setTasks((prevTasks) =>
+    setAllTasks((prevTasks) =>
       prevTasks.map((t) =>
         t.id === id
           ? { ...t, notes: [...t.notes, { id: uuidv4(), text: note, timestamp: new Date().toISOString() }] }
@@ -347,19 +381,21 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     )
   }
 
-  const importCalendarTasks = (events: { uid: string; summary: string; durationMinutes: number }[]) => {
-    setTasks((prevTasks) => {
+  const importCalendarTasks = (events: { uid: string; summary: string; durationMinutes: number; date: string }[]) => {
+    setAllTasks((prevTasks) => {
       const base = isDemoList(prevTasks) ? [] : prevTasks
       let next = [...base]
       let chartIndexCursor = nextChartIndex
       for (const event of events) {
         const existingIdx = next.findIndex((t) => t.sourceUid === event.uid)
         if (existingIdx >= 0) {
-          // Keep id/progress/notes intact - only the calendar-sourced fields refresh.
+          // Keep id/progress/notes intact - only the calendar-sourced fields
+          // refresh, including date (a rescheduled meeting should move too).
           next[existingIdx] = {
             ...next[existingIdx],
             name: event.summary,
             goalTimeMinutes: event.durationMinutes,
+            date: event.date,
           }
         } else {
           next.push({
@@ -371,6 +407,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             isPriority: false,
             notes: [],
             sourceUid: event.uid,
+            date: event.date,
           })
           chartIndexCursor = (chartIndexCursor % TOTAL_CHART_COLORS) + 1
         }

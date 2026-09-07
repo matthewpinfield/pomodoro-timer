@@ -1,4 +1,28 @@
-import { unfoldLines, parseDateTime, parseIcs } from "./ics-parser";
+import { unfoldLines, parseDateTime, parseIcs, dateDigitsToIso, windowEndDigits } from "./ics-parser";
+
+describe("dateDigitsToIso", () => {
+  it("converts YYYYMMDD to YYYY-MM-DD", () => {
+    expect(dateDigitsToIso("20260907")).toBe("2026-09-07");
+  });
+});
+
+describe("windowEndDigits", () => {
+  it("adds the given number of days ahead", () => {
+    expect(windowEndDigits("20260907", 14)).toBe("20260921");
+  });
+
+  it("correctly rolls over a month boundary", () => {
+    expect(windowEndDigits("20260925", 14)).toBe("20261009");
+  });
+
+  it("correctly rolls over a year boundary", () => {
+    expect(windowEndDigits("20261225", 14)).toBe("20270108");
+  });
+
+  it("defaults to the standard 14-day window when not specified", () => {
+    expect(windowEndDigits("20260907")).toBe(windowEndDigits("20260907", 14));
+  });
+});
 
 describe("unfoldLines", () => {
   it("joins a folded continuation line back onto the previous line", () => {

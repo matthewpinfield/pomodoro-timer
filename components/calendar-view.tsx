@@ -43,7 +43,7 @@ export function CalendarView() {
       if (invokeError) throw invokeError
       if (data?.error) throw new Error(data.error)
 
-      const events = (data?.events ?? []) as { uid: string; summary: string; durationMinutes: number }[]
+      const events = (data?.events ?? []) as { uid: string; summary: string; durationMinutes: number; date: string }[]
       importCalendarTasks(events)
       setLastSyncCount(events.length)
     } catch (err) {
@@ -63,7 +63,7 @@ export function CalendarView() {
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Calendar</h1>
         <div className="glass-card rounded-[1.5rem] p-6">
           <p className="text-sm text-muted-foreground">
-            Sign in to import today&apos;s events from your calendar as tasks.
+            Sign in to import your upcoming calendar events as tasks.
           </p>
         </div>
       </div>
@@ -75,7 +75,8 @@ export function CalendarView() {
       <div className="text-center">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Calendar</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Paste your calendar&apos;s private iCal (ICS) link to import today&apos;s events as tasks.
+          Paste your calendar&apos;s private iCal (ICS) link to import the next two weeks of events as tasks -
+          each one lands on its own day, so it only shows up once that day arrives.
         </p>
       </div>
 
@@ -97,13 +98,13 @@ export function CalendarView() {
           <CalendarDays className="w-8 h-8 text-primary" />
           <Button onClick={handleSync} disabled={syncing} className="gap-2">
             <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing..." : "Sync today's events"}
+            {syncing ? "Syncing..." : "Sync calendar"}
           </Button>
           {lastSyncCount !== null && !error && (
             <p className="text-sm text-muted-foreground">
               {lastSyncCount === 0
-                ? "No events found for today."
-                : `Imported ${lastSyncCount} event${lastSyncCount === 1 ? "" : "s"} as task${lastSyncCount === 1 ? "" : "s"}.`}
+                ? "No events found in the next two weeks."
+                : `Imported ${lastSyncCount} event${lastSyncCount === 1 ? "" : "s"} across the next two weeks - each will appear on its own day.`}
             </p>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}

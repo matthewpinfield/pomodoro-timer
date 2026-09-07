@@ -16,4 +16,9 @@ export interface Task {
   // UID, so re-syncing updates this same task instead of duplicating it.
   // Absent for ordinary, manually-created tasks.
   sourceUid?: string;
+  // YYYY-MM-DD, local date this task belongs to. Manually-created tasks
+  // always get today's date; calendar imports get the event's own date -
+  // this is what lets the pie chart show a specific day's plan instead of
+  // one flat undated list.
+  date: string;
 }

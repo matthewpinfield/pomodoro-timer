@@ -45,6 +45,31 @@ export function parseDateTime(value: string): { epochMs: number; dateDigits: str
   return { epochMs, dateDigits };
 }
 
+// A single sync pulling in "today only" meant re-syncing every single day
+// just to stay current - this window means one sync covers a couple of
+// weeks of a real schedule instead.
+export const WINDOW_DAYS_AHEAD = 14;
+
+// "20260907" -> "2026-09-07", matching the Task.date shape the client stores.
+export function dateDigitsToIso(dateDigits: string): string {
+  return `${dateDigits.slice(0, 4)}-${dateDigits.slice(4, 6)}-${dateDigits.slice(6, 8)}`;
+}
+
+// Client-local "today" (YYYYMMDD) plus WINDOW_DAYS_AHEAD, as YYYYMMDD -
+// computed here rather than trusting the client to also compute and send
+// the window end, so there's one source of truth for how wide the window is.
+export function windowEndDigits(todayDigits: string, daysAhead = WINDOW_DAYS_AHEAD): string {
+  const y = Number(todayDigits.slice(0, 4));
+  const m = Number(todayDigits.slice(4, 6)) - 1;
+  const d = Number(todayDigits.slice(6, 8));
+  const end = new Date(Date.UTC(y, m, d));
+  end.setUTCDate(end.getUTCDate() + daysAhead);
+  const ey = end.getUTCFullYear();
+  const em = String(end.getUTCMonth() + 1).padStart(2, "0");
+  const ed = String(end.getUTCDate()).padStart(2, "0");
+  return `${ey}${em}${ed}`;
+}
+
 export function parseIcs(icsText: string): ParsedEvent[] {
   const lines = unfoldLines(icsText);
   const events: ParsedEvent[] = [];

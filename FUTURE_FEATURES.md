@@ -51,6 +51,30 @@ Settled shape, to build in this order:
    vibration finally gets bundled in for Android, and where iPhone
    notifications become possible at all (via Web Push, PWA install required).
 
+## Task rollover (paid-tier candidate)
+
+Raised while adding real dates to tasks (needed for Calendar import to place
+events on their correct day instead of dumping everything into "today").
+Idea: for a task not finished by end of day, automatically carry its
+remaining time (`goalTimeMinutes - progressMinutes`) forward onto the next
+day instead of it just sitting there unfinished and forgotten. Directly
+targets multi-day projects - the whole point of the pie-chart budget concept
+falls apart if a task that spans several days just vanishes from view once
+its original day has passed.
+
+Buildable now that tasks have a `date` field to actually move - wasn't
+possible before this session's date work landed. Not building it alongside
+the date foundation itself though; wants its own pass once dated tasks are
+solid and tested; a few real design questions to resolve first:
+- Does it roll over automatically at day boundary, or only when the user
+  opens a new day and confirms/dismisses per task?
+- Does the *original* day keep a record showing "started, not finished" for
+  history's sake, or does the task just relocate entirely to the new day?
+- Progress/notes clearly carry with it - what about `sourceUid` for a
+  calendar-imported task that rolls over - does a future re-sync of that
+  same calendar event create a second, duplicate task, or correctly find
+  the rolled-over one?
+
 ## Notifications & Alerts
 
 Currently there's no audio or notification of any kind when a pomodoro/break/task
