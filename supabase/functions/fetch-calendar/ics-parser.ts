@@ -46,9 +46,9 @@ export function parseDateTime(value: string): { epochMs: number; dateDigits: str
 }
 
 // A single sync pulling in "today only" meant re-syncing every single day
-// just to stay current - this window means one sync covers a couple of
-// weeks of a real schedule instead.
-export const WINDOW_DAYS_AHEAD = 14;
+// just to stay current - this window means one sync covers roughly a month
+// of a real schedule instead.
+export const WINDOW_DAYS_AHEAD = 30;
 
 // "20260907" -> "2026-09-07", matching the Task.date shape the client stores.
 export function dateDigitsToIso(dateDigits: string): string {

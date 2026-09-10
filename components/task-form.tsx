@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import type { Task } from "@/types/task"
 
 interface TaskFormProps {
-  onSubmit: (task: { name: string; goalTimeMinutes: number; isPriority?: boolean }) => void
+  onSubmit: (task: { name: string; goalTimeMinutes: number; isPriority?: boolean; startTime?: string }) => void
   onCancel?: () => void
   initialValues?: Partial<Task>
   workdayHours?: number
@@ -33,6 +33,7 @@ export function TaskForm({
   const [hours, setHours] = useState(Math.floor((initialValues?.goalTimeMinutes || 0) / 60).toString())
   const [minutes, setMinutes] = useState(((initialValues?.goalTimeMinutes || 0) % 60).toString())
   const [isPriority, setIsPriority] = useState(initialValues?.isPriority || false)
+  const [startTime, setStartTime] = useState(initialValues?.startTime || "")
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export function TaskForm({
     setHours(Math.floor((initialValues?.goalTimeMinutes || 0) / 60).toString())
     setMinutes(((initialValues?.goalTimeMinutes || 0) % 60).toString())
     setIsPriority(initialValues?.isPriority || false)
+    setStartTime(initialValues?.startTime || "")
     setError(null)
   }, [initialValues])
 
@@ -78,6 +80,7 @@ export function TaskForm({
       name,
       goalTimeMinutes,
       isPriority,
+      startTime: startTime || undefined,
     })
 
     if (standalone || !initialValues?.id) {
@@ -85,6 +88,7 @@ export function TaskForm({
       setHours("0")
       setMinutes("0")
       setIsPriority(false)
+      setStartTime("")
     }
   }
 
@@ -138,6 +142,19 @@ export function TaskForm({
         </div>
       </div>
       
+      <div className="space-y-md">
+        <Label htmlFor="start-time" className="text-base px-w-xs">
+          Reminder time <span className="text-muted-foreground font-normal">(optional)</span>
+        </Label>
+        <Input
+          id="start-time"
+          type="time"
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+          className="w-full px-3 py-2 text-base"
+        />
+      </div>
+
       <div className="flex items-center justify-between pt-4">
         <div className="flex items-center gap-2">
           <Switch

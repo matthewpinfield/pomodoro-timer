@@ -21,4 +21,8 @@ export interface Task {
   // this is what lets the pie chart show a specific day's plan instead of
   // one flat undated list.
   date: string;
+  // Optional HH:MM (local, 24h) time of day to send a reminder notification.
+  // Paired with `date` above - the reminder fires once that combination has
+  // passed, interpreted in the user's own stored timezone server-side.
+  startTime?: string;
 }

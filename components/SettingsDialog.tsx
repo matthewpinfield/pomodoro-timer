@@ -5,14 +5,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 // import { Button } from "@/components/ui/button";
 import { useTimer, type TimerSettings } from "@/context/timer-context"; // RE-ADD useTimer import
 import { useSettings } from "@/context/settings-context"; // Import useSettings
+import { useAuth } from "@/context/auth-context";
+import { useProAccess } from "@/lib/entitlements";
+import { isPushSupported, getExistingSubscription, enablePushReminders, disablePushReminders } from "@/lib/push";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input"; // Import Input
 import { Switch } from "@/components/ui/switch"; // Import Switch
 import { Button } from "@/components/ui/button"; // Ensure Button is imported
-import { PauseCircle, Palette, RotateCcw, Volume2 } from "lucide-react"; // Re-import icons
+import { PauseCircle, Palette, RotateCcw, Volume2, BellRing } from "lucide-react"; // Re-import icons
 import { toast } from "sonner";
 import * as React from "react"; // Import React itself
-import { useRef, useEffect } from "react"; // Import useRef and useEffect
+import { useRef, useEffect, useState } from "react"; // Import useRef and useEffect
 
 interface SettingsDialogProps {
   open: boolean;
@@ -24,7 +27,48 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { settings: timerSettings, toggleAutoPause, updateTimerSetting } = useTimer(); 
   // Re-import and use useMonochromeChart and updateMonochromeChart from useSettings
   const { workdayHours, updateWorkdayHours, useMonochromeChart, updateMonochromeChart, soundEnabled, updateSoundEnabled } = useSettings();
+  const { user } = useAuth();
+  const { hasProAccess } = useProAccess();
   const contentRef = useRef<HTMLDivElement>(null); // Ref for DialogContent
+
+  // Push Reminders toggle state - not synced app state (see lib/push.ts),
+  // derived live from whatever this browser's Push API currently reports.
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    getExistingSubscription().then((sub) => {
+      if (!cancelled) setPushEnabled(!!sub);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const handleTogglePush = async (checked: boolean) => {
+    if (!user) {
+      toast.error("Sign in to enable push reminders.");
+      return;
+    }
+    setPushBusy(true);
+    try {
+      if (checked) {
+        await enablePushReminders(user.id);
+        setPushEnabled(true);
+        toast.success("Push reminders enabled on this device.");
+      } else {
+        await disablePushReminders();
+        setPushEnabled(false);
+        toast.success("Push reminders disabled on this device.");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't update push reminders.");
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   // Handler for duration inputs
   const handleDurationChange = (
@@ -192,6 +236,44 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               />
             </div>
           </div>
+
+          {/* --- Push Reminders Setting --- */}
+          {/* Placeholder paywall seam (lib/entitlements.ts) - unreachable
+              today since useProAccess() always grants access, but the
+              structural branch exists so flipping that hook's internals on
+              later is the only change needed here. */}
+          {hasProAccess ? (
+            <div className="flex items-center justify-between">
+              <div className="space-y-1 pr-4">
+                <Label htmlFor="push-enabled-switch" className="text-foreground cursor-pointer">
+                  Push Reminders
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {isPushSupported()
+                    ? "Sends a notification when a task's reminder time arrives, even if the app is closed."
+                    : "Not supported in this browser (on iPhone, add FocusPie to your Home Screen first)."}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <BellRing className="w-icon-sm h-icon-sm text-muted-foreground opacity-75" />
+                <Switch
+                  id="push-enabled-switch"
+                  checked={pushEnabled}
+                  disabled={pushBusy || !isPushSupported()}
+                  onCheckedChange={handleTogglePush}
+                  aria-label="Toggle push reminders on this device"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="space-y-1 pr-4">
+                <Label className="text-foreground">Push Reminders</Label>
+                <p className="text-xs text-muted-foreground">Requires FocusPie Pro.</p>
+              </div>
+              <BellRing className="w-icon-sm h-icon-sm text-muted-foreground opacity-50" />
+            </div>
+          )}
 
           {/* --- Monochrome CHART Setting --- */}
           <div className="flex items-center justify-between">

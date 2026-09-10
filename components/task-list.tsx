@@ -76,7 +76,7 @@ export function TaskList({
     }
   }
 
-  const handleUpdate = (taskId: string, taskData: { name: string; goalTimeMinutes: number }) => {
+  const handleUpdate = (taskId: string, taskData: { name: string; goalTimeMinutes: number; isPriority?: boolean; startTime?: string }) => {
     updateTask(taskId, taskData)
     setEditingTaskId(null)
   }
@@ -126,7 +126,8 @@ export function TaskList({
                   name: task.name,
                   goalTimeMinutes: task.goalTimeMinutes,
                   chartIndex: task.chartIndex,
-                  isPriority: task.isPriority
+                  isPriority: task.isPriority,
+                  startTime: task.startTime,
                 }}
                 onSubmit={(data) => handleUpdate(task.id, data)}
                 onCancel={() => setEditingTaskId(null)}

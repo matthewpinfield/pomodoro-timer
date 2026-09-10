@@ -19,8 +19,9 @@ describe("windowEndDigits", () => {
     expect(windowEndDigits("20261225", 14)).toBe("20270108");
   });
 
-  it("defaults to the standard 14-day window when not specified", () => {
-    expect(windowEndDigits("20260907")).toBe(windowEndDigits("20260907", 14));
+  it("defaults to the standard 30-day window when not specified", () => {
+    expect(windowEndDigits("20260907")).toBe(windowEndDigits("20260907", 30));
+    expect(windowEndDigits("20260907")).toBe("20261007");
   });
 });
 

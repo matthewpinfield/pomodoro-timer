@@ -25,6 +25,17 @@ interface SettingsContextType {
   // Edge Function that does the actual fetch requires an auth token.
   calendarIcsUrl: string | null;
   updateCalendarIcsUrl: (url: string | null) => void;
+  // ISO timestamp of the last successful "Sync calendar" click, so the
+  // Calendar page can show the user when they last imported. Set only after
+  // a sync actually completes without error - never touched on load.
+  calendarLastSyncedAt: string | null;
+  setCalendarLastSyncedAt: (iso: string) => void;
+  // IANA timezone (e.g. "Europe/London"), recomputed fresh from the browser
+  // every session and pushed to Supabase - never restored from a previously
+  // synced row, since a stale value (old device, old DST state) would be
+  // worse than none. Used server-side to correctly interpret a task's local
+  // date+startTime for reminder delivery. No public setter - it's automatic.
+  timezone: string | null;
   // Add other settings here later (timer durations, theme)
 }
 
@@ -39,6 +50,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [useMonochromeChart, setUseMonochromeChart] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [calendarIcsUrl, setCalendarIcsUrl] = useState<string | null>(null);
+  const [calendarLastSyncedAt, setCalendarLastSyncedAt] = useState<string | null>(null);
+  const [timezone, setTimezone] = useState<string | null>(null);
   const localLoadDoneRef = useRef(false);
   const migrationStartedForUserIdRef = useRef<string | null>(null);
   const [migrationDoneForUserId, setMigrationDoneForUserId] = useState<string | null>(null);
@@ -76,6 +89,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     localLoadDoneRef.current = true;
   }, []);
 
+  // Capture the browser's current IANA timezone every session - deliberately
+  // not persisted to localStorage and never read back from a synced row (see
+  // the type comment above); this always reflects the device/browser it's
+  // running on right now.
+  useEffect(() => {
+    try {
+      setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    } catch {
+      // Unsupported environment - reminders just won't fire for this session.
+    }
+  }, []);
+
   // --- Sync with Supabase when a user signs in ---
   // Same shape as task-context.tsx's migration effect: if this account
   // already has a settings row (from another device), it's authoritative -
@@ -90,7 +115,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (async () => {
       const { data, error } = await supabase!
         .from("user_settings")
-        .select("workday_hours, use_monochrome_chart, sound_enabled, calendar_ics_url")
+        .select("workday_hours, use_monochrome_chart, sound_enabled, calendar_ics_url, calendar_last_synced_at")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -105,6 +130,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setUseMonochromeChart(data.use_monochrome_chart);
         setSoundEnabled(data.sound_enabled);
         setCalendarIcsUrl(data.calendar_ics_url ?? null);
+        setCalendarLastSyncedAt(data.calendar_last_synced_at ?? null);
       } else {
         const { error: upsertError } = await supabase!.from("user_settings").upsert(
           {
@@ -113,6 +139,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             use_monochrome_chart: useMonochromeChart,
             sound_enabled: soundEnabled,
             calendar_ics_url: calendarIcsUrl,
+            calendar_last_synced_at: calendarLastSyncedAt,
+            timezone,
           },
           { onConflict: "user_id" },
         );
@@ -140,13 +168,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           use_monochrome_chart: useMonochromeChart,
           sound_enabled: soundEnabled,
           calendar_ics_url: calendarIcsUrl,
+          calendar_last_synced_at: calendarLastSyncedAt,
+          timezone,
         },
         { onConflict: "user_id" },
       )
       .then(({ error }) => {
         if (error) console.error("SETTINGS_CONTEXT: Failed to sync settings to Supabase:", error);
       });
-  }, [workdayHours, useMonochromeChart, soundEnabled, calendarIcsUrl, user, migrationDoneForUserId]);
+  }, [
+    workdayHours,
+    useMonochromeChart,
+    soundEnabled,
+    calendarIcsUrl,
+    calendarLastSyncedAt,
+    timezone,
+    user,
+    migrationDoneForUserId,
+  ]);
 
   // Save workdayHours to localStorage whenever it changes
   useEffect(() => {
@@ -196,6 +235,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     updateSoundEnabled,
     calendarIcsUrl,
     updateCalendarIcsUrl,
+    calendarLastSyncedAt,
+    setCalendarLastSyncedAt,
+    timezone,
     // Add other settings values/updaters here
   };
 

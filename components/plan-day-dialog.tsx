@@ -36,7 +36,7 @@ export function PlanDayDialog({ open, onOpenChange, editTaskId = null }: PlanDay
     }
   }, [open, editTaskId, editingTask, tasks]);
 
-  const handleFormSubmit = (taskData: { name: string; goalTimeMinutes: number; isPriority?: boolean }) => {
+  const handleFormSubmit = (taskData: { name: string; goalTimeMinutes: number; isPriority?: boolean; startTime?: string }) => {
     if (editingTask) {
       updateTask(editingTask.id, taskData)
       toast.success(`"${taskData.name}" updated`)

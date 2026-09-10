@@ -28,6 +28,7 @@ interface TaskRow {
   notes: TaskNote[]
   source_uid: string | null
   date: string | null
+  start_time: string | null
 }
 
 function taskToRow(task: Task, userId: string): Omit<TaskRow, "user_id"> & { user_id: string } {
@@ -42,6 +43,7 @@ function taskToRow(task: Task, userId: string): Omit<TaskRow, "user_id"> & { use
     notes: task.notes,
     source_uid: task.sourceUid ?? null,
     date: task.date,
+    start_time: task.startTime ?? null,
   }
 }
 
@@ -58,6 +60,7 @@ function rowToTask(row: TaskRow): Task {
     // Rows saved before this column existed have no date - treat as today
     // rather than leaving them permanently invisible from every pie-chart view.
     date: row.date ?? todayDateString(),
+    startTime: row.start_time ?? undefined,
   }
 }
 
@@ -66,6 +69,7 @@ interface TaskData {
   name: string;
   goalTimeMinutes: number;
   isPriority?: boolean; // Include priority in the data type
+  startTime?: string; // Optional HH:MM reminder time
 }
 
 interface TaskContextType {
@@ -83,6 +87,10 @@ interface TaskContextType {
   // (the ICS event's own UID) so re-syncing the same calendar updates these
   // same tasks instead of duplicating them on every sync.
   importCalendarTasks: (events: { uid: string; summary: string; durationMinutes: number; date: string }[]) => void
+  // Every sourceUid already turned into a task (any date, not just today) -
+  // lets the Calendar page tell "already accepted, keep auto-updating it"
+  // events apart from "brand new, ask the user first" ones on each sync.
+  importedSourceUids: Set<string>
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
@@ -136,6 +144,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   // be the same thing by definition.
   const tasks = useMemo(() => allTasks.filter((t) => t.date === todayDateString()), [allTasks]);
   const hasRealTasks = useMemo(() => tasks.some((t) => !t.id.startsWith("demo-")), [tasks]);
+  const importedSourceUids = useMemo(
+    () => new Set(allTasks.filter((t) => t.sourceUid).map((t) => t.sourceUid as string)),
+    [allTasks],
+  );
 
   // Helper function to sort tasks (priority first, then maybe by creation order/name?)
   // For now, just priority first.
@@ -313,6 +325,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       isPriority: taskData.isPriority || false,
       notes: [],
       date: todayDateString(), // Manually-added tasks always mean "today"
+      startTime: taskData.startTime,
     }
 
     setAllTasks((prevTasks) => {
@@ -386,6 +399,21 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const base = isDemoList(prevTasks) ? [] : prevTasks
       let next = [...base]
       let chartIndexCursor = nextChartIndex
+      const incomingUids = new Set(events.map((e) => e.uid))
+      const today = todayDateString()
+
+      // An event that's since been deleted or rescheduled out of the sync
+      // window no longer appears here. Prune its task automatically - but
+      // only if it's still today-or-future dated and completely untouched
+      // (no progress, notes, or priority flag), so a task the user has
+      // already worked on or a past record is never silently deleted.
+      next = next.filter((t) => {
+        if (!t.sourceUid || incomingUids.has(t.sourceUid)) return true
+        const untouched = t.progressMinutes === 0 && t.notes.length === 0 && !t.isPriority
+        const isTodayOrFuture = t.date >= today
+        return !(untouched && isTodayOrFuture)
+      })
+
       for (const event of events) {
         const existingIdx = next.findIndex((t) => t.sourceUid === event.uid)
         if (existingIdx >= 0) {
@@ -431,6 +459,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         addTaskNote,
         setCurrentTaskId,
         importCalendarTasks,
+        importedSourceUids,
       }}
     >
       {children}

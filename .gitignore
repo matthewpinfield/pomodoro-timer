@@ -29,6 +29,10 @@ yarn-error.log*
 # supabase CLI local cache
 supabase/.temp/
 
+# local Deno CLI artifact from running `deno check`/`deno run` against the
+# edge functions during development - not consumed by Supabase's own deploy
+deno.lock
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

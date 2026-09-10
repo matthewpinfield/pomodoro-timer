@@ -279,6 +279,29 @@ describe("TaskProvider - Supabase sync", () => {
     expect(__mockStore.tasks[0].name).toBe("Added while signed in");
   });
 
+  it("threads an optional startTime through to Supabase as start_time, and omits it when not set", async () => {
+    const { result } = renderTasks();
+    await settleInitialAuth();
+    act(() => {
+      __mockSignIn("user-1");
+    });
+    await waitFor(() => expect(__mockStore.tasks).toHaveLength(0));
+
+    act(() => {
+      result.current.addTask({ name: "With a reminder", goalTimeMinutes: 25, startTime: "14:30" });
+      result.current.addTask({ name: "No reminder", goalTimeMinutes: 15 });
+    });
+
+    await waitFor(() => expect(__mockStore.tasks).toHaveLength(2));
+    const withTime = __mockStore.tasks.find((t) => t.name === "With a reminder");
+    const withoutTime = __mockStore.tasks.find((t) => t.name === "No reminder");
+    expect(withTime?.start_time).toBe("14:30");
+    expect(withoutTime?.start_time ?? null).toBeNull();
+
+    // Also round-trips back into the in-memory Task correctly.
+    expect(result.current.tasks.find((t) => t.name === "With a reminder")?.startTime).toBe("14:30");
+  });
+
   it("removes a task from Supabase when it's deleted locally while signed in", async () => {
     const { result } = renderTasks();
     await settleInitialAuth();
@@ -384,5 +407,112 @@ describe("TaskProvider - importCalendarTasks", () => {
     const storedEvent = stored.find((t: { sourceUid?: string }) => t.sourceUid === "event-1");
     expect(storedEvent).toBeDefined();
     expect(storedEvent.date).toBe(nextWeek);
+  });
+
+  it("prunes an untouched, today-or-future calendar task whose event disappears from a later sync", () => {
+    const { result } = renderTasks();
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15, date: TODAY }]);
+    });
+    expect(result.current.tasks).toHaveLength(1);
+
+    // Re-sync without event-1 - it was deleted or moved outside the window
+    // on the actual calendar. It was never touched, so it should vanish.
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-2", summary: "1:1", durationMinutes: 30, date: TODAY }]);
+    });
+
+    expect(result.current.tasks.some((t) => t.sourceUid === "event-1")).toBe(false);
+    expect(result.current.tasks.some((t) => t.sourceUid === "event-2")).toBe(true);
+  });
+
+  it("keeps a calendar task missing from a later sync if it already has progress logged", () => {
+    const { result } = renderTasks();
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Team standup", durationMinutes: 15, date: TODAY }]);
+    });
+    const id = result.current.tasks[0].id;
+    act(() => {
+      result.current.updateTaskProgress(id, 5);
+    });
+
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-2", summary: "1:1", durationMinutes: 30, date: TODAY }]);
+    });
+
+    expect(result.current.tasks.some((t) => t.sourceUid === "event-1")).toBe(true);
+  });
+
+  it("keeps a calendar task missing from a later sync if it has a note or is marked priority", () => {
+    const { result } = renderTasks();
+    act(() => {
+      result.current.importCalendarTasks([
+        { uid: "event-1", summary: "Team standup", durationMinutes: 15, date: TODAY },
+        { uid: "event-2", summary: "1:1", durationMinutes: 30, date: TODAY },
+      ]);
+    });
+    const noteTaskId = result.current.tasks.find((t) => t.sourceUid === "event-1")!.id;
+    const priorityTaskId = result.current.tasks.find((t) => t.sourceUid === "event-2")!.id;
+    const priorityTask = result.current.tasks.find((t) => t.sourceUid === "event-2")!;
+    act(() => {
+      result.current.addTaskNote(noteTaskId, "remember to bring notes");
+      result.current.updateTask(priorityTaskId, {
+        name: priorityTask.name,
+        goalTimeMinutes: priorityTask.goalTimeMinutes,
+        isPriority: true,
+      });
+    });
+
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-3", summary: "Something else", durationMinutes: 10, date: TODAY }]);
+    });
+
+    expect(result.current.tasks.some((t) => t.sourceUid === "event-1")).toBe(true);
+    expect(result.current.tasks.some((t) => t.sourceUid === "event-2")).toBe(true);
+  });
+
+  it("keeps a past-dated calendar task missing from a later sync, even if untouched", () => {
+    const { result } = renderTasks();
+    const yesterday = "2020-01-01"; // safely in the past for any real run
+
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-1", summary: "Old meeting", durationMinutes: 15, date: yesterday }]);
+    });
+
+    act(() => {
+      result.current.importCalendarTasks([{ uid: "event-2", summary: "1:1", durationMinutes: 30, date: TODAY }]);
+    });
+
+    const stored = JSON.parse(localStorage.getItem("focuspie-tasks") ?? "[]");
+    expect(stored.some((t: { sourceUid?: string }) => t.sourceUid === "event-1")).toBe(true);
+  });
+});
+
+describe("TaskProvider - importedSourceUids", () => {
+  it("is empty before any calendar import", () => {
+    const { result } = renderTasks();
+    expect(result.current.importedSourceUids.size).toBe(0);
+  });
+
+  it("tracks a sourceUid once its event has been imported, including future-dated ones", () => {
+    const { result } = renderTasks();
+    act(() => {
+      result.current.importCalendarTasks([
+        { uid: "event-1", summary: "Team standup", durationMinutes: 15, date: TODAY },
+        { uid: "event-2", summary: "Next month's thing", durationMinutes: 30, date: "2099-01-08" },
+      ]);
+    });
+
+    expect(result.current.importedSourceUids.has("event-1")).toBe(true);
+    expect(result.current.importedSourceUids.has("event-2")).toBe(true);
+  });
+
+  it("does not include manually-created tasks (no sourceUid)", () => {
+    const { result } = renderTasks();
+    act(() => {
+      result.current.addTask({ name: "Manual task", goalTimeMinutes: 20 });
+    });
+
+    expect(result.current.importedSourceUids.size).toBe(0);
   });
 });
