@@ -6,11 +6,20 @@
 // file is just the HTTP glue.
 
 import { parseIcs, windowEndDigits, dateDigitsToIso } from "./ics-parser.ts";
+import { isSafeIcsUrl } from "./url-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Minimum time between syncs for a given account, enforced server-side (not
+// just in the UI) - protects the shared Supabase Free-tier invocation quota
+// from a signed-in user (or a script using their token directly) hammering
+// this function in a loop. Checked and set using the same calendar_last_
+// synced_at column the Calendar page already shows "Last imported X ago"
+// from, so there's one source of truth, not a second hidden timestamp.
+const MIN_SECONDS_BETWEEN_SYNCS = 120;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -37,10 +46,41 @@ Deno.serve(async (req: Request) => {
       },
     });
     if (!userResp.ok) return json({ error: "Not authenticated" }, 401);
+    const { id: userId } = await userResp.json();
 
     const { icsUrl, todayDigits } = await req.json();
     if (!icsUrl || typeof icsUrl !== "string") return json({ error: "icsUrl is required" }, 400);
     if (!todayDigits || typeof todayDigits !== "string") return json({ error: "todayDigits is required" }, 400);
+    if (!isSafeIcsUrl(icsUrl)) return json({ error: "That calendar URL isn't allowed" }, 400);
+
+    // Rate limit, enforced server-side using this same account's own last-
+    // synced timestamp (RLS lets a user read/write only their own row, so
+    // this authenticates as the caller, not the service role).
+    const restHeaders = { Authorization: authHeader, apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" };
+    const settingsResp = await fetch(
+      `${Deno.env.get("SUPABASE_URL")}/rest/v1/user_settings?select=calendar_last_synced_at&user_id=eq.${userId}`,
+      { headers: restHeaders },
+    );
+    if (settingsResp.ok) {
+      const rows = await settingsResp.json();
+      const lastSynced = rows?.[0]?.calendar_last_synced_at;
+      if (lastSynced) {
+        const secondsSince = (Date.now() - new Date(lastSynced).getTime()) / 1000;
+        if (secondsSince < MIN_SECONDS_BETWEEN_SYNCS) {
+          return json(
+            { error: `Please wait ${Math.ceil(MIN_SECONDS_BETWEEN_SYNCS - secondsSince)}s before syncing again` },
+            429,
+          );
+        }
+      }
+    }
+    // Claim this sync slot before doing the slow external fetch, so a rapid
+    // burst of requests can't all pass the check before any of them finish.
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/user_settings?user_id=eq.${userId}`, {
+      method: "PATCH",
+      headers: { ...restHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({ calendar_last_synced_at: new Date().toISOString() }),
+    });
 
     let icsResponse: Response;
     try {

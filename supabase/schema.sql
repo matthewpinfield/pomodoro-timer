@@ -149,9 +149,15 @@ create policy "Users can view their own push subscriptions"
   on public.push_subscriptions for select
   using (auth.uid() = user_id);
 
+-- Capped at 10 devices/account, enforced at the DB level (not just the app
+-- UI) - stops a script spamming fake subscription rows via a stolen/reused
+-- token even though a real browser only ever needs one per device.
 create policy "Users can insert their own push subscriptions"
   on public.push_subscriptions for insert
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and (select count(*) from public.push_subscriptions where user_id = auth.uid()) < 10
+  );
 
 create policy "Users can delete their own push subscriptions"
   on public.push_subscriptions for delete
