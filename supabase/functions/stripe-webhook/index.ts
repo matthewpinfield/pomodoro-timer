@@ -1,3 +1,4 @@
+// Redeployed to force a fresh instance after updating STRIPE_WEBHOOK_SECRET.
 // Stripe calls this directly whenever a subscription's lifecycle changes -
 // no browser ever calls it, so unlike fetch-calendar/index.ts there's no
 // CORS handling here. Auth is Stripe's own webhook signature (verified via
