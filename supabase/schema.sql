@@ -253,3 +253,28 @@ alter table public.subscriptions enable row level security;
 create policy "Users can view their own subscription"
   on public.subscriptions for select
   using (auth.uid() = user_id);
+
+-- === Calendar connections (OAuth providers) =================================
+-- One row per connected provider per user - `provider` is just 'google' for
+-- now, shaped so Microsoft/Apple can be added later without a redesign.
+-- OAuth tokens are exactly as sensitive as a Stripe secret key, so - same
+-- pattern as public.subscriptions - this is read-only for the client (no
+-- insert/update/delete policy for `authenticated` at all). Only
+-- connect-google-calendar (writes on initial connect) and
+-- fetch-google-calendar (writes on token refresh) ever touch this table,
+-- both via the service role.
+create table if not exists public.calendar_connections (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  provider text not null,
+  access_token text not null,
+  refresh_token text not null,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, provider)
+);
+
+alter table public.calendar_connections enable row level security;
+
+create policy "Users can view their own calendar connections"
+  on public.calendar_connections for select
+  using (auth.uid() = user_id);
