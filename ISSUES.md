@@ -25,6 +25,18 @@ sign-in form.
 **Status:** open, not yet fixed - flagged instead of silently left in
 conversation history so it survives a session ending.
 
+### user_settings REST calls returning 400 on the live site
+Spotted 2026-09-11 in the browser Network tab on `focuspie.app/account/`
+while debugging the Stripe billing flow: both the `GET
+.../rest/v1/user_settings?select=...` (settings-context.tsx's sign-in
+migration read) and `POST .../rest/v1/user_settings?on_conflict=user_id`
+(the write-through upsert) returned 400. Not yet root-caused - surfaced
+mid-unrelated-debugging and not chased down. Worth investigating properly:
+check the exact response body for the real Postgres/PostgREST error message
+(a 400 usually means a malformed query or missing/renamed column, not an
+auth/RLS problem, which would be 401/403 instead).
+**Status:** open, not yet investigated.
+
 ### Never actually deployed
 Everything's been verified locally (`pnpm build`, `tsc`, manual testing) but
 the GitHub Pages workflow itself has never run for real, and nothing's been
@@ -88,6 +100,18 @@ now" rather than a finished mobile pass.
 
 ## Repo hygiene (non-blocking)
 
+- **gmail.com vs. googlemail.com creates two separate accounts for the same
+  mailbox.** Found 2026-09-11 while testing Stripe billing: Google treats
+  `user@gmail.com` and `user@googlemail.com` as the same inbox (a legacy
+  regional-domain alias), but Supabase Auth has no way to know that - each
+  gets its own `auth.users` row, and browser autofill can silently swap
+  between the two without the user noticing (that's what happened here - a
+  successful test subscription on the `@gmail.com` account was invisible
+  when a later sign-in landed on the `@googlemail.com` one instead). Narrow
+  edge case (only affects people with a legacy googlemail.com alias saved
+  somewhere), not fixed. Would need email normalization at sign-in time if
+  ever addressed - not urgent given how few users this could realistically
+  affect.
 - `.cursor/rules/*.mdc` files are leftover from before the Cursor→Claude
   switch, superseded by `CLAUDE.md`. Harmless but redundant.
 - Stray root files (`app function.txt`, `How the Pomodoro Timer Circle Works
