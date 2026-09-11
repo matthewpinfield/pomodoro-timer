@@ -13,7 +13,7 @@
 // rigor as jsr:@negrel/webpush before it) rather than assumed to work or
 // assumed broken by analogy to a different library's real Deno-compat issue.
 
-import Stripe from "npm:stripe@17";
+import Stripe from "npm:stripe@17.7.0";
 import { mapStripeEventToSubscriptionUpdate } from "./event-mapper.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

@@ -13,7 +13,7 @@
 // Uses the official npm:stripe SDK, same as stripe-webhook - validated under
 // Deno before either function was written.
 
-import Stripe from "npm:stripe@17";
+import Stripe from "npm:stripe@17.7.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
