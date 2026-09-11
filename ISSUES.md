@@ -4,6 +4,27 @@ Live tracker for known gaps before this goes public. Update status as things
 get fixed rather than deleting entries — keeps the history of what was known
 and when.
 
+## Operational gotcha worth remembering
+
+### Updating a Supabase Edge Function secret doesn't guarantee already-warm instances pick it up
+Hit this 2026-09-11 switching `stripe-webhook` from test to live Stripe keys:
+`supabase secrets set` updated the value correctly, but the deployed function
+kept failing webhook signature verification with the *old* secret's
+behavior - `Deno.env.get(...)` is read once at module load, and a warm
+(already-running) instance doesn't necessarily restart just because the
+secret store changed underneath it. A genuine code redeploy (not just
+re-running `secrets set`) forced a fresh instance and fixed it immediately.
+**Takeaway:** after rotating any secret an Edge Function reads
+(`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`,
+`VAPID_PRIVATE_KEY_JWK`, etc.), redeploy the function that reads it - don't
+assume the next invocation automatically sees the new value.
+
+## Full live Stripe billing confirmed working end-to-end (2026-09-11)
+Real signup → real Checkout → real payment → real webhook → real
+`subscriptions` row update → "FocusPie Pro" correctly shown. Subscription
+deliberately left active (real $2.99 charge, kept running for further
+testing rather than canceled immediately).
+
 ## Considered, deliberately not fixed (low risk)
 
 Full security pass done 2026-09-11 before linking the real (live-mode) Stripe
