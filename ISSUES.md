@@ -4,6 +4,32 @@ Live tracker for known gaps before this goes public. Update status as things
 get fixed rather than deleting entries — keeps the history of what was known
 and when.
 
+## Considered, deliberately not fixed (low risk)
+
+Full security pass done 2026-09-11 before linking the real (live-mode) Stripe
+account - git history scanned clean (no secrets in any commit), every
+table's RLS policy reviewed, both Stripe Edge Functions' auth/validation
+logic reviewed. Two things were considered and consciously left as-is:
+
+- **No rate limit on `stripe-billing-session`** (creating Stripe Checkout/
+  Portal sessions). Unlike `fetch-calendar`, this has no per-account cooldown.
+  Worst case if abused: wasted Supabase invocations and harmless extra Stripe
+  Customer objects - no cost, no data exposure, and it already requires a
+  signed-in account, which is itself rate-limited at sign-up (see above).
+- **Stripe webhook events are processed in arrival order, not verified
+  chronological order.** Stripe doesn't strictly guarantee in-order delivery;
+  a delayed retry of an older event could theoretically overwrite a newer
+  subscription status. Real-world risk is low (single-endpoint delivery is
+  normally in-order in practice); a proper fix means comparing event
+  timestamps before writing, not done given the low probability.
+
+Also confirmed safe by design: this Stripe account is shared with Buy Me a
+Coffee, so `stripe-webhook` receives *every* subscription event on the
+account, not just FocusPie's - but it only ever updates a `subscriptions` row
+that already exists, and a row only exists for a Stripe customer created via
+FocusPie's own checkout flow, so an unrelated BMC event finds zero matching
+rows and is silently ignored.
+
 ## Blocking / should fix before launch
 
 ### No rate limiting or bot protection on account sign-up — mitigated
