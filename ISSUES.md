@@ -26,7 +26,7 @@ billing risk, and no paid feature is reachable without actually completing
 sign-in) - revisit if real abuse is ever observed.
 **Status:** mitigated, not eliminated.
 
-### user_settings REST calls returning 400 on the live site — root-caused
+### user_settings REST calls returning 400 on the live site — fixed
 Spotted 2026-09-11 in the browser Network tab on `focuspie.app/account/`
 while debugging the Stripe billing flow. Root cause confirmed via curl
 against the live REST API: Postgres error `42703 column
@@ -35,10 +35,10 @@ code bug. `supabase/schema.sql` has always correctly declared `alter table
 public.user_settings add column if not exists calendar_last_synced_at
 timestamptz;`, but that one specific statement was apparently never actually
 run against the live database (every other column referenced by the app was
-individually verified present via curl - this was the only gap). Fix is
-purely that one SQL statement, given to the user to run.
-**Status:** fix identified, SQL given to user - confirm it's been run before
-closing.
+individually verified present via curl - this was the only gap). Fix was
+purely that one SQL statement; user ran it, re-verified via curl (200
+instead of 400 for the same query).
+**Status:** fixed.
 
 ### Never actually deployed — fixed
 Stale as of 2026-09-11 - the app has been live at `focuspie.app` for several
