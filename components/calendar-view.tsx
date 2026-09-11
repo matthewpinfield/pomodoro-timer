@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { formatDistanceToNow, format } from "date-fns"
-import { CalendarDays, RefreshCw, Link as LinkIcon } from "lucide-react"
+import { CalendarDays, RefreshCw, Link as LinkIcon, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { useSettings } from "@/context/settings-context"
 import { useTasks } from "@/context/task-context"
@@ -46,6 +46,7 @@ export function CalendarView() {
   const { calendarIcsUrl, updateCalendarIcsUrl, calendarLastSyncedAt, setCalendarLastSyncedAt } = useSettings()
   const { importCalendarTasks, importedSourceUids } = useTasks()
   const [draftUrl, setDraftUrl] = useState(calendarIcsUrl ?? "")
+  const [urlVisible, setUrlVisible] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -176,12 +177,27 @@ export function CalendarView() {
       </div>
 
       <form onSubmit={handleSave} className="glass-card rounded-[1.5rem] p-5 sm:p-6 flex flex-col gap-3">
-        <Input
-          type="url"
-          placeholder="https://calendar.example.com/your-secret-feed.ics"
-          value={draftUrl}
-          onChange={(e) => setDraftUrl(e.target.value)}
-        />
+        <div className="relative">
+          <Input
+            type={urlVisible ? "text" : "password"}
+            placeholder="https://calendar.example.com/your-secret-feed.ics"
+            value={draftUrl}
+            onChange={(e) => setDraftUrl(e.target.value)}
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setUrlVisible((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label={urlVisible ? "Hide calendar link" : "Show calendar link"}
+          >
+            {urlVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          This link grants read access to your calendar to anyone who has it - treat it like a
+          password. Don&apos;t share it, and only paste it here.
+        </p>
         <Button type="submit" variant="secondary" className="gap-2">
           <LinkIcon className="w-4 h-4" />
           Save link
