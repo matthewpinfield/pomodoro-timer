@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { formatDistanceToNow, format } from "date-fns"
-import { CalendarDays, RefreshCw, Link as LinkIcon, Eye, EyeOff } from "lucide-react"
+import { CalendarDays, RefreshCw, Link as LinkIcon, Eye, EyeOff, LogIn } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { useSettings } from "@/context/settings-context"
 import { useTasks } from "@/context/task-context"
@@ -58,9 +58,119 @@ export function CalendarView() {
   const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set())
   const [lastImportSummary, setLastImportSummary] = useState<{ added: number; skipped: number } | null>(null)
 
+  // Google connection status - null while unknown/loading, otherwise
+  // whether a calendar_connections row exists for this user. Not synced
+  // through context since it's only relevant on this page.
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null)
+  const [connectingGoogle, setConnectingGoogle] = useState(false)
+
+  const redirectUri = () => {
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
+    return `${window.location.origin}${basePath}/calendar/`
+  }
+
+  // On mount: check whether Google is already connected, and handle the
+  // OAuth redirect back from Google's consent screen (same
+  // read-then-clean-the-URL pattern already used for Stripe's
+  // ?checkout=success on the Account page).
+  useEffect(() => {
+    if (!supabase || !user) return
+    let cancelled = false
+
+    supabase
+      .from("calendar_connections")
+      .select("provider")
+      .eq("user_id", user.id)
+      .eq("provider", "google")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setGoogleConnected(!!data)
+      })
+
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get("code")
+    const state = params.get("state")
+    const oauthError = params.get("error")
+
+    if (oauthError) {
+      setError("Google sign-in was cancelled or denied.")
+      window.history.replaceState({}, "", window.location.pathname)
+    } else if (code) {
+      const expectedState = sessionStorage.getItem("google_oauth_state")
+      sessionStorage.removeItem("google_oauth_state")
+      window.history.replaceState({}, "", window.location.pathname)
+
+      if (state !== expectedState) {
+        setError("Google sign-in couldn't be verified - please try connecting again.")
+      } else {
+        setConnectingGoogle(true)
+        supabase.functions
+          .invoke("connect-google-calendar", { body: { code, redirectUri: redirectUri() } })
+          .then(({ data, error: invokeError }) => {
+            if (invokeError) throw invokeError
+            if (data?.error) throw new Error(data.error)
+            if (!cancelled) setGoogleConnected(true)
+          })
+          .catch((err) => {
+            if (!cancelled) {
+              setError(err instanceof Error ? err.message : "Couldn't connect Google Calendar.")
+            }
+          })
+          .finally(() => {
+            if (!cancelled) setConnectingGoogle(false)
+          })
+      }
+    }
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  const handleConnectGoogle = () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    if (!clientId) {
+      setError("Google Calendar isn't configured yet.")
+      return
+    }
+    const state = crypto.randomUUID()
+    sessionStorage.setItem("google_oauth_state", state)
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri(),
+      response_type: "code",
+      scope: "https://www.googleapis.com/auth/calendar.events.readonly",
+      access_type: "offline",
+      prompt: "consent", // forces a refresh_token every time, not just first consent
+      state,
+    })
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
+  }
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     updateCalendarIcsUrl(draftUrl.trim() || null)
+  }
+
+  // Shared by both the ICS and Google sync paths - splits fetched events
+  // into "already a task, keep it auto-updating" vs. "new, ask the user"
+  // (see the reviewEvents comment above), regardless of which provider
+  // supplied them.
+  const processFetchedEvents = (events: CalendarEvent[]) => {
+    const alreadyImported = events.filter((e) => importedSourceUids.has(e.uid))
+    const newEvents = events.filter((e) => !importedSourceUids.has(e.uid))
+
+    importCalendarTasks(alreadyImported)
+    setCalendarLastSyncedAt(new Date().toISOString())
+
+    if (newEvents.length > 0) {
+      setReviewEvents(newEvents)
+      setSelectedUids(new Set(newEvents.map((e) => e.uid))) // default: everything checked
+    } else {
+      setLastImportSummary({ added: 0, skipped: 0 })
+    }
   }
 
   const handleSync = async () => {
@@ -75,25 +185,27 @@ export function CalendarView() {
       })
       if (invokeError) throw invokeError
       if (data?.error) throw new Error(data.error)
-
-      const events = (data?.events ?? []) as CalendarEvent[]
-      const alreadyImported = events.filter((e) => importedSourceUids.has(e.uid))
-      const newEvents = events.filter((e) => !importedSourceUids.has(e.uid))
-
-      // Events already turned into tasks on a previous sync keep updating
-      // automatically (renamed, rescheduled, or removed) - no need to
-      // re-approve the same recurring meeting every time.
-      importCalendarTasks(alreadyImported)
-      setCalendarLastSyncedAt(new Date().toISOString())
-
-      if (newEvents.length > 0) {
-        setReviewEvents(newEvents)
-        setSelectedUids(new Set(newEvents.map((e) => e.uid))) // default: everything checked
-      } else {
-        setLastImportSummary({ added: 0, skipped: 0 })
-      }
+      processFetchedEvents((data?.events ?? []) as CalendarEvent[])
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't sync your calendar. Try again in a moment.")
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const handleSyncGoogle = async () => {
+    if (!supabase) return
+    setSyncing(true)
+    setError(null)
+    setLastImportSummary(null)
+    setReviewEvents(null)
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke("fetch-google-calendar")
+      if (invokeError) throw invokeError
+      if (data?.error) throw new Error(data.error)
+      processFetchedEvents((data?.events ?? []) as CalendarEvent[])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't sync Google Calendar. Try again in a moment.")
     } finally {
       setSyncing(false)
     }
@@ -176,6 +288,40 @@ export function CalendarView() {
         </p>
       </div>
 
+      <div className="glass-card rounded-[1.5rem] p-5 sm:p-6 flex flex-col items-center gap-3 text-center">
+        {googleConnected ? (
+          <>
+            <CalendarDays className="w-8 h-8 text-primary" />
+            <p className="text-sm font-medium text-foreground">Google Calendar connected</p>
+            <Button onClick={handleSyncGoogle} disabled={syncing} className="gap-2">
+              <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing..." : "Sync Google Calendar"}
+            </Button>
+          </>
+        ) : (
+          <>
+            <LogIn className="w-8 h-8 text-primary" />
+            <p className="text-sm text-muted-foreground">
+              Connect your Google Calendar directly - no copying or pasting anything.
+            </p>
+            <Button onClick={handleConnectGoogle} disabled={connectingGoogle} className="gap-2">
+              {connectingGoogle ? "Connecting..." : "Connect Google Calendar"}
+            </Button>
+          </>
+        )}
+      </div>
+
+      <p className="text-xs text-muted-foreground text-center -mt-2">
+        Other calendars (Apple, Outlook) - coming soon.
+      </p>
+
+      <div className="text-center">
+        <p className="text-xs text-muted-foreground">
+          Not on Google? You can still paste a private calendar link below - just know your
+          provider will warn you this is sensitive, same as a password.
+        </p>
+      </div>
+
       <form onSubmit={handleSave} className="glass-card rounded-[1.5rem] p-5 sm:p-6 flex flex-col gap-3">
         <div className="relative">
           <Input
@@ -216,18 +362,21 @@ export function CalendarView() {
               Last imported {formatDistanceToNow(new Date(calendarLastSyncedAt), { addSuffix: true })}
             </p>
           )}
-          {lastImportSummary && !error && !reviewEvents && (
-            <p className="text-sm text-muted-foreground">
-              {lastImportSummary.added === 0 && lastImportSummary.skipped === 0
-                ? "No new events found in the next month."
-                : `Added ${lastImportSummary.added} new task${lastImportSummary.added === 1 ? "" : "s"}${
-                    lastImportSummary.skipped > 0 ? `, skipped ${lastImportSummary.skipped}` : ""
-                  }.`}
-            </p>
-          )}
-          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
       )}
+
+      {/* Shared between the Google and ICS sync paths - only one sync can be
+          in flight/most-recent at a time, so one status block covers both. */}
+      {lastImportSummary && !error && !reviewEvents && (
+        <p className="text-sm text-muted-foreground text-center">
+          {lastImportSummary.added === 0 && lastImportSummary.skipped === 0
+            ? "No new events found in the next month."
+            : `Added ${lastImportSummary.added} new task${lastImportSummary.added === 1 ? "" : "s"}${
+                lastImportSummary.skipped > 0 ? `, skipped ${lastImportSummary.skipped}` : ""
+              }.`}
+        </p>
+      )}
+      {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
       {reviewEvents && (
         <div className="glass-card rounded-[1.5rem] p-5 sm:p-6 flex flex-col gap-4">
