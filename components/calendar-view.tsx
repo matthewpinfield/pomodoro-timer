@@ -8,6 +8,7 @@ import { useSettings } from "@/context/settings-context"
 import { useTasks } from "@/context/task-context"
 import { supabase } from "@/lib/supabase"
 import { useProAccess } from "@/lib/entitlements"
+import { PremiumBadge } from "@/components/premium-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -127,28 +128,34 @@ export function CalendarView() {
   if (!user) {
     return (
       <div className="w-full max-w-md mx-auto flex flex-col gap-6 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Calendar</h1>
+        <div className="flex items-center justify-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Calendar</h1>
+          <PremiumBadge />
+        </div>
         <div className="glass-card rounded-[1.5rem] p-6">
           <p className="text-sm text-muted-foreground">
-            Sign in to import your upcoming calendar events as tasks.
+            Calendar import is a premium FocusPie feature. Sign in, then subscribe from your
+            Account page to unlock it.
           </p>
         </div>
       </div>
     )
   }
 
-  // Placeholder paywall seam - unreachable today (useProAccess always grants
-  // access, since there's no billing system yet), but the structural branch
-  // exists so flipping that hook's internals on later is the only change
-  // needed here. See lib/entitlements.ts.
   if (!hasProAccess) {
     return (
       <div className="w-full max-w-md mx-auto flex flex-col gap-6 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Calendar</h1>
-        <div className="glass-card rounded-[1.5rem] p-6">
+        <div className="flex items-center justify-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Calendar</h1>
+          <PremiumBadge />
+        </div>
+        <div className="glass-card rounded-[1.5rem] p-6 flex flex-col gap-3 items-center">
           <p className="text-sm text-muted-foreground">
             Calendar import requires FocusPie Pro.
           </p>
+          <Button asChild size="sm">
+            <a href="/account">Upgrade to Pro</a>
+          </Button>
         </div>
       </div>
     )
@@ -157,7 +164,10 @@ export function CalendarView() {
   return (
     <div className="w-full max-w-md mx-auto flex flex-col gap-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Calendar</h1>
+        <div className="flex items-center justify-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Calendar</h1>
+          <PremiumBadge />
+        </div>
         <p className="text-sm text-muted-foreground mt-1">
           Paste your calendar&apos;s private iCal (ICS) link to import the next month of events as tasks -
           each one lands on its own day, so it only shows up once that day arrives. You&apos;ll get to pick

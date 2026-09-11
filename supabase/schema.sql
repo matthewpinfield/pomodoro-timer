@@ -228,3 +228,28 @@ select cron.schedule(
   );
   $$
 );
+
+-- === Billing (Stripe) =======================================================
+-- One row per user, tracking their Stripe customer/subscription. Real status
+-- can only ever come from Stripe itself, so - unlike every other table in
+-- this file - there is deliberately NO insert/update/delete policy for the
+-- `authenticated` role at all. A user can read their own row, never write
+-- it. All writes come from the service role: stripe-billing-session seeds
+-- stripe_customer_id the first time someone starts checkout (so a repeat
+-- checkout reuses the same Stripe Customer instead of creating duplicates),
+-- and stripe-webhook updates status/stripe_subscription_id/
+-- current_period_end whenever Stripe reports a subscription lifecycle event.
+create table if not exists public.subscriptions (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  stripe_customer_id text unique,
+  stripe_subscription_id text unique,
+  status text not null default 'none',
+  current_period_end timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.subscriptions enable row level security;
+
+create policy "Users can view their own subscription"
+  on public.subscriptions for select
+  using (auth.uid() = user_id);

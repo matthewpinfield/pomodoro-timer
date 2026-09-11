@@ -7,6 +7,7 @@ import { useTimer, type TimerSettings } from "@/context/timer-context"; // RE-AD
 import { useSettings } from "@/context/settings-context"; // Import useSettings
 import { useAuth } from "@/context/auth-context";
 import { useProAccess } from "@/lib/entitlements";
+import { PremiumBadge } from "@/components/premium-badge";
 import { isPushSupported, getExistingSubscription, enablePushReminders, disablePushReminders } from "@/lib/push";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input"; // Import Input
@@ -238,16 +239,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
 
           {/* --- Push Reminders Setting --- */}
-          {/* Placeholder paywall seam (lib/entitlements.ts) - unreachable
-              today since useProAccess() always grants access, but the
-              structural branch exists so flipping that hook's internals on
-              later is the only change needed here. */}
           {hasProAccess ? (
             <div className="flex items-center justify-between">
               <div className="space-y-1 pr-4">
-                <Label htmlFor="push-enabled-switch" className="text-foreground cursor-pointer">
-                  Push Reminders
-                </Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="push-enabled-switch" className="text-foreground cursor-pointer">
+                    Push Reminders
+                  </Label>
+                  <PremiumBadge />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {isPushSupported()
                     ? "Sends a notification when a task's reminder time arrives, even if the app is closed."
@@ -268,8 +268,16 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           ) : (
             <div className="flex items-center justify-between">
               <div className="space-y-1 pr-4">
-                <Label className="text-foreground">Push Reminders</Label>
-                <p className="text-xs text-muted-foreground">Requires FocusPie Pro.</p>
+                <div className="flex items-center gap-2">
+                  <Label className="text-foreground">Push Reminders</Label>
+                  <PremiumBadge />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Requires FocusPie Pro.{" "}
+                  <a href="/account" className="underline hover:text-foreground">
+                    Upgrade
+                  </a>
+                </p>
               </div>
               <BellRing className="w-icon-sm h-icon-sm text-muted-foreground opacity-50" />
             </div>
