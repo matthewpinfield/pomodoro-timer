@@ -106,8 +106,9 @@ now" rather than a finished mobile pass.
   regional-domain alias), but Supabase Auth has no way to know that - each
   gets its own `auth.users` row, and browser autofill can silently swap
   between the two without the user noticing (that's what happened here - a
-  successful test subscription on the `@gmail.com` account was invisible
-  when a later sign-in landed on the `@googlemail.com` one instead). Narrow
+  successful test subscription on the `@googlemail.com` account was invisible
+  when a later sign-in landed on the `@gmail.com` one instead). Confirmed
+  working correctly once signed back into the right one. Narrow
   edge case (only affects people with a legacy googlemail.com alias saved
   somewhere), not fixed. Would need email normalization at sign-in time if
   ever addressed - not urgent given how few users this could realistically
