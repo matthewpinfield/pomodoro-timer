@@ -6,7 +6,7 @@ and when.
 
 ## Blocking / should fix before launch
 
-### No rate limiting or bot protection on account sign-up
+### No rate limiting or bot protection on account sign-up — mitigated
 Discovered 2026-09-11 while debugging a Stripe billing test: `Authentication →
 Users` in the Supabase dashboard showed an account for
 `qa-test-focuspie@gmail.com` that the site owner did not create and doesn't
@@ -15,15 +15,16 @@ recognize. Root cause: `context/auth-context.tsx`'s magic-link sign-in
 anyone submits *any* email into the sign-in form on `/account` — no
 confirmation, CAPTCHA, or rate limit required for the row to exist, only for
 it to ever become a usable session. The live site is public
-(`focuspie.app/account`), so any visitor, bot, or scanner can trigger this
-indefinitely. Low severity today (Free-tier Supabase has hard usage caps, not
-billing risk - see the paywall/cost-control discussion this session - and no
-paid feature is reachable without actually completing sign-in), but worth
-closing before real users arrive: e.g. Supabase's own auth rate-limit
-settings (Authentication → Rate Limits in the dashboard), or a CAPTCHA on the
-sign-in form.
-**Status:** open, not yet fixed - flagged instead of silently left in
-conversation history so it survives a session ending.
+(`focuspie.app/account`), so any visitor, bot, or scanner could trigger this
+indefinitely.
+**Fix applied:** Supabase's own sign-up/OTP rate limit (Authentication → Rate
+Limits in the dashboard) tightened to 12 requests/hour. A CAPTCHA on the
+sign-in form would be more robust still (this rate limit is per-project, not
+per-IP, so a slow/patient abuser could still trickle through) but wasn't
+pursued given the low severity (Free-tier Supabase has hard usage caps, not
+billing risk, and no paid feature is reachable without actually completing
+sign-in) - revisit if real abuse is ever observed.
+**Status:** mitigated, not eliminated.
 
 ### user_settings REST calls returning 400 on the live site — root-caused
 Spotted 2026-09-11 in the browser Network tab on `focuspie.app/account/`
