@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import type { User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
+import { normalizeEmail } from "@/lib/utils"
 
 interface AuthContextType {
   user: User | null
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return "Sign-in isn't configured yet."
     const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: normalizeEmail(email),
       options: {
         emailRedirectTo: `${window.location.origin}${basePath}/account/`,
       },

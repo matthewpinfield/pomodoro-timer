@@ -25,24 +25,27 @@ sign-in form.
 **Status:** open, not yet fixed - flagged instead of silently left in
 conversation history so it survives a session ending.
 
-### user_settings REST calls returning 400 on the live site
+### user_settings REST calls returning 400 on the live site — root-caused
 Spotted 2026-09-11 in the browser Network tab on `focuspie.app/account/`
-while debugging the Stripe billing flow: both the `GET
-.../rest/v1/user_settings?select=...` (settings-context.tsx's sign-in
-migration read) and `POST .../rest/v1/user_settings?on_conflict=user_id`
-(the write-through upsert) returned 400. Not yet root-caused - surfaced
-mid-unrelated-debugging and not chased down. Worth investigating properly:
-check the exact response body for the real Postgres/PostgREST error message
-(a 400 usually means a malformed query or missing/renamed column, not an
-auth/RLS problem, which would be 401/403 instead).
-**Status:** open, not yet investigated.
+while debugging the Stripe billing flow. Root cause confirmed via curl
+against the live REST API: Postgres error `42703 column
+user_settings.calendar_last_synced_at does not exist` - schema drift, not a
+code bug. `supabase/schema.sql` has always correctly declared `alter table
+public.user_settings add column if not exists calendar_last_synced_at
+timestamptz;`, but that one specific statement was apparently never actually
+run against the live database (every other column referenced by the app was
+individually verified present via curl - this was the only gap). Fix is
+purely that one SQL statement, given to the user to run.
+**Status:** fix identified, SQL given to user - confirm it's been run before
+closing.
 
-### Never actually deployed
-Everything's been verified locally (`pnpm build`, `tsc`, manual testing) but
-the GitHub Pages workflow itself has never run for real, and nothing's been
-pushed to `origin`. The config *should* work based on local verification, but
-that's not the same as a confirmed live deployment.
-**Status:** open.
+### Never actually deployed — fixed
+Stale as of 2026-09-11 - the app has been live at `focuspie.app` for several
+sessions now (custom domain, GitHub Pages), with real Stripe billing, Supabase
+auth/sync, Calendar import, and push notifications all confirmed working
+against the live deployment. Left the entry rather than deleting it, per this
+file's own convention.
+**Status:** fixed.
 
 ### No test suite — fixed
 `jest.config.mjs` referenced the `ts-jest` preset, which was never installed —
@@ -85,10 +88,11 @@ remainder correctly completes the next minute rather than being dropped.
 
 ## Scope decisions worth confirming intentional
 
-### No accounts / no sync
-State is entirely `localStorage`, tied to one browser on one device. Fine if
-that's the intended scope for launch; flagging so it's a decision, not an
-oversight discovered later.
+### No accounts / no sync — resolved
+Stale as of 2026-09-11 - accounts (Supabase Auth, magic-link) and cross-device
+sync (tasks/settings) were built and shipped in a later session, free for
+every signed-in user permanently. Left the entry rather than deleting it, per
+this file's own convention.
 
 ### Mobile: functional but not mobile-native
 Real-device tested and called "okay-ish." Two concrete touch gaps were found
@@ -101,23 +105,25 @@ now" rather than a finished mobile pass.
 ## Repo hygiene (non-blocking)
 
 - **gmail.com vs. googlemail.com creates two separate accounts for the same
-  mailbox.** Found 2026-09-11 while testing Stripe billing: Google treats
-  `user@gmail.com` and `user@googlemail.com` as the same inbox (a legacy
-  regional-domain alias), but Supabase Auth has no way to know that - each
-  gets its own `auth.users` row, and browser autofill can silently swap
-  between the two without the user noticing (that's what happened here - a
-  successful test subscription on the `@googlemail.com` account was invisible
-  when a later sign-in landed on the `@gmail.com` one instead). Confirmed
-  working correctly once signed back into the right one. Narrow
-  edge case (only affects people with a legacy googlemail.com alias saved
-  somewhere), not fixed. Would need email normalization at sign-in time if
-  ever addressed - not urgent given how few users this could realistically
-  affect.
-- `.cursor/rules/*.mdc` files are leftover from before the Cursor→Claude
-  switch, superseded by `CLAUDE.md`. Harmless but redundant.
-- Stray root files (`app function.txt`, `How the Pomodoro Timer Circle Works
-  (F.md`, `transferToResponsive.md`) look like working notes rather than
-  project docs. Worth a cleanup pass at some point, not urgent.
+  mailbox — fixed.** Found 2026-09-11 while testing Stripe billing: Google
+  treats `user@gmail.com` and `user@googlemail.com` as the same inbox (a
+  legacy regional-domain alias), but Supabase Auth had no way to know that -
+  each got its own `auth.users` row, and browser autofill silently swapped
+  between the two without the user noticing (a successful test subscription
+  on the `@googlemail.com` account was invisible when a later sign-in landed
+  on the `@gmail.com` one instead). **Fix:** `lib/utils.ts`'s
+  `normalizeEmail()` canonicalizes `@googlemail.com` → `@gmail.com` (plus
+  trim/lowercase) before `context/auth-context.tsx` ever calls
+  `signInWithOtp` - both domains now always resolve to the same account
+  going forward. Existing duplicate accounts from before this fix aren't
+  merged (out of scope - no realistic way to reconcile two already-separate
+  `auth.users` rows automatically). Covered by tests in `lib/utils.test.ts`.
+- ~~`.cursor/rules/*.mdc` files are leftover from before the Cursor→Claude
+  switch~~ — removed.
+- ~~Stray root files (`app function.txt`, `How the Pomodoro Timer Circle Works
+  (F.md`, `transferToResponsive.md`)~~ — removed (superseded by
+  `FUTURE_FEATURES.md`/`TIMER_LOGIC.md`/`CLAUDE.md` respectively; preserved
+  in git history if ever needed).
 
 ## Resolved this session (for reference)
 

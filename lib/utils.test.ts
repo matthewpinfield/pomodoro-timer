@@ -1,5 +1,24 @@
-import { formatTime, getTaskDisplayColor, getTaskModeColor } from "./utils";
+import { formatTime, getTaskDisplayColor, getTaskModeColor, normalizeEmail } from "./utils";
 import type { Task } from "@/types/task";
+
+describe("normalizeEmail", () => {
+  it("canonicalizes googlemail.com to gmail.com", () => {
+    expect(normalizeEmail("someone@googlemail.com")).toBe("someone@gmail.com");
+  });
+
+  it("leaves gmail.com and other domains unchanged", () => {
+    expect(normalizeEmail("someone@gmail.com")).toBe("someone@gmail.com");
+    expect(normalizeEmail("someone@example.com")).toBe("someone@example.com");
+  });
+
+  it("lowercases and trims", () => {
+    expect(normalizeEmail("  Someone@GoogleMail.com  ")).toBe("someone@gmail.com");
+  });
+
+  it("only matches googlemail.com as the actual domain, not as part of the local part", () => {
+    expect(normalizeEmail("notgooglemail.com@example.com")).toBe("notgooglemail.com@example.com");
+  });
+});
 
 describe("formatTime", () => {
   it("formats whole minutes and seconds with zero-padding", () => {

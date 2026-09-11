@@ -9,6 +9,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Google treats gmail.com and googlemail.com as the same mailbox (a legacy
+// regional-domain alias) - a user typing/autofilling one vs. the other looks
+// identical to them (same inbox), but Supabase Auth has no way to know
+// they're the same address and would create two separate accounts.
+// Canonicalizing to gmail.com before sign-in keeps it to one account.
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase().replace(/@googlemail\.com$/, "@gmail.com");
+}
+
 // EXPORTED - Server Safe
 export function formatTime(seconds: number): string {
   const safeSeconds = Math.max(0, seconds);
