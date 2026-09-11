@@ -6,6 +6,25 @@ and when.
 
 ## Blocking / should fix before launch
 
+### No rate limiting or bot protection on account sign-up
+Discovered 2026-09-11 while debugging a Stripe billing test: `Authentication →
+Users` in the Supabase dashboard showed an account for
+`qa-test-focuspie@gmail.com` that the site owner did not create and doesn't
+recognize. Root cause: `context/auth-context.tsx`'s magic-link sign-in
+(`supabase.auth.signInWithOtp`) creates a real row in `auth.users` the moment
+anyone submits *any* email into the sign-in form on `/account` — no
+confirmation, CAPTCHA, or rate limit required for the row to exist, only for
+it to ever become a usable session. The live site is public
+(`focuspie.app/account`), so any visitor, bot, or scanner can trigger this
+indefinitely. Low severity today (Free-tier Supabase has hard usage caps, not
+billing risk - see the paywall/cost-control discussion this session - and no
+paid feature is reachable without actually completing sign-in), but worth
+closing before real users arrive: e.g. Supabase's own auth rate-limit
+settings (Authentication → Rate Limits in the dashboard), or a CAPTCHA on the
+sign-in form.
+**Status:** open, not yet fixed - flagged instead of silently left in
+conversation history so it survives a session ending.
+
 ### Never actually deployed
 Everything's been verified locally (`pnpm build`, `tsc`, manual testing) but
 the GitHub Pages workflow itself has never run for real, and nothing's been
