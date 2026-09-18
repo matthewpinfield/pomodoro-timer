@@ -254,7 +254,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {isPushSupported()
-                    ? "Sends a notification when a task's reminder time arrives, even if the app is closed."
+                    ? "Notifies you when a task's reminder time arrives, or a pomodoro/break ends — even if the app is closed."
                     : "Not supported in this browser (on iPhone, add FocusPie to your Home Screen first)."}
                 </p>
               </div>

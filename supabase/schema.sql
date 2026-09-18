@@ -229,6 +229,85 @@ select cron.schedule(
   $$
 );
 
+-- === Timer completion notifications =========================================
+-- A running pomodoro/break counts down entirely client-side (via
+-- requestAnimationFrame in context/timer-context.tsx), which mobile browsers
+-- throttle or freeze once the screen locks or the tab backgrounds - so on its
+-- own the only way to know a session ended is to be looking at the screen
+-- when it happens. One row per user (a user only ever has one countdown
+-- running at a time) holding the next notification to fire; the client
+-- upserts it whenever a countdown starts/resumes and deletes it on
+-- pause/skip/early-finish, so it always reflects "what's currently running
+-- and when it ends" rather than accumulating history the way tasks' own
+-- reminder columns do.
+create table if not exists public.scheduled_notifications (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  fire_at timestamptz not null,
+  title text not null,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.scheduled_notifications enable row level security;
+
+create policy "Users can view their own scheduled notifications"
+  on public.scheduled_notifications for select
+  using (auth.uid() = user_id);
+
+create policy "Users can upsert their own scheduled notifications"
+  on public.scheduled_notifications for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own scheduled notifications"
+  on public.scheduled_notifications for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete their own scheduled notifications"
+  on public.scheduled_notifications for delete
+  using (auth.uid() = user_id);
+
+-- Same cross-user visibility need/lockdown as due_task_reminders() above -
+-- the cron has no per-user JWT, and this returns every user's push keys.
+create or replace function public.due_timer_notifications()
+returns table (
+  user_id uuid,
+  title text,
+  body text,
+  endpoint text,
+  p256dh text,
+  auth text
+)
+language sql
+security invoker
+as $$
+  select sn.user_id, sn.title, sn.body, ps.endpoint, ps.p256dh, ps.auth
+  from public.scheduled_notifications sn
+  left join public.push_subscriptions ps on ps.user_id = sn.user_id
+  where sn.fire_at <= now()
+    and sn.fire_at > now() - interval '3 minutes';
+$$;
+
+revoke all on function public.due_timer_notifications() from public, anon, authenticated;
+grant execute on function public.due_timer_notifications() to service_role;
+
+-- Reuses the same vault secret and cron secret header as the task-reminder
+-- job above - it's just an internal shared token between pg_cron and this
+-- project's Edge Functions, not meaningfully scoped per-function.
+select cron.schedule(
+  'send-timer-notifications-every-minute',
+  '* * * * *',
+  $$
+  select net.http_post(
+    url := 'https://hsbuiciohnefbfkhlgsg.supabase.co/functions/v1/send-timer-notifications',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'task_reminders_cron_secret')
+    ),
+    body := '{}'::jsonb
+  );
+  $$
+);
+
 -- === Billing (Stripe) =======================================================
 -- One row per user, tracking their Stripe customer/subscription. Real status
 -- can only ever come from Stripe itself, so - unlike every other table in

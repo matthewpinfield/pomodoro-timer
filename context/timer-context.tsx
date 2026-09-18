@@ -6,6 +6,7 @@ import { useTasks } from "./task-context"; // Corrected import path
 import { useSettings } from "./settings-context";
 import { useAuth } from "./auth-context";
 import { supabase } from "@/lib/supabase";
+import { getExistingSubscription } from "@/lib/push";
 import { playTransitionChime } from "@/lib/sound";
 import { formatTime } from "@/lib/utils";
 import { toast } from "sonner";
@@ -224,6 +225,57 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         if (error) console.error("TIMER_CONTEXT: Failed to sync settings to Supabase:", error)
       })
   }, [settings, user, settingsMigrationDoneForUserId])
+
+  // Always-current mirror of timeLeftInMode, read (not depended on) by the
+  // notification-scheduling effect below so it only re-runs on a real
+  // mode/isRunning transition, not on every second of the countdown.
+  const timeLeftInModeRef = useRef(timeLeftInMode);
+  useEffect(() => {
+    timeLeftInModeRef.current = timeLeftInMode;
+  }, [timeLeftInMode]);
+
+  // --- Schedule/cancel a server-side push for when the current phase ends ---
+  // The countdown above runs entirely client-side, which mobile browsers
+  // throttle or freeze once the screen locks or the tab backgrounds - so on
+  // its own a session can silently finish with nobody around to hear the
+  // chime (see lib/sound.ts). Signed-in users with an active push
+  // subscription (Settings > Push Reminders, Pro) get a real server-timed
+  // notification instead: starting or resuming a countdown upserts one row
+  // in scheduled_notifications with the exact instant it should fire;
+  // pausing, skipping, or finishing early cancels it. send-timer-notifications
+  // (cron, every minute) does the actual sending.
+  useEffect(() => {
+    if (!supabase || !user) return;
+
+    let cancelled = false;
+    (async () => {
+      if (mode === "idle" || !isRunning) {
+        const { error } = await supabase!.from("scheduled_notifications").delete().eq("user_id", user.id);
+        if (error) console.error("TIMER_CONTEXT: Failed to cancel scheduled notification:", error);
+        return;
+      }
+
+      // Cheap local check (Push API/service worker registration, no network
+      // call) - most users never enable this, no point writing a row for them.
+      const subscription = await getExistingSubscription();
+      if (cancelled || !subscription) return;
+
+      const fireAt = new Date(Date.now() + timeLeftInModeRef.current * 1000);
+      const { title, body } =
+        mode === "working"
+          ? { title: "Pomodoro complete", body: "Time for a break." }
+          : { title: "Break's over", body: "Ready to get back to it?" };
+
+      const { error } = await supabase!
+        .from("scheduled_notifications")
+        .upsert({ user_id: user.id, fire_at: fireAt.toISOString(), title, body }, { onConflict: "user_id" });
+      if (error) console.error("TIMER_CONTEXT: Failed to schedule notification:", error);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, isRunning, user]);
 
   // --- Effect to update timeLeftInMode if settings change AND timer is idle ---
   useEffect(() => {
