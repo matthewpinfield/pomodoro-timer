@@ -15,6 +15,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/auth-context";
 import { supabase } from "@/lib/supabase";
+import { normalizeEmail } from "@/lib/utils";
+
+// The app's own owner/dev account(s) - always Pro, no Stripe subscription
+// needed. Not a security boundary (this list ships in the client bundle),
+// just a comp for the person paying to keep the paid features running.
+const OWNER_EMAILS = ["matthewpinfield@gmail.com"];
 
 export function useProAccess(): { hasProAccess: boolean; loading: boolean; refetch: () => void } {
   const { user } = useAuth();
@@ -25,6 +31,12 @@ export function useProAccess(): { hasProAccess: boolean; loading: boolean; refet
   useEffect(() => {
     if (!user || !supabase) {
       setHasProAccess(false);
+      setLoading(false);
+      return;
+    }
+
+    if (user.email && OWNER_EMAILS.includes(normalizeEmail(user.email))) {
+      setHasProAccess(true);
       setLoading(false);
       return;
     }
