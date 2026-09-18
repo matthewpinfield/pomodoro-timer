@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { AlarmsView } from "@/components/alarms-view"
 
 export const metadata: Metadata = {
-  title: "Alarms - FocusPie",
+  title: "Alarms",
   description: "Set quick reminder timers without leaving your focus session",
 }
 

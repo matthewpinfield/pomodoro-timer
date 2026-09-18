@@ -10,9 +10,12 @@ import { PlanDayDialog } from "@/components/plan-day-dialog"
 import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion" // Keep motion if desired
 import { TaskList } from "@/components/task-list"
-import { WelcomeDialog } from "@/components/welcome-dialog"
+import { OnboardingTour } from "@/components/onboarding-tour"
 
-const WELCOME_SEEN_KEY = "focuspie-welcome-seen"; // localStorage key
+// Same key the landing page's returning-visitor check reads - reaching the
+// app at all (not just dismissing a dialog) now marks onboarding as done.
+const WELCOME_SEEN_KEY = "focuspie-welcome-seen";
+const TOUR_SEEN_KEY = "focuspie-tour-seen";
 
 export default function PieChartView() {
   const router = useRouter()
@@ -20,23 +23,26 @@ export default function PieChartView() {
   const { workdayHours, useMonochromeChart } = useSettings()
   const [planDayOpen, setPlanDayOpen] = useState(false)
   const [editTaskId, setEditTaskId] = useState<string | null>(null)
-  const [welcomeOpen, setWelcomeOpen] = useState(false); // State for welcome dialog
+  const [tourActive, setTourActive] = useState(false)
 
   // Calculate total task time for summary text
   const totalGoalMinutes = tasks.reduce((sum, task) => sum + task.goalTimeMinutes, 0);
 
   const buttonContainerRef = useRef<HTMLDivElement>(null);
 
-  // Effect to check if welcome screen should be shown
   useEffect(() => {
-    const welcomeSeen = localStorage.getItem(WELCOME_SEEN_KEY) === "true";
-    if (!welcomeSeen) {
-      setWelcomeOpen(true);
+    localStorage.setItem(WELCOME_SEEN_KEY, "true");
+    if (localStorage.getItem(TOUR_SEEN_KEY) !== "true") {
+      setTourActive(true);
     }
-  }, []); // Run only once on mount
+  }, []);
 
-  // Determine the effective monochrome state for children
-  const effectiveMonochrome = welcomeOpen || useMonochromeChart;
+  const handleTourFinish = () => {
+    localStorage.setItem(TOUR_SEEN_KEY, "true");
+    setTourActive(false);
+  };
+
+  const effectiveMonochrome = useMonochromeChart;
 
   // --- Handlers ---
   const handleTaskSelect = async (taskId: string) => {
@@ -44,11 +50,6 @@ export default function PieChartView() {
   };
   const handlePlanDay = () => { setEditTaskId(null); setPlanDayOpen(true); };
   const handleTaskClick = (taskId: string) => { setEditTaskId(taskId); setPlanDayOpen(true); };
-
-  const handleWelcomeDismiss = () => {
-    localStorage.setItem(WELCOME_SEEN_KEY, "true");
-    setWelcomeOpen(false);
-  };
 
   return (
     <div className="w-full max-w-7xl mx-auto px-0 sm:px-4 flex flex-col h-full">
@@ -65,7 +66,7 @@ export default function PieChartView() {
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 bg-primary/10 rounded-full blur-[80px] sm:blur-[100px] h-[250px] sm:h-[300px] w-full -z-10 opacity-60 group-hover:opacity-80 transition-opacity duration-700" />
 
             {/* Pie Chart Container */}
-            <div className="relative aspect-square w-[90%] sm:w-[75%] md:w-[90%] lg:w-[85%] xl:w-[80%] max-w-[400px] mx-auto mb-4 sm:mb-6 transform transition-transform duration-500 hover:scale-[1.02]"> 
+            <div data-tour="pie-chart" className="relative aspect-square w-[90%] sm:w-[75%] md:w-[90%] lg:w-[85%] xl:w-[80%] max-w-[400px] mx-auto mb-4 sm:mb-6 transform transition-transform duration-500 hover:scale-[1.02]">
                <PieChart
                  tasks={tasks}
                  onTaskSelect={handleTaskSelect}
@@ -111,6 +112,7 @@ export default function PieChartView() {
               </div>
               
               <Button
+                data-tour="plan-task-button"
                 onClick={handlePlanDay}
                 className="w-full h-12 sm:h-14 flex items-center justify-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 shadow-xl shadow-primary/20 border border-primary-foreground/10 font-bold text-sm sm:text-base"
                 size="lg"
@@ -121,8 +123,8 @@ export default function PieChartView() {
             </div>
 
             {/* --- List Section --- */}
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-3 sm:pr-4 -mr-3 sm:-mr-4" >
-              <TaskList 
+            <div data-tour="task-list" className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-3 sm:pr-4 -mr-3 sm:-mr-4" >
+              <TaskList
                 tasks={tasks} 
                 onEditTask={handleTaskClick} 
                 forceMonochrome={effectiveMonochrome}
@@ -132,7 +134,7 @@ export default function PieChartView() {
       </div>
 
       <PlanDayDialog open={planDayOpen} onOpenChange={setPlanDayOpen} editTaskId={editTaskId} />
-      <WelcomeDialog open={welcomeOpen} onDismiss={handleWelcomeDismiss} />
+      <OnboardingTour active={tourActive} onFinish={handleTourFinish} />
 
     </div>
   );

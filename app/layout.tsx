@@ -10,6 +10,7 @@ import { AuthProvider } from "@/context/auth-context"
 import { Header } from '@/components/Header' // Assuming Header has sticky/fixed positioning
 import { Toaster } from "@/components/ui/toaster"
 import { AlarmFiringOverlay } from "@/components/alarm-firing-overlay"
+import { Analytics } from "@/components/analytics"
 import { cn } from "@/lib/utils"
 
 // --- Font definitions ---
@@ -17,7 +18,30 @@ const digitalFont = Share_Tech_Mono({ subsets: ["latin"], weight: "400", variabl
 
 // --- Viewport and Metadata ---
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: "#4299e1" } // Adjust themeColor
-export const metadata: Metadata = { title: "FocusPie - ADHD-Friendly Focus Timer", description: "A visual focus timer application designed for individuals with ADHD" }
+export const metadata: Metadata = {
+  metadataBase: new URL("https://focuspie.app"),
+  title: {
+    default: "FocusPie - ADHD-Friendly Focus Timer",
+    template: "%s | FocusPie",
+  },
+  description: "A visual focus timer application designed for individuals with ADHD",
+  keywords: ["ADHD focus timer", "pomodoro timer", "visual time management", "task planner", "focus app"],
+  openGraph: {
+    siteName: "FocusPie",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
+  // Populated at build time from GitHub Actions secrets once Search Console /
+  // Bing Webmaster properties exist - see .github/workflows/deploy.yml.
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+      : undefined,
+  },
+}
 
 export default function RootLayout({
   children,
@@ -57,6 +81,7 @@ export default function RootLayout({
                     </div>
                     <Toaster />
                     <AlarmFiringOverlay />
+                    <Analytics />
                   </AlarmProvider>
                 </TimerProvider>
               </TaskProvider>

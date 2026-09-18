@@ -17,6 +17,7 @@ import { PauseCircle, Palette, RotateCcw, Volume2, BellRing } from "lucide-react
 import { toast } from "sonner";
 import * as React from "react"; // Import React itself
 import { useRef, useEffect, useState } from "react"; // Import useRef and useEffect
+import { useRouter } from "next/navigation";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -31,6 +32,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { user } = useAuth();
   const { hasProAccess } = useProAccess();
   const contentRef = useRef<HTMLDivElement>(null); // Ref for DialogContent
+  const router = useRouter();
 
   // Push Reminders toggle state - not synced app state (see lib/push.ts),
   // derived live from whatever this browser's Push API currently reports.
@@ -90,9 +92,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     updateWorkdayHours(isNaN(value) ? 0 : value);
   };
 
-  const handleResetWelcome = () => {
+  const handleViewWelcome = () => {
     localStorage.removeItem("focuspie-welcome-seen");
-    toast.success("Welcome screen reset - it'll show on next page load.");
+    localStorage.removeItem("focuspie-tour-seen");
+    onOpenChange(false);
+    router.push("/");
   };
 
   // Effect to focus the dialog content instead of the first input when opened
@@ -306,19 +310,19 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
 
           
-          {/* --- Reset Welcome Screen --- */}
+          {/* --- View Welcome Page --- */}
           <div className="flex items-center justify-between pt-4 border-t">
             <div className="space-y-1 pr-4">
               <Label className="text-foreground">
-                Show Welcome Screen Again
+                View Welcome Page
               </Label>
-              <p className="text-xs text-muted-foreground">Resets the welcome dialog so it appears on next load.</p>
+              <p className="text-xs text-muted-foreground">Revisit FocusPie&apos;s intro page.</p>
             </div>
-            <Button 
+            <Button
               variant="outline"
               size="icon"
-              onClick={handleResetWelcome}
-              aria-label="Reset and show welcome screen on next load"
+              onClick={handleViewWelcome}
+              aria-label="View the FocusPie welcome page"
             >
               <RotateCcw className="w-4 h-4" />
             </Button>
